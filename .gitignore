@@ -17,3 +17,6 @@ Thumbs.db
 
 # Test scratch output (tests write to a temp dir, but just in case)
 *.tmp.json
+
+# Local visual evidence (published as release assets instead)
+docs/evidence/*.png

@@ -48,10 +48,13 @@ All three blockers and the high-priority items from the 2026-09-06 source review
 
 Visual slice (bounded): light-blue sky environment, stone island sides under
 the turf, lion-face ball (mane ring/eyes/muzzle, still static on the rolling
-body — billboard face is future work), warmer directional light. Evidence:
-`docs/evidence/2026-09-06_r2_*.png` (390 ready/paused, 360 ready). Note: this
-machine's window capture renders darker than nominal values (round-1 evidence
-shows the same trait); on-screen appearance is brighter than the PNGs suggest.
+body — billboard face is future work), warmer directional light. Evidence
+screenshots are release assets, not repo files:
+[release v0.1.0-graybox-slice](https://github.com/ther12k/roar3d/releases/tag/v0.1.0-graybox-slice)
+(390 ready/paused, 360 ready; `docs/evidence/README.md` explains regeneration).
+Note: this machine's window capture renders darker than nominal values
+(round-1 evidence shows the same trait); on-screen appearance is brighter than
+the PNGs suggest.
 
 Round-2 suite growth: 153 unit (was 138) + 121 integration (was 75), including
 HUD-driven interaction tests (pause/overview/power/aim through real input
@@ -107,8 +110,9 @@ stroke. All verified **with a synthetic frame source**, not a real microphone.
 - Handoff package's own tools: `validate_package.py` PASS.
 - Visual: windowed run on desktop (Vulkan, Forward Mobile renderer) with viewport
   capture — course, ball, flag, cup, aim guide, HUD all render and are readable.
-  Captures: `docs/evidence/2026-09-06_cc01_ready_first_run.png` (first run —
-  found the missing ball mesh) and `docs/evidence/2026-09-06_cc01_ready_final.png`.
+  Captures are release assets:
+  [release v0.1.0-graybox-slice](https://github.com/ther12k/roar3d/releases/tag/v0.1.0-graybox-slice)
+  (`*_first_run` found the missing ball mesh; `*_final` is round 1).
   Reproduce: `ROAR3D_SCREENSHOT=/tmp/shot.png godot --path .`.
 
 Reproduce everything: `tools/run_tests.sh /path/to/godot` (isolates `user://` per
