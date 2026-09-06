@@ -18,6 +18,19 @@ func run(h: TestHarness) -> void:
 	_catalog(h)
 	h.suite = "shot_command"
 	_shot_command(h)
+	h.suite = "engine_api_pins"
+	_engine_api_pins(h)
+
+
+func _engine_api_pins(h: TestHarness) -> void:
+	# Review round 1 found the mic adapter calling a nonexistent method.
+	# Pin the exact 4.7.2 API surface the code depends on so an engine bump
+	# or a bad edit fails here first.
+	h.check(ClassDB.class_has_method("AudioEffectCapture", "get_buffer"), "AudioEffectCapture.get_buffer exists")
+	h.check(not ClassDB.class_has_method("AudioEffectCapture", "get_frames"), "AudioEffectCapture.get_frames does NOT exist (4.7.2)")
+	h.check(ClassDB.class_has_method("AudioEffectCapture", "get_frames_available"), "get_frames_available exists")
+	h.check(ClassDB.class_has_method("AudioEffectCapture", "get_discarded_frames"), "get_discarded_frames exists")
+	h.check(ClassDB.class_has_method("OS", "request_permission"), "OS.request_permission exists")
 
 
 func _shot_math(h: TestHarness) -> void:

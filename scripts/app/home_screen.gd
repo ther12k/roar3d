@@ -33,12 +33,26 @@ func _ready() -> void:
 	mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(mode_label)
 
+	var hint := Label.new()
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
+	hint.visible = false
+	box.add_child(hint)
+
 	var mode_button := RoarTheme.make_flat_button("Switch to %s" % ("Touch" if SettingsStore.is_voice_mode() else "Voice"), true)
 	mode_button.pressed.connect(func() -> void:
 		SettingsStore.set_input_mode("touch" if SettingsStore.is_voice_mode() else "voice")
+		if SettingsStore.is_voice_mode() and not SettingsStore.has_valid_calibration():
+			hint.text = "Voice: your first mic hold will guide a short calibration. Touch always works too."
+			hint.visible = true
 		get_tree().reload_current_scene()
 	)
 	box.add_child(mode_button)
+
+	if SettingsStore.is_voice_mode() and not SettingsStore.has_valid_calibration():
+		hint.text = "Voice selected — first mic hold will guide calibration."
+		hint.visible = true
 
 
 func _on_play() -> void:

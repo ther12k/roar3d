@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://roar3dgameroot"]
+[gd_scene load_steps=21 format=3 uid="uid://roar3dgameroot"]
 
 [ext_resource type="Script" path="res://scripts/game/game_root.gd" id="1_root"]
 [ext_resource type="Script" path="res://scripts/game/game_session_controller.gd" id="2_session"]
@@ -17,6 +17,43 @@ radius = 0.25
 height = 0.5
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball"]
+albedo_color = Color(1, 0.55, 0.2, 1)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.35, 0.62, 0.92, 1)
+sky_horizon_color = Color(0.78, 0.88, 0.96, 1)
+ground_bottom_color = Color(0.45, 0.58, 0.72, 1)
+ground_horizon_color = Color(0.78, 0.88, 0.96, 1)
+sun_angle_max_degrees = 20.0
+sun_curve = 0.12
+
+[sub_resource type="Sky" id="Sky_sky"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_env"]
+background_mode = 2
+sky = SubResource("Sky_sky")
+
+
+[sub_resource type="TorusMesh" id="TorusMesh_mane"]
+inner_radius = 0.17
+outer_radius = 0.27
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mane"]
+albedo_color = Color(1, 0.55, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.035
+height = 0.07
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dark"]
+albedo_color = Color(1, 0.55, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_muzzle"]
+radius = 0.075
+height = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_muzzle"]
 albedo_color = Color(1, 0.55, 0.2, 1)
 
 [node name="GameRoot" type="Node"]
@@ -48,6 +85,31 @@ shape = SubResource("SphereShape3D_ball")
 mesh = SubResource("SphereMesh_ball_visual")
 material_override = SubResource("StandardMaterial3D_ball")
 
+[node name="ManeMesh" type="MeshInstance3D" parent="WorldRoot/Ball"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0.04)
+mesh = SubResource("TorusMesh_mane")
+material_override = SubResource("StandardMaterial3D_mane")
+
+[node name="EyeLeft" type="MeshInstance3D" parent="WorldRoot/Ball"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07, 0.06, 0.235)
+mesh = SubResource("SphereMesh_eye")
+material_override = SubResource("StandardMaterial3D_dark")
+
+[node name="EyeRight" type="MeshInstance3D" parent="WorldRoot/Ball"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 0.06, 0.235)
+mesh = SubResource("SphereMesh_eye")
+material_override = SubResource("StandardMaterial3D_dark")
+
+[node name="Muzzle" type="MeshInstance3D" parent="WorldRoot/Ball"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0.21)
+mesh = SubResource("SphereMesh_muzzle")
+material_override = SubResource("StandardMaterial3D_muzzle")
+
+[node name="Nose" type="MeshInstance3D" parent="WorldRoot/Ball"]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, -0.02, 0.28)
+mesh = SubResource("SphereMesh_eye")
+material_override = SubResource("StandardMaterial3D_dark")
+
 [node name="VisualPivot" type="Node3D" parent="WorldRoot/Ball"]
 
 [node name="CameraRig" type="Node3D" parent="WorldRoot"]
@@ -59,8 +121,13 @@ current = true
 [node name="Lighting" type="Node3D" parent="WorldRoot"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldRoot/Lighting"]
-transform = Transform3D(1, 0, 0, 0, 0.643, -0.766, 0, 0.766, 0.643, 6, 10, 4)
+transform = Transform3D(1, 0, 0, 0, 0.643, -0.766, 0, 0.766, 0.643, 6, 12, 6)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.0
 shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="WorldRoot/Lighting"]
+environment = SubResource("Environment_env")
 
 [node name="GameUI" type="CanvasLayer" parent="."]
 

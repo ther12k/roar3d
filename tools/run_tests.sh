@@ -6,8 +6,17 @@ set -euo pipefail
 GODOT_BIN="${1:-${GODOT_BIN:-godot}}"
 cd "$(dirname "$0")/.."
 
-echo "== Engine version (evidence for the test record) =="
-"$GODOT_BIN" --version
+echo "== Engine version gate (must match ENGINE_VERSION) =="
+ACTUAL_VERSION="$("$GODOT_BIN" --version | head -1)"
+PINNED_VERSION="$(tr -d ' \t\n\r' < ENGINE_VERSION)"
+# Normalize both to x.y.z.channel: 4.7.2.stable.official.xyz / 4.7.2-stable
+ACTUAL_KEY="$(echo "$ACTUAL_VERSION" | cut -d. -f1-3).$(echo "$ACTUAL_VERSION" | cut -d. -f4)"
+PINNED_KEY="${PINNED_VERSION//-/.}"
+if [ "$ACTUAL_KEY" != "$PINNED_KEY" ]; then
+  echo "ENGINE MISMATCH: binary '$ACTUAL_VERSION' != pinned '$PINNED_VERSION' — refusing to run."
+  exit 1
+fi
+echo "OK: $ACTUAL_VERSION matches $PINNED_VERSION"
 
 echo
 echo "== Clean import check =="

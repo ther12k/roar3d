@@ -12,6 +12,7 @@ signal progress_changed()
 var data: Dictionary = {}
 var catalog: LevelCatalog.CatalogData = null
 var last_error := ""
+var _saver := SaveFile.new()
 
 
 func _ready() -> void:
@@ -112,11 +113,18 @@ func next_playable_level() -> String:
 	return playable[0]
 
 
-# --- Persistence (docs/08 §4) ---
+# --- Persistence (docs/08 §4) via the shared, operation-checked SaveFile ---
 
 
 func save() -> bool:
-	return _atomic_write(PROGRESS_PATH, BACKUP_PATH, data)
+	var result := _saver.write_object(
+		PROGRESS_PATH, BACKUP_PATH, data,
+		func(d: Variant) -> SaveSchema.ValidationResult: return SaveSchema.validate_progress(d, ordered_ids())
+	)
+	if not result["ok"]:
+		last_error = _saver.last_error
+		return false
+	return true
 
 
 func retry_save() -> bool:
@@ -124,12 +132,14 @@ func retry_save() -> bool:
 
 
 func _load() -> void:
-	var primary := _read_validated(PROGRESS_PATH)
-	if primary.has("ok"):
+	var validator := func(d: Variant) -> SaveSchema.ValidationResult:
+		return SaveSchema.validate_progress(d, ordered_ids())
+	var primary := _saver.read_object(PROGRESS_PATH, validator)
+	if primary["ok"]:
 		data = primary["value"]
 		return
-	var backup := _read_validated(BACKUP_PATH)
-	if backup.has("ok"):
+	var backup := _saver.read_object(BACKUP_PATH, validator)
+	if backup["ok"]:
 		data = backup["value"]
 		save()  # heal primary from last-good backup
 		return
@@ -138,23 +148,6 @@ func _load() -> void:
 		{"schema_version": 1, "content_version": SaveSchema.CONTENT_VERSION}, ordered_ids()
 	).value
 	save()
-
-
-func _read_validated(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {"error": "missing"}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return {"error": "unreadable"}
-	var text := file.get_as_text()
-	file = null
-	var parsed := SaveSchema.parse_object(text)
-	if not parsed["ok"]:
-		return {"error": "malformed"}
-	var result := SaveSchema.validate_progress(parsed["value"], ordered_ids())
-	if not result.valid:
-		return {"error": ";".join(result.errors)}
-	return {"ok": true, "value": result.value}
 
 
 func _commit(next: Dictionary) -> bool:
@@ -168,28 +161,3 @@ func _commit(next: Dictionary) -> bool:
 	if ok:
 		progress_changed.emit()
 	return ok
-
-
-func _atomic_write(path: String, backup_path: String, payload: Dictionary) -> bool:
-	var text := JSON.stringify(payload, "  ")
-	var temp_path := path + ".tmp"
-	var file := FileAccess.open(temp_path, FileAccess.WRITE)
-	if file == null:
-		last_error = "open_failed"
-		return false
-	file.store_string(text)
-	file.flush()
-	file = null
-	var verify := FileAccess.open(temp_path, FileAccess.READ)
-	if verify == null or verify.get_as_text() != text:
-		last_error = "verify_failed"
-		return false
-	verify = null
-	var dir := DirAccess.open("user://")
-	if dir == null:
-		last_error = "dir_failed"
-		return false
-	if FileAccess.file_exists(path):
-		dir.copy(path, backup_path)
-	dir.rename(temp_path, path)
-	return true

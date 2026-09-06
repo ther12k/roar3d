@@ -81,7 +81,9 @@ class MicFrameSource extends VoiceFrameSource:
 		var available := capture.get_frames_available()
 		if available <= 0:
 			return PackedVector2Array()
-		return capture.get_frames(available)
+		# 4.7.2 API: AudioEffectCapture.get_buffer(count). There is no
+		# get_frames(); a unit test pins this against ClassDB.
+		return capture.get_buffer(available)
 
 	func sample_rate() -> int:
 		return AudioServer.get_mix_rate()

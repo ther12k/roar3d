@@ -7,6 +7,7 @@ func _ready() -> void:
 	var suites: Array = [
 		preload("res://tests/unit/test_domain.gd").new(),
 		preload("res://tests/unit/test_state_machine.gd").new(),
+		preload("res://tests/unit/test_save_file.gd").new(),
 	]
 	for suite in suites:
 		suite.run(harness)

@@ -25,11 +25,14 @@ var _phase: int = Phase.IDLE
 var _capture_token := -1
 var _token_seq := 0
 var _ring: Array = []  # VoiceWindow, bounded to RING_CAPACITY_MS/WINDOW_MS
-var _ring_cursor := 0
 var _hold_started_msec := 0
 var _last_fresh_msec := 0
 var _smoothed := 0.0
 var _warmup_frames_discarded := 0
+var _residual := PackedVector2Array()  # partial window carried across pulls
+var _windows_completed := 0  # analyzed windows since hold start (sample clock)
+var _window_clock_msec := 0  # first window's wall time; +WINDOW_MS per window
+var _discarded_baseline := 0  # per-hold overrun reference (counter is cumulative)
 var _preview := {"valid": false, "power": 0.0, "qualified_ms": 0}
 var _last_status := {}
 
@@ -78,9 +81,13 @@ func published_preview() -> Dictionary:
 
 
 ## Begin a capture hold. Fails without side effects when permission is
-## missing (QA-001/QA-003) or the source cannot start.
+## missing (QA-001/QA-003), calibration is absent (power mapping is unusable
+## without one), or the source cannot start.
 func begin_capture() -> bool:
 	if _phase != Phase.IDLE:
+		return false
+	if calibration.is_empty():
+		_publish_status("needs_calibration")
 		return false
 	if _is_real_mic and not PlatformAdapter.has_microphone_permission():
 		_publish_status("permission_denied")
@@ -88,10 +95,13 @@ func begin_capture() -> bool:
 	_token_seq += 1
 	_capture_token = _token_seq
 	_ring.clear()
+	_residual = PackedVector2Array()
+	_windows_completed = 0
 	_smoothed = 0.0
 	_warmup_frames_discarded = 0
 	_preview = {"valid": false, "power": 0.0, "qualified_ms": 0}
 	_source.clear_buffer()
+	_discarded_baseline = _source.frames_discarded()
 	if not _source.start():
 		_capture_token = -1
 		_publish_status("no_input")
@@ -115,6 +125,7 @@ func end_capture() -> void:
 	_source.stop()
 	_source.clear_buffer()
 	_ring.clear()
+	_residual = PackedVector2Array()
 	_preview = {"valid": false, "power": 0.0, "qualified_ms": 0}
 	_capture_token = -1
 	AudioDirector.duck_for_capture(false)
@@ -131,6 +142,11 @@ func _process(_delta: float) -> void:
 		return
 	var frames := _source.pull_frames()
 	if frames.is_empty():
+		# No fresh audio: age the preview out against wall time so an old
+		# maximum never lingers (docs/04 §5).
+		if _phase == Phase.LISTENING:
+			_preview = VoiceAnalysis.preview_power(_ring, Time.get_ticks_msec())
+			_publish_status("")
 		if now - _last_fresh_msec > NO_FRESH_TIMEOUT_MS:
 			end_capture()
 			_publish_status("no_input")
@@ -146,24 +162,50 @@ func _ingest_frames(frames: PackedVector2Array, now_msec: int) -> void:
 	var rate := _source.sample_rate()
 	if rate <= 0:
 		return
+	var warmup_frames: int = int(round(float(rate) * WARMUP_DISCARD_MS / 1000.0))
 	var frames_per_window: int = maxi(1, int(round(float(rate) * WINDOW_MS / 1000.0)))
-	for start: int in range(0, frames.size(), frames_per_window):
-		var end: int = mini(start + frames_per_window, frames.size())
+	# Delivery-independent analysis: carry partial windows across pulls and
+	# process only complete ones. The same waveform must qualify identically
+	# whether it arrives as one buffer or twenty (review finding: chunk-size
+	# dependence). Warmup discards raw frames first.
+	_residual.append_array(frames)
+	var raw: PackedVector2Array = _residual
+	if _warmup_frames_discarded < warmup_frames:
+		var consume: int = mini(warmup_frames - _warmup_frames_discarded, raw.size())
+		_warmup_frames_discarded += consume
+		raw = raw.slice(consume)
+	while raw.size() >= frames_per_window:
 		var window_frames := PackedVector2Array()
-		for i: int in range(start, end):
-			window_frames.append(frames[i])
-		if _warmup_frames_discarded < int(round(float(rate) * WARMUP_DISCARD_MS / 1000.0)):
-			_warmup_frames_discarded += window_frames.size()
-			continue
-		_analyze_window(window_frames, now_msec)
-	if _source.frames_discarded() > 0:
+		for i: int in frames_per_window:
+			window_frames.append(raw[i])
+		raw = raw.slice(frames_per_window)
+		if _windows_completed == 0:
+			_window_clock_msec = now_msec
+		else:
+			_window_clock_msec += WINDOW_MS
+		_windows_completed += 1
+		_analyze_window(window_frames, _window_clock_msec)
+	_residual = raw
+	if _source.frames_discarded() - _discarded_baseline > 0:
 		# Overrun invalidates the current shot rather than passing stale audio
-		# off as current (docs/04 §3).
+		# off as current (docs/04 §3). The baseline is per hold because the
+		# engine counter is cumulative and clear_buffer() does not reset it.
 		end_capture()
 		_publish_status("buffer_overrun")
 		return
-	_preview = VoiceAnalysis.preview_power(_ring, now_msec)
+	# The "recent 250 ms" window is measured on the audio sample clock (the
+	# newest window's stamp), so delivery chunking cannot change which
+	# windows count as recent.
+	_preview = VoiceAnalysis.preview_power(_ring, _audio_now_msec())
 	_publish_status("")
+
+
+## Wall time can run ahead of or behind delivered audio; preview math uses
+## the last analyzed window's stamp as "now" instead.
+func _audio_now_msec() -> int:
+	if _ring.is_empty():
+		return Time.get_ticks_msec()
+	return (_ring[_ring.size() - 1] as VoiceAnalysis.VoiceWindow).t_msec
 
 
 func _analyze_window(window_frames: PackedVector2Array, now_msec: int) -> void:
@@ -192,9 +234,9 @@ func _analyze_window(window_frames: PackedVector2Array, now_msec: int) -> void:
 
 
 ## Qualified duration inside the recent window; below ~150 ms a clap cannot
-## become a shot (QA-006).
+## become a shot (QA-006). Audio-clock based, delivery-independent.
 func qualified_hold_duration() -> float:
-	return VoiceAnalysis.recent_qualified_duration(_ring, Time.get_ticks_msec())
+	return VoiceAnalysis.recent_qualified_duration(_ring, _audio_now_msec())
 
 
 ## Consume the preview for a shot release. Returns {token, power} only when
@@ -207,7 +249,7 @@ func release_capture_for_shot() -> Dictionary:
 		return {"valid": false, "error": "not_listening"}
 	var token := _capture_token
 	var preview := _preview
-	var qualified := VoiceAnalysis.recent_qualified_duration(_ring, Time.get_ticks_msec())
+	var qualified := VoiceAnalysis.recent_qualified_duration(_ring, _audio_now_msec())
 	end_capture()
 	if not preview["valid"] or float(preview["power"]) <= 0.0:
 		return {"valid": false, "error": "no_signal"}

@@ -26,6 +26,13 @@ func _run_all() -> void:
 	await _test_voice_clap_cannot_shoot()
 	await _test_voice_cancel_and_interrupt_no_stroke()
 	await _test_voice_double_release_single_shot()
+	await _test_pause_resume_through_ui()
+	await _test_overview_through_ui()
+	await _test_slider_shoot_matches_displayed_power()
+	await _test_aim_drag_falls_through_hud()
+	await _test_uncalibrated_voice_gated_to_calibration()
+	await _test_overrun_recovery_next_hold_works()
+	await _test_chunk_size_independent_qualification()
 	await _test_game_root_scene_smoke()
 
 
@@ -371,6 +378,265 @@ func _test_voice_double_release_single_shot() -> void:
 	harness.check_eq(session.strokes, 1, "duplicate release cannot double-fire (QA-011)")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE], 900)
 	await _free_voice_env(env)
+
+
+# --- full-stack UI tests: drive the real HUD, real input events ---
+
+
+## Builds the actual gameplay scene (HUD + camera + session) with a synthetic
+## microphone injected, mirroring how a player interacts.
+func _make_full_game() -> Dictionary:
+	AppRouter.current_level_id = "CC01"
+	var packed: PackedScene = load("res://scenes/game/game_root.tscn")
+	var root: GameRoot = packed.instantiate()
+	add_child(root)
+	await get_tree().physics_frame
+	var source := VoiceFrameSource.SyntheticFrameSource.new()
+	source.rate = 48000
+	root.voice._source = source  # test hook: synthetic frames, identical pipeline
+	root.voice._is_real_mic = false
+	for i: int in 240:
+		if root.session.fsm.state == GameStateMachine.State.READY:
+			break
+		await get_tree().physics_frame
+	return {"root": root, "session": root.session, "hud": root.hud, "coordinator": root.coordinator, "voice": root.voice, "source": source}
+
+
+func _free_full_game(env: Dictionary) -> void:
+	get_tree().paused = false
+	var root: GameRoot = env["root"]
+	var level_ref: LevelController = root.level
+	root.queue_free()
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	harness.check(not is_instance_valid(level_ref) or level_ref.instance == null, "level torn down (FR-19)")
+
+
+func _push_key(keycode: int) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	get_viewport().push_input(event)
+
+
+## Control rects live in canvas coordinates; push_input expects window
+## coordinates. Headless runs a scaled transform (e.g. 844×844 canvas in a
+## 0×0-reported window), so convert explicitly.
+func _to_window(canvas_pos: Vector2) -> Vector2:
+	return get_viewport().get_final_transform() * canvas_pos
+
+
+func _push_mouse_press(canvas_pos: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = _to_window(canvas_pos)
+	get_viewport().push_input(event)
+
+
+func _push_mouse_release(canvas_pos: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = false
+	event.position = _to_window(canvas_pos)
+	get_viewport().push_input(event)
+
+
+func _push_mouse_motion(canvas_from: Vector2, delta: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = _to_window(canvas_from + delta)
+	var scale_x := get_viewport().get_final_transform().get_scale().x
+	event.relative = delta * scale_x
+	get_viewport().push_input(event)
+
+
+func _test_pause_resume_through_ui() -> void:
+	harness.suite = "ui.pause_resume"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var hud: HUDPresenter = env["hud"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	var voice: VoiceInputService = env["voice"]
+	var source: VoiceFrameSource.SyntheticFrameSource = env["source"]
+	voice.calibration = {"gate_db": -50.0, "lower_db": -40.0, "upper_db": -20.0}
+	harness.check(not get_tree().paused, "not paused initially")
+	# Open a voice hold, then pause mid-capture via Escape/Back.
+	harness.check(coordinator.voice_hold_started(), "hold opens")
+	source.push_constant_ms(200, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_push_key(KEY_ESCAPE)
+	await get_tree().process_frame
+	harness.check(get_tree().paused, "Escape pauses the tree")
+	harness.check(hud.is_paused_sheet_visible(), "pause sheet visible")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.PAUSED, "session paused, not just the world")
+	harness.check(not voice.is_listening(), "capture closed by pause")
+	harness.check_eq(session.strokes, 0, "canceled hold spends no stroke")
+	# Resume through the same input path; HUD stays responsive while paused.
+	_push_key(KEY_ESCAPE)
+	await get_tree().process_frame
+	harness.check(not get_tree().paused, "Escape resumes")
+	harness.check(not hud.is_paused_sheet_visible(), "sheet hidden")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session resumed to READY")
+	harness.check(not voice.is_listening(), "mic never auto-restarts on resume")
+	await _free_full_game(env)
+
+
+func _test_overview_through_ui() -> void:
+	harness.suite = "ui.overview"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var root: GameRoot = env["root"]
+	var hud: HUDPresenter = env["hud"]
+	hud.overview_toggled.emit()
+	await get_tree().process_frame
+	harness.check(root.camera_rig.is_overview(), "overview opens from the button signal")
+	harness.check(get_tree().paused, "simulation paused during inspection")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session itself stays READY")
+	hud.overview_toggled.emit()
+	await get_tree().process_frame
+	harness.check(not root.camera_rig.is_overview(), "overview closes")
+	harness.check(not get_tree().paused, "simulation resumes")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "still READY after inspection")
+	await _free_full_game(env)
+
+
+func _test_slider_shoot_matches_displayed_power() -> void:
+	harness.suite = "ui.power_display"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var hud: HUDPresenter = env["hud"]
+	hud._power_slider.value = 40.0
+	# process_frame fires BEFORE node _process callbacks, so the display
+	# refresh lags one frame; two frames make the selected value visible.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	harness.check("40%" in hud._power_label.text, "selected power shown before the shot (was 0%% before fix)")
+	hud._on_shoot()
+	var rolling := await _await_state(session, [GameStateMachine.State.ROLLING], 10)
+	harness.check(rolling, "shoot button fires")
+	harness.check_between(session.last_committed_power, 0.399, 0.401, "committed power equals displayed slider power (FR-04)")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_full_game(env)
+
+
+func _test_aim_drag_falls_through_hud() -> void:
+	harness.suite = "ui.aim_fallthrough"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var hud: HUDPresenter = env["hud"]
+	var initial_aim := session.aim_direction
+	# Drag on empty playfield: HUD root must not swallow the events.
+	_push_mouse_press(Vector2(195, 400))
+	_push_mouse_motion(Vector2(195, 400), Vector2(70, 0))
+	_push_mouse_release(Vector2(265, 400))
+	await get_tree().process_frame
+	var angle_after_drag := initial_aim.angle_to(session.aim_direction)
+	harness.check(angle_after_drag > 0.03, "empty-area drag rotates aim (%.3f rad)" % angle_after_drag)
+	# Drag over the slider: the control consumes it; aim must not change.
+	var aim_before_slider := session.aim_direction
+	var slider_center: Vector2 = (hud._power_slider as Control).get_global_rect().get_center()
+	_push_mouse_press(slider_center)
+	_push_mouse_motion(slider_center, Vector2(60, 0))
+	_push_mouse_release(slider_center + Vector2(60, 0))
+	await get_tree().process_frame
+	harness.check(aim_before_slider.angle_to(session.aim_direction) < 0.001, "slider interaction never changes aim")
+	await _free_full_game(env)
+
+
+func _test_uncalibrated_voice_gated_to_calibration() -> void:
+	harness.suite = "ui.voice_onboarding"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var hud: HUDPresenter = env["hud"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	var voice: VoiceInputService = env["voice"]
+	SettingsStore.invalidate_calibration()
+	voice.calibration = {}
+	harness.check(not coordinator.voice_hold_started(), "uncalibrated hold refused")
+	harness.check(hud._cal_sheet.visible, "calibration sheet opens instead")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session untouched")
+	harness.check_eq(session.strokes, 0, "no stroke spent")
+	# A calibration profile must arrive through the game-root flow; simulate
+	# the strong-stage path by applying directly and confirming the gate lifts.
+	voice.calibration = {"gate_db": -50.0, "lower_db": -40.0, "upper_db": -20.0}
+	hud._cal_sheet.visible = false
+	harness.check(coordinator.voice_hold_started(), "calibrated hold opens")
+	(env["source"] as VoiceFrameSource.SyntheticFrameSource).push_constant_ms(200, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	harness.check_eq(session.fsm.state, GameStateMachine.State.CAPTURING, "capture active once calibrated")
+	coordinator.voice_release_outside()
+	await _free_full_game(env)
+
+
+func _test_overrun_recovery_next_hold_works() -> void:
+	harness.suite = "ui.overrun_recovery"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	var voice: VoiceInputService = env["voice"]
+	var source: VoiceFrameSource.SyntheticFrameSource = env["source"]
+	voice.calibration = {"gate_db": -50.0, "lower_db": -40.0, "upper_db": -20.0}
+	harness.check(coordinator.voice_hold_started(), "first hold opens")
+	source.push_constant_ms(200, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	source.mark_overrun(64)  # cumulative counter rises mid-hold
+	source.push_constant_ms(40, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	harness.check(not voice.is_listening(), "overrun closes capture")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session back to READY after overrun")
+	harness.check_eq(session.strokes, 0, "overrun spends no stroke")
+	# Baseline must reset: the very next hold works normally.
+	harness.check(coordinator.voice_hold_started(), "next hold opens after overrun (baseline reset)")
+	source.push_constant_ms(300, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	harness.check(bool(voice.published_preview()["valid"]), "preview valid on recovery hold")
+	coordinator.voice_release_inside()
+	var rolling := await _await_state(session, [GameStateMachine.State.ROLLING], 10)
+	harness.check(rolling, "recovery hold commits a shot normally")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_full_game(env)
+
+
+func _test_chunk_size_independent_qualification() -> void:
+	harness.suite = "voice.chunk_equivalence"
+	var calibration := {"gate_db": -50.0, "lower_db": -40.0, "upper_db": -20.0}
+	# Pattern A: the whole 400 ms arrives in one buffer.
+	var voice_a := VoiceInputService.new(VoiceFrameSource.SyntheticFrameSource.new(), false)
+	add_child(voice_a)
+	voice_a.calibration = calibration
+	harness.check(voice_a.begin_capture(), "A: capture starts")
+	(voice_a._source as VoiceFrameSource.SyntheticFrameSource).push_constant_ms(400, 0.05)
+	# The service's first _process lands on the following frame; two frames
+	# guarantee the buffer was pulled and analyzed.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var preview_a: Dictionary = voice_a.published_preview()
+	# Pattern B: the same audio in 20 x 20 ms buffers over 20 frames.
+	var voice_b := VoiceInputService.new(VoiceFrameSource.SyntheticFrameSource.new(), false)
+	add_child(voice_b)
+	voice_b.calibration = calibration
+	harness.check(voice_b.begin_capture(), "B: capture starts")
+	var source_b: VoiceFrameSource.SyntheticFrameSource = voice_b._source
+	for i: int in 20:
+		source_b.push_constant_ms(20, 0.05)
+		await get_tree().process_frame
+	var preview_b: Dictionary = voice_b.published_preview()
+	harness.check(bool(preview_a["valid"]) and bool(preview_b["valid"]), "both deliveries produce a preview")
+	harness.check(
+		absf(float(preview_a["power"]) - float(preview_b["power"])) <= 0.01,
+		"preview power independent of chunking (%.3f vs %.3f)" % [float(preview_a["power"]), float(preview_b["power"])]
+	)
+	harness.check_eq(int(preview_a["qualified_ms"]), int(preview_b["qualified_ms"]), "qualified duration independent of chunking")
+	voice_a.end_capture()
+	voice_b.end_capture()
+	voice_a.queue_free()
+	voice_b.queue_free()
+	await get_tree().physics_frame
 
 
 # --- full stack smoke: the actual game_root scene with HUD + camera ---

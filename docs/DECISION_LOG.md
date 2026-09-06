@@ -77,3 +77,67 @@ settle-detection bug — watch diagnostics.
 **Decision.** `handoff/.gdignore` keeps the 20 MB reference PNGs/CSVs out of the
 Godot import cache.
 **Impact.** Handoff Python tools unaffected; gallery still opens from disk.
+
+## D-010 · GameRoot is the single pause/overview authority
+**Decision.** `set_gameplay_paused()` and `toggle_overview()` are the only code
+that flips `SceneTree.paused` during gameplay; HUD/CameraRig request them.
+**Why.** Review round 1: HUD was pausable (dead resume button), resume unpause
+didn't reach the session FSM, and overview had a second pause path — three ways
+to get stuck. Order is fixed: cancel capture → session FSM → tree → overlay.
+**Impact.** Any new pause-flavored feature (phone call, screenshot mode) must
+extend GameRoot, not add its own `get_tree().paused` write.
+
+## D-011 · HUD: PROCESS_MODE_ALWAYS + MOUSE_FILTER_IGNORE root
+**Decision.** The HUD always processes (controls work while paused) and its
+root ignores mouse (playfield drags fall through to aiming); interactive
+controls consume their own events.
+**Why.** Review round 1: full-rect STOP root swallowed aim input; pausable HUD
+couldn't resume. Also: HUD marks ui_cancel handled so the router's back
+handler never double-fires on the same Escape press.
+**Impact.** New HUD panels must set their own mouse handling; the root must
+stay transparent.
+
+## D-012 · Voice analysis windows are delivery-independent
+**Decision.** Residual-frame accumulator (complete 20 ms windows only), audio-
+sample-clock timestamps, preview measured against the newest window's stamp;
+overrun compared to a per-hold baseline of the cumulative engine counter.
+**Why.** Review round 1: final partial fragments were analyzed as full
+windows, all windows in one pull shared a timestamp, and qualification
+depended on chunk arrival. Fixed behavior is pinned by a 1×400 ms vs 20×20 ms
+equivalence test.
+**Impact.** Any change to WINDOW_MS/preview constants must keep that test
+passing.
+
+## D-013 · Voice requires a calibration profile before any hold
+**Decision.** `begin_capture` refuses with `needs_calibration` when no profile;
+the coordinator opens the 3-step sheet; GameRoot loads the saved profile at
+start and persists a derived one only after the strong stage validates.
+**Why.** An empty profile maps every sound to zero power — voice mode was
+silently unusable. Touch remains equally visible at every step.
+**Impact.** `OS.request_permission` timing on Android is still unverified
+(RB-005); the in-context request is best-effort until then.
+
+## D-014 · SaveFile shared helper with checked replace
+**Decision.** One implementation of the temp-write/verify/backup/rename
+algorithm; `_copy`/`_rename` are instance seams so tests inject failures.
+Rename failure = hard error (old primary survives); backup-copy failure =
+warning (primary still replaced with verified content).
+**Why.** Review round 1: copy/rename results were unchecked — a failed
+replacement could be reported as success. Now covered by QA-038-style tests.
+
+## D-015 · Non-editor runs load imported scenes — re-import after scene edits
+**Decision.** `--path .` runs use `.godot/imported` copies of scenes; visual
+verification requires `--import` after every `.tscn` edit. `run_tests.sh`
+always re-imports first.
+**Why.** Round 2: several lighting/material edits appeared to have no effect
+because the game rendered the previously imported scene. The
+`ROAR3D_SCREENSHOT` hook now also dumps the pixels at the ball's projected
+position as ground truth.
+
+## D-016 · This machine's capture pipeline renders darker than nominal
+**Decision.** Keep the engine-default color pipeline (custom tonemap/ambient
+experiments reverted); document the display quirk instead of chasing it.
+**Why.** Round-1 evidence (accepted as readable) shows the same dark-capture
+trait — e.g. the "orange" ball sampled (76,38,6) in PNG pixels. The quirk is
+in window capture on this X11/Vulkan config, not in scene authoring; device
+validation (RB-003) will judge the real look.

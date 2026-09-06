@@ -1,7 +1,64 @@
 # Implementation Status
 
-Last updated: 2026-09-06 · Engine: Godot **4.7.2.stable.official.ed1daf0bf** (pinned in
-`ENGINE_VERSION`, binary used for all evidence below)
+Last updated: 2026-09-06 (round 2: review-fix pass) · Engine: Godot
+**4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`; `tools/run_tests.sh`
+refuses to run on any other version).
+
+## Round 2 — review findings fixed
+
+All three blockers and the high-priority items from the 2026-09-06 source review:
+
+- **Mic adapter API (blocker)**: `AudioEffectCapture.get_buffer()` is used; the
+  nonexistent `get_frames()` call is gone. A unit test pins the ClassDB surface
+  (`get_buffer` exists, `get_frames` does not) so an engine bump or bad edit
+  fails immediately. Real-microphone behavior remains device-untested.
+- **Pause/overview (blocker)**: single authority — `GameRoot.set_gameplay_paused()`
+  / `toggle_overview()` cancel capture, update the session FSM, pause the tree,
+  and toggle overlays in one path. HUD is `PROCESS_MODE_ALWAYS`; resume reaches
+  `session.resume_session()` (previously the world unpaused with the session
+  still PAUSED). UI tests pause/resume mid-capture through real key events.
+- **Aiming (blocker)**: `session.can_aim()` forwarding added (aim input
+  previously errored on any mouse event); HUD root is `MOUSE_FILTER_IGNORE` so
+  playfield drags reach the aiming handler while controls consume their own
+  input. Tested via pushed input events: empty-drag rotates aim; slider drags
+  never do.
+- **Voice onboarding**: gameplay loads the saved calibration profile; an
+  uncalibrated hold opens a 3-step calibration sheet (room/soft/strong with
+  "Use Touch instead" always visible) instead of silently mapping to zero
+  power; permission is requested in-context before calibration (best-effort
+  `OS.request_permission`, device behavior unverified). Profile derivation
+  persists through SettingsStore only after the strong stage validates.
+- **Window qualification**: analysis windows are built from a residual
+  accumulator (complete 20 ms windows only), timestamps derive from the audio
+  sample clock, and the "recent 250 ms" preview window is measured on that
+  clock — the same waveform now qualifies identically delivered as 1×400 ms or
+  20×20 ms (integration test). Overrun detection uses a per-hold baseline
+  (engine counter is cumulative; `clear_buffer()` does not reset it) — an
+  overflow invalidates that hold and the next hold works (tested).
+- **Power display (FR-04)**: three-state — selected slider value (Touch,
+  pre-shot; previously showed 0% with the slider at 50%), qualified preview
+  (Voice capture), committed power (rolling). Tested.
+- **Saves**: shared `SaveFile` helper with checked copy/rename; rename failure
+  now reports failure and leaves the old primary intact; backup-copy failure
+  is a surfaced warning. Failure-injection unit tests at each step (QA-038).
+  Both stores refactored onto it.
+- **Header layout**: fixed 48 px pause slot inside the safe area, ellipsized
+  hole label, second-line status — verified at 390 and 360 logical px.
+- **Theme**: gameplay HUD uses the shared RoarTheme (was default-styled).
+
+Visual slice (bounded): light-blue sky environment, stone island sides under
+the turf, lion-face ball (mane ring/eyes/muzzle, still static on the rolling
+body — billboard face is future work), warmer directional light. Evidence:
+`docs/evidence/2026-09-06_r2_*.png` (390 ready/paused, 360 ready). Note: this
+machine's window capture renders darker than nominal values (round-1 evidence
+shows the same trait); on-screen appearance is brighter than the PNGs suggest.
+
+Round-2 suite growth: 153 unit (was 138) + 121 integration (was 75), including
+HUD-driven interaction tests (pause/overview/power/aim through real input
+events and visible controls), calibration gating, overrun recovery, chunk
+equivalence, and save-failure injection.
+
+## What is done and verified (round 1 summary retained below)
 
 ## What is done and verified
 

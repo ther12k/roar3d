@@ -1,9 +1,14 @@
 class_name GameRoot
 extends Node
-## Gameplay composition root. Builds one GameSession per level load; leaving
-## the scene tears down capture, listeners, and pending commands (FR-19).
+## Gameplay composition root and the SINGLE pause/overview authority
+## (review round 1: pause/overview previously split across HUD, CameraRig and
+## the session, which could leave the player stuck or the session paused
+## while the world ran). All pause-flavored state changes funnel through
+## set_gameplay_paused()/toggle_overview(): cancel capture → update session
+## state machine → pause the tree → show/hide overlay, in that order.
 
 const AIM_GUIDE_LENGTH := 2.4
+const CAL_STAGE_SECONDS := 1.5
 
 @onready var session: GameSessionController = $GameSessionController
 @onready var coordinator: InputCoordinator = $InputCoordinator
@@ -14,6 +19,10 @@ const AIM_GUIDE_LENGTH := 2.4
 @onready var hud: HUDPresenter = $GameUI/SafeAreaRoot
 
 var _aim_guide: Node3D = null
+var _cal_stage: String = ""
+var _cal_room: Dictionary = {}
+var _cal_soft: Dictionary = {}
+var _cal_strong: Dictionary = {}
 
 
 func _ready() -> void:
@@ -43,9 +52,16 @@ func _ready() -> void:
 	coordinator.voice = voice
 	camera_rig.session = session
 	camera_rig.level = level
+	# A saved calibration profile is the only way Voice power mapping works;
+	# load it before any hold can start (review finding: empty profile).
+	if SettingsStore.has_valid_calibration():
+		voice.calibration = SettingsStore.calibration()
+	hud.gameplay = self
 	hud.bind(session, coordinator, voice, camera_rig)
 	hud.set_hole_info("%s · %s" % [level_id, String(meta["title"])], int(meta["par"]))
-	hud.pause_requested.connect(_on_pause)
+	hud.pause_requested.connect(func() -> void: set_gameplay_paused(true))
+	hud.resume_requested.connect(func() -> void: set_gameplay_paused(false))
+	hud.overview_toggled.connect(func() -> void: toggle_overview())
 	hud.restart_requested.connect(_restart_level)
 	hud.map_requested.connect(_to_map)
 	hud.next_hole_requested.connect(_next_hole)
@@ -57,26 +73,9 @@ func _ready() -> void:
 	_maybe_capture_evidence_screenshot()
 
 
-## Dev-only visual evidence helper: ROAR3D_SCREENSHOT=/tmp/shot.png godot --path .
-## Waits for the Ready state, then saves the viewport and quits.
-func _maybe_capture_evidence_screenshot() -> void:
-	var shot_path := OS.get_environment("ROAR3D_SCREENSHOT")
-	if shot_path.is_empty():
-		return
-	for i: int in 300:
-		if session.fsm.state == GameStateMachine.State.READY:
-			break
-		await get_tree().create_timer(0.05).timeout
-	await get_tree().create_timer(0.8).timeout
-	var image := get_viewport().get_texture().get_image()
-	image.save_png(shot_path)
-	print("screenshot saved: " + shot_path)
-	get_tree().quit(0)
-
-
 func _build_aim_guide() -> void:
-	# Graybox dotted guide: a few flat segments pointing along the aim
-	# direction; clipped look is fine — it is not a trajectory promise.
+	# Graybox dotted guide: flat segments pointing along the aim direction;
+	# not a trajectory promise.
 	_aim_guide = Node3D.new()
 	_aim_guide.name = "AimGuide"
 	for i: int in 6:
@@ -97,7 +96,7 @@ func _build_aim_guide() -> void:
 func _process(_delta: float) -> void:
 	if _aim_guide == null or session == null:
 		return
-	var show_guide := session.fsm.can_aim() and not camera_rig.is_overview()
+	var show_guide := session.can_aim() and not camera_rig.is_overview()
 	_aim_guide.visible = show_guide
 	if show_guide:
 		var ball_pos := session.ball.global_position
@@ -105,13 +104,101 @@ func _process(_delta: float) -> void:
 		_aim_guide.look_at(ball_pos + session.aim_direction, Vector3.UP)
 
 
-# --- Navigation / lifecycle ---
+# --- Pause / overview: one authority, one order of operations ---
 
 
-func _on_pause() -> void:
+## Pause cancels capture first (never a hidden hold), then cancels any
+## un-committed shot in the session, then pauses the tree. Resume reverses;
+## the mic never restarts by itself.
+func set_gameplay_paused(paused: bool) -> void:
+	if paused:
+		if camera_rig.is_overview():
+			camera_rig.set_overview_active(false)
+			hud.set_overview_indicator(false)
+		coordinator.interrupt_capture()
+		session.pause_session()  # discards COMMIT_PENDING without a stroke
+		hud.show_pause()
+		get_tree().paused = true
+	else:
+		get_tree().paused = false
+		session.resume_session()
+		hud.hide_pause()
+
+
+## Overview is a Ready-only inspection; the whole simulation pauses
+## consistently while it is open (docs/05 §7), through this same authority.
+func toggle_overview() -> void:
+	if camera_rig.is_overview():
+		camera_rig.set_overview_active(false)
+		hud.set_overview_indicator(false)
+		get_tree().paused = false
+		return
+	if get_tree().paused or session.fsm.state != GameStateMachine.State.READY:
+		return
+	camera_rig.set_overview_active(true)
+	hud.set_overview_indicator(true)
+	get_tree().paused = true
+
+
+# --- Calibration orchestration (RB-021 core; HUD drives, service measures) ---
+
+
+func start_calibration_stage(stage: String) -> bool:
+	if stage not in ["room", "soft", "strong"]:
+		return false
 	coordinator.interrupt_capture()
-	session.pause_session()
-	hud.show_pause()
+	if not PlatformAdapter.try_request_microphone_permission():
+		hud.on_calibration_stage_done({"ok": false, "error_code": "permission_denied"})
+		return true  # sheet already informed; no async stage running
+	if not voice.begin_calibration_stage(stage):
+		hud.on_calibration_stage_done({"ok": false, "error_code": "no_input"})
+		return true
+	_cal_stage = stage
+	get_tree().create_timer(CAL_STAGE_SECONDS, true, false, true).timeout.connect(_finish_calibration_stage)
+	return true
+
+
+func _finish_calibration_stage() -> void:
+	if _cal_stage.is_empty():
+		return
+	var summary := voice.finish_calibration_stage()
+	summary["ok"] = _calibration_stage_ok(summary)
+	var stage := String(summary.get("stage", ""))
+	match stage:
+		"room":
+			_cal_room = summary
+		"soft":
+			_cal_soft = summary
+		"strong":
+			_cal_strong = summary
+	_cal_stage = ""
+	if stage == "strong" and bool(summary["ok"]):
+		# Derive + persist before the sheet celebrates; a failed derivation
+		# must offer a retry, not close into an uncalibrated voice mode.
+		var result: Dictionary = voice.apply_calibration(_cal_room, _cal_soft, _cal_strong)
+		if bool(result["valid"]):
+			SettingsStore.set_calibration(result["calibration"])
+			voice.calibration = result["calibration"]
+		else:
+			summary = {"ok": false, "error_code": String(result["error_code"]), "stage": "strong"}
+	hud.on_calibration_stage_done(summary)
+
+
+func _calibration_stage_ok(summary: Dictionary) -> bool:
+	# Room only needs enough data; soft/strong need >= 0.3 s qualified
+	# (docs/04 §4) and a usable level.
+	if String(summary.get("stage", "")) == "room":
+		return float(summary.get("noise_level_db", -999.0)) > -999.0
+	return float(summary.get("qualified_sec", 0.0)) >= 0.3 and float(summary.get("level_db", -999.0)) > -999.0
+
+
+func cancel_calibration_stage() -> void:
+	if not _cal_stage.is_empty():
+		_cal_stage = ""
+		voice.end_capture()
+
+
+# --- Navigation / lifecycle ---
 
 
 func _restart_level() -> void:
@@ -145,14 +232,52 @@ func _notification(what: int) -> void:
 		NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 			# Background/focus loss: close capture, cancel un-committed shot,
 			# pause the session; resume never restarts the mic (FR-15).
-			if is_instance_valid(coordinator):
-				coordinator.interrupt_capture()
-			if is_instance_valid(voice):
-				voice.end_capture()
-			if is_instance_valid(session) and not get_tree().paused:
-				session.pause_session()
-				if is_instance_valid(hud):
-					hud.show_pause()
+			if is_instance_valid(hud) and not hud.is_paused_sheet_visible():
+				set_gameplay_paused(true)
 		NOTIFICATION_PREDELETE:
 			if is_instance_valid(level):
 				level.unload()
+
+
+# --- Dev-only visual evidence helpers (env-gated) ---
+
+
+## ROAR3D_SCREENSHOT=/tmp/shot.png — Ready state capture.
+func _maybe_capture_evidence_screenshot() -> void:
+	var shot_path := OS.get_environment("ROAR3D_SCREENSHOT")
+	if shot_path.is_empty():
+		return
+	for i: int in 300:
+		if session.fsm.state == GameStateMachine.State.READY:
+			break
+		await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.8).timeout
+	var image := get_viewport().get_texture().get_image()
+	image.save_png(shot_path)
+	print("screenshot saved: " + shot_path)
+	# Ground-truth dump for visual verification: what occupies the ball's
+	# screen position in this exact capture.
+	var cam := camera_rig.camera
+	var screen_pos := cam.unproject_position(ball.global_position)
+	var img_size := image.get_size()
+	if screen_pos.x >= 0 and screen_pos.y >= 0 and screen_pos.x < img_size.x and screen_pos.y < img_size.y:
+		var px := int(screen_pos.x)
+		var py := int(screen_pos.y)
+		var samples: Array[String] = []
+		for dy: int in range(-8, 9, 4):
+			for dx: int in range(-8, 9, 4):
+				var x := clampi(px + dx, 0, img_size.x - 1)
+				var y := clampi(py + dy, 0, img_size.y - 1)
+				var c := image.get_pixel(x, y)
+				samples.append("(%d,%d)%s" % [x, y, c.to_html(false)])
+		print("ball_screen=", screen_pos, " samples=", " ".join(samples))
+	# Optional second capture: ROAR3D_SCREENSHOT_PAUSE — paused sheet state.
+	var pause_path := OS.get_environment("ROAR3D_SCREENSHOT_PAUSE")
+	if not pause_path.is_empty():
+		set_gameplay_paused(true)
+		await get_tree().create_timer(0.4).timeout
+		var paused_image := get_viewport().get_texture().get_image()
+		paused_image.save_png(pause_path)
+		print("screenshot saved: " + pause_path)
+		set_gameplay_paused(false)
+	get_tree().quit(0)

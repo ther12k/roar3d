@@ -10,7 +10,7 @@ const AIM_KEY_STEP := 0.06
 
 var session: GameSessionController
 var voice: VoiceInputService
-var hud: Control = null
+var hud: HUDPresenter = null
 
 var _drag_aiming := false
 var _voice_hold_open := false
@@ -53,11 +53,16 @@ func _rotate_aim(angle: float) -> void:
 
 
 ## Mic button pressed. Returns false when a shot is not allowed right now;
-## never opens a capture that cannot become a shot.
+## never opens a capture that cannot become a shot. Without a calibration
+## profile the power mapping is unusable — route to calibration instead.
 func voice_hold_started() -> bool:
 	if _voice_hold_open:
 		return false
 	if not session.can_begin_capture():
+		return false
+	if voice.calibration.is_empty():
+		if hud != null:
+			hud.open_calibration_sheet()
 		return false
 	if not voice.begin_capture():
 		return false  # permission denied / no input: no state change, no stroke

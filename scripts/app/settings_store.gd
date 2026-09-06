@@ -10,6 +10,7 @@ signal settings_changed(settings: Dictionary)
 
 var settings: Dictionary = {}
 var last_error := ""
+var _saver := SaveFile.new()
 
 
 func _ready() -> void:
@@ -78,64 +79,31 @@ func _update(partial: Dictionary) -> void:
 	settings_changed.emit(settings)
 
 
-# --- Persistence: validate -> temp write -> verify -> replace, with backup ---
+# --- Persistence via the shared, operation-checked SaveFile ---
 
 
 func save() -> bool:
-	return _atomic_write(SETTINGS_PATH, BACKUP_PATH, settings)
+	var result := _saver.write_object(
+		SETTINGS_PATH, BACKUP_PATH, settings,
+		func(d: Variant) -> SaveSchema.ValidationResult: return SaveSchema.validate_settings(d)
+	)
+	if not result["ok"]:
+		last_error = _saver.last_error
+		return false
+	return true
 
 
 func _load() -> void:
-	var primary := _read_validated(SETTINGS_PATH)
-	if primary.has("ok"):
+	var validator := func(d: Variant) -> SaveSchema.ValidationResult:
+		return SaveSchema.validate_settings(d)
+	var primary := _saver.read_object(SETTINGS_PATH, validator)
+	if primary["ok"]:
 		settings = primary["value"]
 		return
-	var backup := _read_validated(BACKUP_PATH)
-	if backup.has("ok"):
+	var backup := _saver.read_object(BACKUP_PATH, validator)
+	if backup["ok"]:
 		settings = backup["value"]
 		save()  # heal primary from backup
 		return
 	settings = SaveSchema.validate_settings({}).value  # defaults
 	save()
-
-
-func _read_validated(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {"error": "missing"}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return {"error": "unreadable"}
-	var text := file.get_as_text()
-	file = null
-	var parsed := SaveSchema.parse_object(text)
-	if not parsed["ok"]:
-		return {"error": "malformed"}
-	var result := SaveSchema.validate_settings(parsed["value"])
-	if not result.valid:
-		return {"error": ";".join(result.errors)}
-	return {"ok": true, "value": result.value}
-
-
-func _atomic_write(path: String, backup_path: String, data: Dictionary) -> bool:
-	var text := JSON.stringify(data, "  ")
-	var temp_path := path + ".tmp"
-	var file := FileAccess.open(temp_path, FileAccess.WRITE)
-	if file == null:
-		last_error = "open_failed"
-		return false
-	file.store_string(text)
-	file.flush()
-	file = null  # close
-	var verify := FileAccess.open(temp_path, FileAccess.READ)
-	if verify == null or verify.get_as_text() != text:
-		last_error = "verify_failed"
-		return false
-	verify = null
-	var dir := DirAccess.open("user://")
-	if dir == null:
-		last_error = "dir_failed"
-		return false
-	if FileAccess.file_exists(path):
-		dir.copy(path, backup_path)
-	dir.rename(temp_path, path)
-	return true

@@ -139,11 +139,17 @@ func in_capture() -> bool:
 
 
 func set_aim(direction: Vector3) -> void:
-	if not fsm.can_aim():
+	if not can_aim():
 		return
 	var flat := ShotMath.horizontal_direction(direction)
 	if flat != Vector3.ZERO:
 		aim_direction = flat
+
+
+## Aiming is gated to Ready (locked during capture/rolling). Input layers ask
+## the session, never the raw FSM, so the authority stays in one place.
+func can_aim() -> bool:
+	return fsm.can_aim()
 
 
 func _enqueue_command(source: ShotCommand.Source, power: float) -> bool:

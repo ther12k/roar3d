@@ -46,7 +46,7 @@ func _ready_position() -> Vector3:
 	back.y = 0.0
 	back = back.normalized() if back.length() > 0.01 else Vector3(0.0, 0.0, 1.0)
 	var span := ball_pos.distance_to(cup_pos)
-	var distance := clampf(span * 0.85 + 3.5, 5.0, 16.0)
+	var distance := clampf(span * 0.75 + 3.0, 5.0, 14.0)
 	var height := distance * ELEVATION
 	return ball_pos + back * distance * 0.9 + Vector3(0.0, height, 0.0)
 
@@ -89,28 +89,11 @@ func _look_between(a: Vector3, b: Vector3) -> void:
 	camera.look_at(a.lerp(b, 0.45), Vector3.UP)
 
 
-## Overview is a deliberate Ready-only inspection; the whole simulation is
-## paused consistently while it is open (docs/05 §7).
-func toggle_overview() -> bool:
-	if overview_active:
-		overview_active = false
-		get_tree().paused = false
-		return false
-	if session.fsm.state != GameStateMachine.State.READY:
-		return false
-	if get_tree().paused:
-		return false
-	overview_active = true
-	get_tree().paused = true
-	return true
+## Overview framing only; pausing during inspection is owned by GameRoot so
+## there is exactly one pause authority (review finding: split pause paths).
+func set_overview_active(active: bool) -> void:
+	overview_active = active
 
 
 func is_overview() -> bool:
 	return overview_active
-
-
-## Gameplay pause (not overview) — called by the HUD pause sheet.
-func force_close_overview() -> void:
-	if overview_active:
-		overview_active = false
-		get_tree().paused = false
