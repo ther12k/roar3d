@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Roarball level catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "content_version",
+    "status",
+    "worlds",
+    "levels"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "content_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string"
+    },
+    "worlds": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "order"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "enum": [
+              "cloud_cliffs",
+              "portal_peaks"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2
+          }
+        }
+      }
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "world_id",
+          "order",
+          "world_index",
+          "title",
+          "scene_path",
+          "par",
+          "max_strokes",
+          "mechanics",
+          "teaching_goal",
+          "layout_brief",
+          "solution_brief",
+          "validation_checks",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(CC|PP)0[1-6]$"
+          },
+          "world_id": {
+            "enum": [
+              "cloud_cliffs",
+              "portal_peaks"
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "world_index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "scene_path": {
+            "type": "string",
+            "pattern": "^res://scenes/levels/(CC|PP)0[1-6]\\.tscn$"
+          },
+          "par": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "max_strokes": {
+            "const": 12
+          },
+          "mechanics": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "turf",
+                "cup",
+                "rail",
+                "ramp",
+                "void",
+                "moving_gate",
+                "portal",
+                "bounce_pad"
+              ]
+            }
+          },
+          "teaching_goal": {
+            "type": "string",
+            "minLength": 10
+          },
+          "layout_brief": {
+            "type": "string",
+            "minLength": 10
+          },
+          "solution_brief": {
+            "type": "string",
+            "minLength": 10
+          },
+          "validation_checks": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 5
+            }
+          },
+          "status": {
+            "enum": [
+              "design_only",
+              "graybox",
+              "playtest_ready",
+              "validated"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

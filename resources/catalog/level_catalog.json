@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "content_version": "mvp-1",
+  "status": "packaged_copy_of_design_briefs",
+  "worlds": [
+    {
+      "id": "cloud_cliffs",
+      "name": "Cloud Cliffs",
+      "order": 1
+    },
+    {
+      "id": "portal_peaks",
+      "name": "Portal Peaks",
+      "order": 2
+    }
+  ],
+  "levels": [
+    {
+      "id": "CC01",
+      "world_id": "cloud_cliffs",
+      "order": 1,
+      "world_index": 1,
+      "title": "First Putt",
+      "scene_path": "res://scenes/levels/CC01.tscn",
+      "par": 2,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "cup"
+      ],
+      "teaching_goal": "Learn aim, power preview, release, and gentle putting.",
+      "layout_brief": "A wide flat green, short approach, low boundary rails, obvious cup. No gap or active obstacle.",
+      "solution_brief": "A medium first putt and optional gentle correction. Allow one-shot skilled route.",
+      "validation_checks": [
+        "Cup visible above bottom tray.",
+        "Touch completion before microphone onboarding.",
+        "Forgiving primary power band; no precision-only requirement."
+      ],
+      "status": "graybox"
+    },
+    {
+      "id": "CC02",
+      "world_id": "cloud_cliffs",
+      "order": 2,
+      "world_index": 2,
+      "title": "Soft Landing",
+      "scene_path": "res://scenes/levels/CC02.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "rail",
+        "cup"
+      ],
+      "teaching_goal": "Discover that less power can be the better choice.",
+      "layout_brief": "A broad approach leads to a short final green with a safe outer rail and a visible optional risky edge.",
+      "solution_brief": "Stop short of the edge, then use a gentle finishing putt; stronger first shot may bank safely with skill.",
+      "validation_checks": [
+        "Overpower failure is visible and recoverable.",
+        "A newcomer can stage two safe shots.",
+        "No unseen cliff behind UI."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "CC03",
+      "world_id": "cloud_cliffs",
+      "order": 3,
+      "world_index": 3,
+      "title": "Bank Buddy",
+      "scene_path": "res://scenes/levels/CC03.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "rail",
+        "cup"
+      ],
+      "teaching_goal": "Use a wall rebound to change direction.",
+      "layout_brief": "An L-shaped green with one clean bank wall; alternate slower two-turn route.",
+      "solution_brief": "Bank at moderate power toward the final green or take two deliberate setup shots.",
+      "validation_checks": [
+        "Rail art and collider align.",
+        "Multiple approach directions remain solvable.",
+        "No clipping at corner module seams."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "CC04",
+      "world_id": "cloud_cliffs",
+      "order": 4,
+      "world_index": 4,
+      "title": "Little Leap",
+      "scene_path": "res://scenes/levels/CC04.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "ramp",
+        "void",
+        "cup"
+      ],
+      "teaching_goal": "Use ramp geometry and readable landing targets.",
+      "layout_brief": "One short ramp and modest gap to a wide landing green; side rails guide the approach.",
+      "solution_brief": "Set aim from the tee, choose a tested power band for the gap, then finish gently.",
+      "validation_checks": [
+        "Low/medium/high power landing bands documented.",
+        "Fall returns to the last safe rest.",
+        "Landing green is visible before shooting."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "CC05",
+      "world_id": "cloud_cliffs",
+      "order": 5,
+      "world_index": 5,
+      "title": "Gate Timing",
+      "scene_path": "res://scenes/levels/CC05.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "moving_gate",
+        "rail",
+        "cup"
+      ],
+      "teaching_goal": "Combine patient timing with a restrained shot.",
+      "layout_brief": "A single sliding gate across a straight lane, with a broad safe staging area before and after.",
+      "solution_brief": "Wait for the gate, then pass with moderate power; stage a short approach when needed.",
+      "validation_checks": [
+        "Gate phase pauses consistently.",
+        "No inescapable pinning against a rail.",
+        "Gate travel region is visually obvious."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "CC06",
+      "world_id": "cloud_cliffs",
+      "order": 6,
+      "world_index": 6,
+      "title": "Cliff Combo",
+      "scene_path": "res://scenes/levels/CC06.tscn",
+      "par": 4,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "ramp",
+        "moving_gate",
+        "void",
+        "cup"
+      ],
+      "teaching_goal": "Combine existing skills without introducing another system.",
+      "layout_brief": "Two broad islands linked by a low ramp; gate lies before the jump, not on the landing pad.",
+      "solution_brief": "Stage before the gate, pass and jump at a tested power band, then approach the cup.",
+      "validation_checks": [
+        "One-star completion unlocks PP01 and Panda.",
+        "Independent safe route and optional efficient route.",
+        "No unfair simultaneous high-precision timing/power demand."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP01",
+      "world_id": "portal_peaks",
+      "order": 7,
+      "world_index": 1,
+      "title": "Through the Ring",
+      "scene_path": "res://scenes/levels/PP01.tscn",
+      "par": 2,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "portal",
+        "cup"
+      ],
+      "teaching_goal": "Learn matching portal symbols and safe exits.",
+      "layout_brief": "One visible pair connects two broad greens; entry and exit can be inspected together.",
+      "solution_brief": "Roll gently into the portal, observe exit direction, then putt toward the cup.",
+      "validation_checks": [
+        "Exit is collision-free with radius clearance.",
+        "Pair latch prevents immediate return.",
+        "Only one pair, visually matched."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP02",
+      "world_id": "portal_peaks",
+      "order": 8,
+      "world_index": 2,
+      "title": "Exit Angle",
+      "scene_path": "res://scenes/levels/PP02.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "portal",
+        "rail",
+        "cup"
+      ],
+      "teaching_goal": "Plan using the portal exit orientation.",
+      "layout_brief": "One pair with rotated exit feeds a bank wall and broad final green.",
+      "solution_brief": "Choose an approach angle that exits along the intended rail, then correct at low power.",
+      "validation_checks": [
+        "Velocity-direction mapping tested at oblique angles.",
+        "Exit arrow agrees with behavior.",
+        "Alternate slower setup route remains possible."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP03",
+      "world_id": "portal_peaks",
+      "order": 9,
+      "world_index": 3,
+      "title": "Spring Step",
+      "scene_path": "res://scenes/levels/PP03.tscn",
+      "par": 3,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "bounce_pad",
+        "void",
+        "cup"
+      ],
+      "teaching_goal": "Learn pad impulse and landing control.",
+      "layout_brief": "A pad sits on a broad approach and launches toward a wide raised platform. No portal on this introduction.",
+      "solution_brief": "Reach the pad with moderate rolling speed, land, then make a soft finishing shot.",
+      "validation_checks": [
+        "Pad fires once per eligible contact.",
+        "Slow/side/repeated entry tests pass.",
+        "Misses reset to a valid safe anchor."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP04",
+      "world_id": "portal_peaks",
+      "order": 10,
+      "world_index": 4,
+      "title": "Portal and Pad",
+      "scene_path": "res://scenes/levels/PP04.tscn",
+      "par": 4,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "portal",
+        "bounce_pad",
+        "void",
+        "cup"
+      ],
+      "teaching_goal": "Chain two known interactions with an optional staging stop.",
+      "layout_brief": "A portal exits before a pad rather than directly on it; a safe flat area separates them.",
+      "solution_brief": "Portal to staging, choose pad approach power, then finish after landing.",
+      "validation_checks": [
+        "Exit cannot activate the pad before the player can understand it.",
+        "No pad/portal infinite-energy loop.",
+        "Intermediate safe rest exists."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP05",
+      "world_id": "portal_peaks",
+      "order": 11,
+      "world_index": 5,
+      "title": "Gate Escape",
+      "scene_path": "res://scenes/levels/PP05.tscn",
+      "par": 4,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "portal",
+        "moving_gate",
+        "rail",
+        "cup"
+      ],
+      "teaching_goal": "Time a gate using a clearly signposted portal exit.",
+      "layout_brief": "A visible exit faces a gate corridor with generous staging distance and side rails.",
+      "solution_brief": "Move through the portal, stop before the gate, then time a moderate putt.",
+      "validation_checks": [
+        "Gate cannot trap the ball at portal exit.",
+        "Overview shows full pairing and corridor.",
+        "Primary route does not require simultaneous portal/gate precision."
+      ],
+      "status": "design_only"
+    },
+    {
+      "id": "PP06",
+      "world_id": "portal_peaks",
+      "order": 12,
+      "world_index": 6,
+      "title": "Royal Route",
+      "scene_path": "res://scenes/levels/PP06.tscn",
+      "par": 5,
+      "max_strokes": 12,
+      "mechanics": [
+        "turf",
+        "ramp",
+        "portal",
+        "bounce_pad",
+        "void",
+        "cup"
+      ],
+      "teaching_goal": "Finish with route planning using previously learned mechanics.",
+      "layout_brief": "A compact finale with one portal pair, one pad, a ramp option, and broad staged greens. No new wind/lava system.",
+      "solution_brief": "Take a safe staged route using known power bands; skilled players combine steps for a lower score.",
+      "validation_checks": [
+        "Independent routes fit twelve-stroke limit.",
+        "Robot unlock and final results work.",
+        "No mandatory exact-float shot or hidden target."
+      ],
+      "status": "design_only"
+    }
+  ]
+}

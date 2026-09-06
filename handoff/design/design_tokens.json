@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "status": "proposed_not_a_godot_theme",
+  "reference_canvas": {
+    "width": 390,
+    "height": 844,
+    "units": "logical"
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "radii": {
+    "panel": 20,
+    "button": 16,
+    "chip": 12
+  },
+  "min_touch_target": 48,
+  "primary_button_height": 60,
+  "microphone_size": 80,
+  "font_sizes": {
+    "title": 28,
+    "heading": 24,
+    "body": 16,
+    "label": 14
+  },
+  "colors": {
+    "panel": "#132B3A",
+    "panel_alt": "#1D4258",
+    "text": "#F5F9FC",
+    "muted": "#B9CDDA",
+    "voice": "#2DCEFF",
+    "primary": "#63DC65",
+    "accent": "#FFBE42",
+    "danger": "#EF6A6A"
+  },
+  "motion_ms": {
+    "press": 100,
+    "navigation": 220,
+    "results_max_before_next": 1500
+  },
+  "notes": [
+    "Map safe-area coordinates through the actual canvas transform.",
+    "Minimum target and font sizes are design proposals; perform a visual/accessibility check.",
+    "Quality settings never change physics or rewards."
+  ]
+}

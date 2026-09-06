@@ -1,0 +1,13 @@
+{
+  "status": "not_playtested",
+  "level_id": "CC01",
+  "engine_version": "4.7.2-stable",
+  "tuning_version": "initial-proposal",
+  "content_hash": null,
+  "device_build": null,
+  "achieved_strokes": null,
+  "steps": [],
+  "evidence_paths": [],
+  "reviewer": null,
+  "notes": "Fill only after building and independently solving the real scene. Do not use the metadata brief as proof of solvability."
+}

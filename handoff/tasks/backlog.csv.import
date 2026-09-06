@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://csqwohmyy1htn"
+
+[deps]
+
+files=["res://handoff/tasks/backlog.title.translation", "res://handoff/tasks/backlog.scope.translation", "res://handoff/tasks/backlog.milestone.translation", "res://handoff/tasks/backlog.priority.translation", "res://handoff/tasks/backlog.size.translation", "res://handoff/tasks/backlog.owner.translation", "res://handoff/tasks/backlog.depends.translation", "res://handoff/tasks/backlog.acceptance.translation", "res://handoff/tasks/backlog.body.translation"]
+
+source_file="res://handoff/tasks/backlog.csv"
+dest_files=["res://handoff/tasks/backlog.title.translation", "res://handoff/tasks/backlog.scope.translation", "res://handoff/tasks/backlog.milestone.translation", "res://handoff/tasks/backlog.priority.translation", "res://handoff/tasks/backlog.size.translation", "res://handoff/tasks/backlog.owner.translation", "res://handoff/tasks/backlog.depends.translation", "res://handoff/tasks/backlog.acceptance.translation", "res://handoff/tasks/backlog.body.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

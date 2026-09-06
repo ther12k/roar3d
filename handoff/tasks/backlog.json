@@ -1,0 +1,1934 @@
+{
+  "schema_version": 1,
+  "project": "Roarball",
+  "date": "2026-09-05",
+  "status": "proposed_not_created_on_github",
+  "issues": [
+    {
+      "id": "RB-001",
+      "title": "[RB-001] Pin Godot toolchain and initialize repository",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Engineering",
+      "depends_on": [],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Establish a reproducible Godot/GDScript repository without Flutter or unnecessary native modules.",
+      "implementation_steps": [
+        "Pin editor and matching export templates to ENGINE_VERSION; document exact local version output.",
+        "Create the proposed directories, ignore engine caches/secrets, and add a simple boot scene.",
+        "Document clean import, domain-test, and debug-export commands once verified."
+      ],
+      "acceptance_criteria": [
+        "A clean checkout imports on a second workstation or clean runner.",
+        "No generated cache, signing secret, Flutter project, or mandatory Kotlin dependency is committed.",
+        "Repository documents the exact engine/export-template pairing."
+      ],
+      "required_evidence": "Clean import log, version output, reviewed repository tree.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-001.md"
+    },
+    {
+      "id": "RB-002",
+      "title": "[RB-002] Select physical Android test matrix",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "QA",
+      "depends_on": [
+        "RB-001"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Replace unsupported device assumptions with an explicit minimum/target test inventory.",
+      "implementation_steps": [
+        "Choose minimum-tier, mid-tier, and alternate-GPU phones from available inventory.",
+        "Record OS, renderer support, audio routes, screen aspect and safe-area characteristics.",
+        "Define the baseline performance/privacy evidence worksheet."
+      ],
+      "acceptance_criteria": [
+        "At least three actual devices are identified with owners/access.",
+        "Proposed minimum Android support is marked unapproved until tests pass.",
+        "Bluetooth, interruptions, and notch/navigation conditions are represented."
+      ],
+      "required_evidence": "Device matrix and planned test assignments.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-002.md"
+    },
+    {
+      "id": "RB-003",
+      "title": "[RB-003] Benchmark Mobile and Compatibility renderers",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Rendering",
+      "depends_on": [
+        "RB-001",
+        "RB-002"
+      ],
+      "references": [
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Choose a measured mobile rendering baseline before producing final course art.",
+      "implementation_steps": [
+        "Build a representative turf/island/ball/light/particle test scene.",
+        "Compare release-like builds with Mobile and Compatibility on the matrix.",
+        "Record frame-time distribution, memory, visual differences, and selected baseline."
+      ],
+      "acceptance_criteria": [
+        "Decision includes measured p95/p99 data, not only average FPS.",
+        "Target/low tiers are named with limitations and renderer-specific concerns.",
+        "No renderer switch is hidden inside an ordinary graphics-quality toggle."
+      ],
+      "required_evidence": "Benchmark scene, raw metrics, comparison screenshots, renderer ADR.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-003.md"
+    },
+    {
+      "id": "RB-004",
+      "title": "[RB-004] Validate Jolt ball, ramp, and collision behavior",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-001",
+        "RB-002"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Prove the chosen physics baseline can support rolling, ramps, and high-speed impacts.",
+      "implementation_steps": [
+        "Create diagnostic flat-roll, ramp, and thin-barrier scenes.",
+        "Use the proposed sphere scale, fixed physics rate, and CCD; sweep candidate impulses.",
+        "Record tuning concerns and engine-specific limitations."
+      ],
+      "acceptance_criteria": [
+        "No unacceptable tunneling in the diagnostic power range.",
+        "A repeatable resting/rolling approach is documented.",
+        "Selected engine, tick rate, and tuning version are recorded."
+      ],
+      "required_evidence": "Diagnostic scenes and physical-device/desktop result notes.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-004.md"
+    },
+    {
+      "id": "RB-005",
+      "title": "[RB-005] Prove mic permissions and hardware release lifecycle",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "Audio/Platform",
+      "depends_on": [
+        "RB-001",
+        "RB-002"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Prove explicit capture can start and stop without playback feedback or a misleading privacy indicator.",
+      "implementation_steps": [
+        "Implement the smallest built-in mic/capture bus prototype with no autoplay.",
+        "Test permission grant/denial, capture stop, pause/background, repeated holds, and route changes.",
+        "Observe OS mic indicator after each transition; document a minimal reproduction if input persists."
+      ],
+      "acceptance_criteria": [
+        "No app-level audio recording or upload exists.",
+        "Capture never routes audible microphone sound to speakers.",
+        "Hardware release result is documented; failures block voice release rather than being relabeled.",
+        "A Kotlin evaluation occurs only if supported engine behavior cannot meet the requirement."
+      ],
+      "required_evidence": "Mic lifecycle matrix, privacy-indicator observations, reproduction project if needed.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-005.md"
+    },
+    {
+      "id": "RB-006",
+      "title": "[RB-006] Approve MVP flows and reconcile concept mockups",
+      "scope": "mvp",
+      "milestone": "M0",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Product/Design",
+      "depends_on": [
+        "RB-001"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/06_UI_UX_SPEC.md",
+        "docs/12_DECISIONS_AND_RISKS.md"
+      ],
+      "goal": "Freeze a buildable scope instead of implementing every feature printed in the concept art.",
+      "implementation_steps": [
+        "Review first-run, Voice/Touch, play, results, map, and collection journeys.",
+        "Map each reference image to keep/change decisions.",
+        "Confirm twelve holes, two worlds, three cosmetics, and omitted economy features."
+      ],
+      "acceptance_criteria": [
+        "No hearts, shop, daily challenge, gems, or voice-score metric in MVP requirements.",
+        "Every essential denial/cancel/loading/save error has a planned path.",
+        "PRD and UI spec precedence over mockups is explicit."
+      ],
+      "required_evidence": "Approved flow review and reference reconciliation.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-006.md"
+    },
+    {
+      "id": "RB-007",
+      "title": "[RB-007] Implement typed shot, score, and tuning domain contracts",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-001",
+        "RB-006"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Create a pure shared contract for input power, physics impulse, and result scoring.",
+      "implementation_steps": [
+        "Implement ShotCommand/result data and normalized power-to-impulse helper.",
+        "Reject zero/non-finite/invalid input and validate horizontal direction.",
+        "Add scoring functions and versioned tuning resource."
+      ],
+      "acceptance_criteria": [
+        "Touch and Voice have one curve with identical constants.",
+        "Boundary tests cover p=0, p=1, invalid numbers, and star thresholds.",
+        "No UI, audio, or physics-node dependency exists in pure math functions."
+      ],
+      "required_evidence": "Unit tests and contract review.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-007.md"
+    },
+    {
+      "id": "RB-008",
+      "title": "[RB-008] Implement authoritative gameplay state machine",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-007"
+      ],
+      "references": [
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/04_VOICE_INPUT_SPEC.md"
+      ],
+      "goal": "Centralize shot acceptance, token invalidation, stroke ownership, and terminal events.",
+      "implementation_steps": [
+        "Implement documented states and guarded transitions.",
+        "Queue immutable commands for the physics tick and reject duplicate shot IDs.",
+        "Handle cancellation before commit and coalesce cup/fall terminal events."
+      ],
+      "acceptance_criteria": [
+        "Duplicate release produces at most one shot/stroke.",
+        "Background before physics commit cancels without a spent stroke.",
+        "Only GameSessionController writes stroke totals and result state."
+      ],
+      "required_evidence": "Transition tests with fake input and clock.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-008.md"
+    },
+    {
+      "id": "RB-009",
+      "title": "[RB-009] Create level wrapper and scene-marker contract",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-001",
+        "RB-007"
+      ],
+      "references": [
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Define the reusable authored level scene used by all holes.",
+      "implementation_steps": [
+        "Create wrapper nodes for visuals, collision, Spawn, Cup, kill region, bounds, and safe anchors.",
+        "Set collision-layer names and validate mandatory markers.",
+        "Separate imported GLB art from gameplay-owned collision/scripts."
+      ],
+      "acceptance_criteria": [
+        "A minimal scene loads by validated ID.",
+        "Missing required markers produces an actionable validation error.",
+        "Reimported art does not overwrite gameplay nodes."
+      ],
+      "required_evidence": "Example graybox scene and validator output.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-009.md"
+    },
+    {
+      "id": "RB-010",
+      "title": "[RB-010] Implement ball impulse and rolling resistance",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-004",
+        "RB-007",
+        "RB-009"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Build a stable spherical physics controller rather than visually animating a fake trajectory.",
+      "implementation_steps": [
+        "Apply each accepted impulse exactly once on the physics tick.",
+        "Implement support-aware rolling resistance without suppressing flight/gravity.",
+        "Keep cosmetic transforms separate and expose settlement metrics."
+      ],
+      "acceptance_criteria": [
+        "Physics rate stays fixed at 60 Hz across quality tiers.",
+        "Flat roll distance is measured at four powers.",
+        "No per-frame impulse multiplication or nonuniform collider scaling."
+      ],
+      "required_evidence": "Regression scene recordings and tuning table.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-010.md"
+    },
+    {
+      "id": "RB-011",
+      "title": "[RB-011] Implement playfield aiming and input ownership",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay/UI",
+      "depends_on": [
+        "RB-008",
+        "RB-010"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Provide intentional touch aim without UI fall-through or camera conflicts.",
+      "implementation_steps": [
+        "Map playfield drag to bounded horizontal aim.",
+        "Exclude UI hit regions and assign pointer ownership.",
+        "Draw a short obstacle-clipped direction guide, not an exact landing prediction."
+      ],
+      "acceptance_criteria": [
+        "Dragging a UI control never changes world aim.",
+        "Aim locks during capture and shot commit.",
+        "Narrow-screen gestures remain usable with one thumb."
+      ],
+      "required_evidence": "Touch gesture tests and phone-scale recording.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-011.md"
+    },
+    {
+      "id": "RB-012",
+      "title": "[RB-012] Implement complete Touch shot controls",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Gameplay/UI",
+      "depends_on": [
+        "RB-007",
+        "RB-008",
+        "RB-011"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Make the entire game playable independently of microphone access.",
+      "implementation_steps": [
+        "Create power slider, Shoot, disabled states, and input-mode intent.",
+        "Route Touch into the same ShotCommand as Voice.",
+        "Reject zero power and moving-ball shots."
+      ],
+      "acceptance_criteria": [
+        "Touch can complete the graybox hole with mic permission denied.",
+        "Same input value yields the shared impulse with no bonus/penalty.",
+        "Shoot is unambiguous and never fires from slider release alone."
+      ],
+      "required_evidence": "Touch-only end-to-end test.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-012.md"
+    },
+    {
+      "id": "RB-013",
+      "title": "[RB-013] Implement Ready, Follow, and Overview cameras",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-009",
+        "RB-010",
+        "RB-011"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md",
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Maintain readable course framing through aiming, flight, reset, and device aspect changes.",
+      "implementation_steps": [
+        "Use authored course bounds and next-target framing.",
+        "Implement smoothed follow and fixed Ready-only Overview with paused simulation.",
+        "Lock camera during capture; add Reduced Motion handling."
+      ],
+      "acceptance_criteria": [
+        "Ball and target remain clear of HUD in reference sizes.",
+        "Overview cannot be used to exploit unpaused hazard timing.",
+        "Falling camera does not dive into the void."
+      ],
+      "required_evidence": "Portrait/narrow/tablet captures and camera state tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-013.md"
+    },
+    {
+      "id": "RB-014",
+      "title": "[RB-014] Implement support, rest detection, and safe anchors",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-009",
+        "RB-010"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Allow shooting only after real supported rest and record recoverable positions.",
+      "implementation_steps": [
+        "Apply speed/angular/support-duration thresholds.",
+        "Validate anchor slope, clearance, and distance from hazards.",
+        "Exclude moving surfaces, cup, portals, and pads from safe resting anchors."
+      ],
+      "acceptance_criteria": [
+        "A midair apex or slowly sliding slope does not become Ready.",
+        "Ball can settle reliably on intended turf.",
+        "Unsafe/blocked anchors fall back to an authored checkpoint."
+      ],
+      "required_evidence": "Rest/anchor integration tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-014.md"
+    },
+    {
+      "id": "RB-015",
+      "title": "[RB-015] Implement out-of-bounds and stuck recovery",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-008",
+        "RB-014"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Recover from falls predictably with one penalty and no infinite reset loop.",
+      "implementation_steps": [
+        "Coalesce kill-plane and kill-volume events by shot ID.",
+        "Reset through a safe physics state and clear residual velocity/forces.",
+        "Add explicit stuck-recovery option after the watchdog period."
+      ],
+      "acceptance_criteria": [
+        "One fall adds exactly one penalty in addition to the committed shot.",
+        "Repeated trigger events cannot create repeated penalties.",
+        "Blocked safe anchor uses fallback; confirmed recovery does not silently erase score."
+      ],
+      "required_evidence": "Fall/reset/blocked-anchor tests and recording.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-015.md"
+    },
+    {
+      "id": "RB-016",
+      "title": "[RB-016] Implement cup capture and completion ownership",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-008",
+        "RB-009",
+        "RB-010"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Finish only when the ball actually qualifies for cup capture.",
+      "implementation_steps": [
+        "Build visual opening/rim and separate eligibility trigger.",
+        "Check distance, height, and speed; send one terminal completion.",
+        "Run cosmetic sink/celebration after scoring authority disables fall reactions."
+      ],
+      "acceptance_criteria": [
+        "Slow valid entry completes once.",
+        "High flyover, fast pass, and underside entry do not win.",
+        "Animation signals cannot duplicate a result."
+      ],
+      "required_evidence": "Cup regression scene and tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-016.md"
+    },
+    {
+      "id": "RB-017",
+      "title": "[RB-017] Implement stars, attempt limits, and unlock rules",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-007",
+        "RB-008"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/02_GAME_DESIGN.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Encode unambiguous scoring and sequential progression without an economy.",
+      "implementation_steps": [
+        "Implement 3/2/1-star thresholds and twelve-stroke attempt resolution.",
+        "Apply penalties before failure resolution and allow completion on stroke twelve.",
+        "Derive next-hole and cosmetic unlocks from completed levels."
+      ],
+      "acceptance_criteria": [
+        "Par/par+1/par+2 produce 3/2/1 stars for valid completion.",
+        "Eleven strokes plus shot plus fall resolves thirteen and fails.",
+        "One-star CC06 unlocks PP01 and Panda."
+      ],
+      "required_evidence": "Boundary and unlock unit tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-017.md"
+    },
+    {
+      "id": "RB-018",
+      "title": "[RB-018] Build shared Godot UI theme and safe-area shell",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI",
+      "depends_on": [
+        "RB-006"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md"
+      ],
+      "goal": "Translate the reference style into reusable real Controls and responsive layout.",
+      "implementation_steps": [
+        "Implement theme tokens, panels, buttons, typography, and focus/disabled states.",
+        "Map physical safe regions into canvas space and configure stretch policy.",
+        "Add a UI showcase scene with phone/tablet test layouts."
+      ],
+      "acceptance_criteria": [
+        "No full-screen screenshot is used as interactive UI.",
+        "Targets meet the proposed logical size and text is not baked into art.",
+        "Safe-area tests pass at narrow/tall/notched sizes."
+      ],
+      "required_evidence": "Theme showcase captures and layout tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-018.md"
+    },
+    {
+      "id": "RB-019",
+      "title": "[RB-019] Implement mode choice and contextual permission UX",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Audio/UI",
+      "depends_on": [
+        "RB-005",
+        "RB-018"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/06_UI_UX_SPEC.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Request microphone access only after a clear voluntary choice.",
+      "implementation_steps": [
+        "Build Voice/Touch selection and privacy pre-prompt.",
+        "Handle asynchronous grant/denial/permanent denial with supported OS APIs.",
+        "Persist selected input mode and provide settings recovery without prompt loops."
+      ],
+      "acceptance_criteria": [
+        "Fresh boot and Touch flow do not prompt for microphone.",
+        "Denied permission still allows all gameplay.",
+        "Permission result is not confused with a synchronous return value."
+      ],
+      "required_evidence": "Fresh-install permission matrix.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-019.md"
+    },
+    {
+      "id": "RB-020",
+      "title": "[RB-020] Implement bounded VoiceInputService and silent monitoring",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Audio",
+      "depends_on": [
+        "RB-005",
+        "RB-007"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/03_TECHNICAL_ARCHITECTURE.md"
+      ],
+      "goal": "Expose validated short-window digital sound levels without storing player audio.",
+      "implementation_steps": [
+        "Create capture provider with token ownership and fresh-frame readiness.",
+        "Use energy across both stereo channels and a bounded ring buffer.",
+        "Handle silence, non-finite values, clipping, no input, and overruns."
+      ],
+      "acceptance_criteria": [
+        "No microphone sound is audible through output.",
+        "Old frames cannot power a new capture session.",
+        "No file/network/log path receives PCM."
+      ],
+      "required_evidence": "Synthetic tests, bus diagram, input lifecycle evidence.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-020.md"
+    },
+    {
+      "id": "RB-021",
+      "title": "[RB-021] Implement room/soft/strong calibration",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Audio",
+      "depends_on": [
+        "RB-019",
+        "RB-020"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Make comfortable relative sound levels usable across devices without escalating effort.",
+      "implementation_steps": [
+        "Collect valid window percentiles/medians for three explicit stages.",
+        "Apply range/noise/clipping checks and keep previous calibration on failure.",
+        "Store only versioned numeric thresholds; invalidate on route changes."
+      ],
+      "acceptance_criteria": [
+        "Too-noisy or too-small range shows recovery/Touch, not forced louder prompts.",
+        "Soft and strong can be achieved comfortably on test devices.",
+        "No hardware identifier or audio recording is stored."
+      ],
+      "required_evidence": "Calibration fixtures and device observation sheet.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-021.md"
+    },
+    {
+      "id": "RB-022",
+      "title": "[RB-022] Implement preview power and stable release selection",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Audio/Gameplay",
+      "depends_on": [
+        "RB-007",
+        "RB-020",
+        "RB-021"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md"
+      ],
+      "goal": "Ensure displayed Shot power is precisely the value committed on release.",
+      "implementation_steps": [
+        "Implement frame-time-aware smoothing and 250 ms recent window.",
+        "Require at least 150 ms valid data and calculate the 75th percentile preview.",
+        "Expire stale preview and publish validity separately from live level."
+      ],
+      "acceptance_criteria": [
+        "Preview-to-command difference is <=0.01 for accepted releases.",
+        "A single transient/no-signal hold cannot launch.",
+        "Frame-jitter and stale-buffer fixtures pass."
+      ],
+      "required_evidence": "Window/quantile tests and debug value comparison.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-022.md"
+    },
+    {
+      "id": "RB-023",
+      "title": "[RB-023] Connect hold/release/cancel voice gestures",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Gameplay/UI",
+      "depends_on": [
+        "RB-008",
+        "RB-011",
+        "RB-019",
+        "RB-022"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Deliver the complete intentional voice-shot interaction.",
+      "implementation_steps": [
+        "Implement warmup/listening UI states and initiating-pointer ownership.",
+        "Lock camera/aim during hold and add explicit cancel region.",
+        "Reject timeout, duplicate release, interruption, and invalid preview."
+      ],
+      "acceptance_criteria": [
+        "One valid release adds one stroke and impulse.",
+        "Cancel and >3 second hold never auto-fire.",
+        "Secondary touches and UI navigation cannot create unintended shots."
+      ],
+      "required_evidence": "Gesture/state regression tests and phone recording.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-023.md"
+    },
+    {
+      "id": "RB-024",
+      "title": "[RB-024] Handle pause, background, route changes, and scene disposal",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Audio/Platform",
+      "depends_on": [
+        "RB-008",
+        "RB-020",
+        "RB-023"
+      ],
+      "references": [
+        "docs/03_TECHNICAL_ARCHITECTURE.md",
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Make capture and simulation lifecycle safe across real application interruptions.",
+      "implementation_steps": [
+        "Cancel uncommitted commands on pause/background and invalidate capture IDs.",
+        "Pause/resume rolling physics and gate phase consistently.",
+        "Stop input/listeners and dispose sessions on scene exit; do not auto-restart mic."
+      ],
+      "acceptance_criteria": [
+        "Privacy indicator and capture ownership tests pass on target devices.",
+        "Returning during a prior hold cannot launch a shot.",
+        "Thirty game entry/exit cycles leave one live session at most."
+      ],
+      "required_evidence": "Lifecycle matrix and stress-run logs.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-024.md"
+    },
+    {
+      "id": "RB-025",
+      "title": "[RB-025] Implement game audio ducking and nonverbal feedback",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Audio",
+      "depends_on": [
+        "RB-020",
+        "RB-023"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md"
+      ],
+      "goal": "Support gameplay feedback without contaminating voice measurement.",
+      "implementation_steps": [
+        "Add separate music/effects/microphone routing and capture ducking.",
+        "Trigger mascot roar and shot sounds only after capture closes.",
+        "Support volume, muted mode, and no mandatory audio cues."
+      ],
+      "acceptance_criteria": [
+        "The game cannot power itself from its own UI/mascot sound in normal tests.",
+        "Muted players can complete using visual cues.",
+        "All audio has recorded provenance and no user voice clips."
+      ],
+      "required_evidence": "Mixer checks and speaker/headphone tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-025.md"
+    },
+    {
+      "id": "RB-026",
+      "title": "[RB-026] Pass one-hole end-to-end playable-loop gate",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "QA/Gameplay",
+      "depends_on": [
+        "RB-012",
+        "RB-013",
+        "RB-015",
+        "RB-016",
+        "RB-017",
+        "RB-023",
+        "RB-024",
+        "RB-045"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Prove the full game loop before polished content or twelve-hole production.",
+      "implementation_steps": [
+        "Assemble one graybox hole with a simple ramp and safe recovery.",
+        "Run Home to completion to persisted result to retry in Voice and Touch.",
+        "Document remaining engineering risks with real-device evidence."
+      ],
+      "acceptance_criteria": [
+        "A denied-mic install still completes and saves the hole.",
+        "Voice path shows correct preview/stroke/cancel behavior.",
+        "No critical physics, capture-release, or progress-loss defect remains for the slice."
+      ],
+      "required_evidence": "End-to-end device recordings, gate checklist, test logs.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-026.md"
+    },
+    {
+      "id": "RB-027",
+      "title": "[RB-027] Create lion mascot production asset and expressions",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Art",
+      "depends_on": [
+        "RB-003",
+        "RB-006"
+      ],
+      "references": [
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Build the recognizable lion-ball visual as an actual optimized 3D asset.",
+      "implementation_steps": [
+        "Author/export a compact sphere-compatible model with clean materials.",
+        "Implement idle/focus/rolling/surprise/success expressions.",
+        "Verify visual pivot and collider independence after import."
+      ],
+      "acceptance_criteria": [
+        "Lion reads clearly at gameplay size.",
+        "Collider, mass, and shot tuning are unchanged by the art.",
+        "Asset source, license/provenance, and triangle/material counts are recorded."
+      ],
+      "required_evidence": "GLB/source inventory, in-game phone-scale captures.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-027.md"
+    },
+    {
+      "id": "RB-028",
+      "title": "[RB-028] Create modular course kit and collision wrappers",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Art/Gameplay",
+      "depends_on": [
+        "RB-003",
+        "RB-009"
+      ],
+      "references": [
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Enable varied holes without individually sculpting every complete course.",
+      "implementation_steps": [
+        "Build straight/corner/green/ramp/rail/cliff modules on consistent scale/grid.",
+        "Attach simplified hand-owned collision and clear pivots.",
+        "Verify seams with the actual ball at high and low speed."
+      ],
+      "acceptance_criteria": [
+        "Module seams do not trap or bounce the ball unexpectedly.",
+        "Reimports preserve wrapper interactions.",
+        "Budget and provenance inventory covers all modules."
+      ],
+      "required_evidence": "Kit scene, collision regression run, asset inventory.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-028.md"
+    },
+    {
+      "id": "RB-029",
+      "title": "[RB-029] Establish mobile lighting, materials, and quality tiers",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Rendering/Art",
+      "depends_on": [
+        "RB-003",
+        "RB-027",
+        "RB-028"
+      ],
+      "references": [
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/03_TECHNICAL_ARCHITECTURE.md"
+      ],
+      "goal": "Match reference mood through measured stylization rather than expensive cinematic effects.",
+      "implementation_steps": [
+        "Create shared turf/wood/stone materials and lightweight waterfall/background treatment.",
+        "Implement measured shadow/particle/resolution quality settings.",
+        "Keep gameplay cues visible in the lowest quality tier."
+      ],
+      "acceptance_criteria": [
+        "No quality tier changes physics, collider, tick rate, or scoring.",
+        "Representative scene meets selected target budgets or records a blocker.",
+        "Low quality preserves cup/gate/portal clarity."
+      ],
+      "required_evidence": "Quality comparison captures and frame-time report.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-029.md"
+    },
+    {
+      "id": "RB-030",
+      "title": "[RB-030] Implement Home and loading/error navigation",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI",
+      "depends_on": [
+        "RB-018",
+        "RB-026",
+        "RB-027"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/03_TECHNICAL_ARCHITECTURE.md"
+      ],
+      "goal": "Build a focused entry screen with real navigation and no mock economy.",
+      "implementation_steps": [
+        "Create hero view, Play, Map, Balls, Settings, and input-mode chip.",
+        "Implement meaningful loading and retry/home failures.",
+        "Resume the next unlocked hole using validated progress."
+      ],
+      "acceptance_criteria": [
+        "Home does not prompt for mic or show unimplemented shop/daily controls.",
+        "Loading errors return safely without duplicate sessions.",
+        "Buttons are accessible real Controls with pressed/disabled states."
+      ],
+      "required_evidence": "Navigation tests and captures.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-030.md"
+    },
+    {
+      "id": "RB-031",
+      "title": "[RB-031] Implement two-world twelve-hole selection",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI",
+      "depends_on": [
+        "RB-018",
+        "RB-017",
+        "RB-045",
+        "RB-046"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Provide clear progression without a heavy animated scene per map node.",
+      "implementation_steps": [
+        "Build two chapter cards/map islands with six nodes each.",
+        "Show title, par, best result, stars, and specific lock reasons.",
+        "Keep actual selection buttons in the responsive UI layer."
+      ],
+      "acceptance_criteria": [
+        "All unlock states match domain tests.",
+        "One-star completion advances progression.",
+        "No shop/hearts/lava-world scope appears as an active feature."
+      ],
+      "required_evidence": "Map state snapshots and progression tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-031.md"
+    },
+    {
+      "id": "RB-032",
+      "title": "[RB-032] Polish calibration UI and recovery states",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI/Audio",
+      "depends_on": [
+        "RB-018",
+        "RB-021",
+        "RB-023"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/04_VOICE_INPUT_SPEC.md"
+      ],
+      "goal": "Make calibration understandable and easy to leave without frustration.",
+      "implementation_steps": [
+        "Implement Room/Soft/Strong steps with deliberate Start action and test shot.",
+        "Show signal quality, progress, Retry Step, and equally accessible Use Touch.",
+        "Keep copy comfortable and distinguish starting/listening/inactive states."
+      ],
+      "acceptance_criteria": [
+        "No automatic capture on mere screen navigation.",
+        "Denied/no-input/noisy/route-changed states have a recovery path.",
+        "No SPL claims or pressure to scream."
+      ],
+      "required_evidence": "All calibration/error-state captures and usability notes.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-032.md"
+    },
+    {
+      "id": "RB-033",
+      "title": "[RB-033] Polish Ready/Capturing/Rolling gameplay HUD",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI",
+      "depends_on": [
+        "RB-018",
+        "RB-012",
+        "RB-013",
+        "RB-023"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Make the playfield and shot affordances readable on phones.",
+      "implementation_steps": [
+        "Build compact hole/par/stroke/pause header and bottom tray.",
+        "Separate live level from committed Shot power and render cancel/disabled states.",
+        "Adapt framing and controls for safe areas/narrow screens."
+      ],
+      "acceptance_criteria": [
+        "Cup/ball/landing area are not hidden by decorative logo or HUD.",
+        "Rolling state does not display misleading mic activity.",
+        "Input fallback and Overview are discoverable."
+      ],
+      "required_evidence": "Portrait/narrow/tablet state captures.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-033.md"
+    },
+    {
+      "id": "RB-034",
+      "title": "[RB-034] Implement Pause, Settings, and Android Back behavior",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI/Platform",
+      "depends_on": [
+        "RB-018",
+        "RB-024",
+        "RB-045"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Create predictable navigation and preferences that cannot accidentally commit a shot.",
+      "implementation_steps": [
+        "Implement resume/restart/map and settings controls.",
+        "Handle back-stack order and confirmation when abandoning an attempt.",
+        "Persist preferences and cancel capture before mode changes."
+      ],
+      "acceptance_criteria": [
+        "Resume never starts mic automatically.",
+        "Back dismisses sheets before exiting gameplay.",
+        "Volume/haptics/reduced-motion/quality/input settings persist."
+      ],
+      "required_evidence": "Back-stack/lifecycle tests and settings captures.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-034.md"
+    },
+    {
+      "id": "RB-035",
+      "title": "[RB-035] Implement truthful results and save-warning UI",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI",
+      "depends_on": [
+        "RB-018",
+        "RB-016",
+        "RB-017",
+        "RB-045"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Show earned progress without invented voice-quality statistics or fake durable saves.",
+      "implementation_steps": [
+        "Build celebration, stars, strokes/par, progress, Next/Retry/Map.",
+        "Handle final hole and failed-attempt variants.",
+        "Expose save retry/warning on persistence failure."
+      ],
+      "acceptance_criteria": [
+        "No whisper %, accuracy %, gems, or time-based rank is shown.",
+        "Final hole routes to map/completion instead of a missing next scene.",
+        "Save failures are visible and previous durable progress stays safe."
+      ],
+      "required_evidence": "Result variants and failure-injection tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-035.md"
+    },
+    {
+      "id": "RB-036",
+      "title": "[RB-036] Approve one polished visual and interaction slice",
+      "scope": "mvp",
+      "milestone": "M2",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Product/QA",
+      "depends_on": [
+        "RB-026",
+        "RB-027",
+        "RB-028",
+        "RB-029",
+        "RB-030",
+        "RB-032",
+        "RB-033",
+        "RB-034",
+        "RB-035"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/06_UI_UX_SPEC.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Demonstrate reference-quality direction with a real engine scene and real controls.",
+      "implementation_steps": [
+        "Assemble the mascot, course kit, lighting, UI, sounds, and full shot loop in one hole.",
+        "Review at phone size against keep/change decisions, not impossible pixel matching.",
+        "Profile and run short usability review before scaling content."
+      ],
+      "acceptance_criteria": [
+        "Approval includes real-device gameplay video and frame timings.",
+        "Buttons, ball, input meter, and camera are functional rather than image overlays.",
+        "Major control/readability issues are resolved or block content scaling."
+      ],
+      "required_evidence": "Approved vertical-slice review and measured build.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-036.md"
+    },
+    {
+      "id": "RB-037",
+      "title": "[RB-037] Implement moving gate obstacle",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-009",
+        "RB-010",
+        "RB-024"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Introduce visible timing puzzles with paused fixed-time motion.",
+      "implementation_steps": [
+        "Create an AnimatableBody3D gate with authored path/period/phase.",
+        "Match collision to visuals and communicate movement range.",
+        "Pause phase with gameplay and prevent impossible trapping layouts."
+      ],
+      "acceptance_criteria": [
+        "Pause/resume does not teleport the obstacle.",
+        "Low-speed contact and fast impact are stable.",
+        "Gate can be reused by multiple holes without copied logic."
+      ],
+      "required_evidence": "Obstacle test scene and pause/impact tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-037.md"
+    },
+    {
+      "id": "RB-038",
+      "title": "[RB-038] Implement paired portals and exit validation",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-009",
+        "RB-010",
+        "RB-014"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Teleport predictably with direction mapping and no recursive trigger loop.",
+      "implementation_steps": [
+        "Define entry/exit coordinate convention and mapped velocity.",
+        "Add radius-clearance checks, per-pair latch, and leaving-trigger condition.",
+        "Validate counterpart IDs and unobstructed exits."
+      ],
+      "acceptance_criteria": [
+        "One pair preserves allowed speed and maps direction as designed.",
+        "Ball cannot repeatedly teleport while inside an exit.",
+        "Invalid pair/blocked exit fails validation or safely rejects entry."
+      ],
+      "required_evidence": "Portal unit/integration tests and visual pairing review.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-038.md"
+    },
+    {
+      "id": "RB-039",
+      "title": "[RB-039] Implement one-shot bounce pad",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Gameplay",
+      "depends_on": [
+        "RB-009",
+        "RB-010"
+      ],
+      "references": [
+        "docs/05_PHYSICS_AND_CAMERA.md"
+      ],
+      "goal": "Create a reusable pad without per-frame energy accumulation.",
+      "implementation_steps": [
+        "Add authored impulse vector/strength and contact latch.",
+        "Coordinate compression/pulse visual with actual impulse.",
+        "Apply speed containment and test side/slow/repeated entries."
+      ],
+      "acceptance_criteria": [
+        "One eligible entry produces one impulse.",
+        "Remaining inside the trigger does not continue acceleration.",
+        "Pad effect remains readable in reduced quality/motion."
+      ],
+      "required_evidence": "Pad regression scene and event-count tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-039.md"
+    },
+    {
+      "id": "RB-040",
+      "title": "[RB-040] Author and validate Cloud Cliffs holes 1\u20133",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Level Design",
+      "depends_on": [
+        "RB-036",
+        "RB-028",
+        "RB-046"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Teach putting, restraint, and rebounds through distinct forgiving layouts.",
+      "implementation_steps": [
+        "Build CC01\u2013CC03 according to catalog goals with actual `.tscn` scenes.",
+        "Playtest safe routes, alternate choices, power bands, and par proposals.",
+        "Verify touch-only completion, camera framing, and safe anchors."
+      ],
+      "acceptance_criteria": [
+        "Each of three holes has an independent successful route record.",
+        "Primary early routes have forgiving power bands rather than single exact values.",
+        "Metadata status changes only with attached evidence."
+      ],
+      "required_evidence": "Three scenes, solution evidence, validation output.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-040.md"
+    },
+    {
+      "id": "RB-041",
+      "title": "[RB-041] Author and validate Cloud Cliffs holes 4\u20136",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Level Design",
+      "depends_on": [
+        "RB-036",
+        "RB-037",
+        "RB-040",
+        "RB-046"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Introduce ramps/gate timing and combine them without a sudden difficulty wall.",
+      "implementation_steps": [
+        "Build CC04\u2013CC06 with ramps, safe landings, and gate layouts.",
+        "Test one-star progression and Panda/PP01 unlock after CC06.",
+        "Tune pars from measured routes and document common failures."
+      ],
+      "acceptance_criteria": [
+        "All three holes are independently completed in the pinned build.",
+        "No inevitable gate trap or inaccessible reset location.",
+        "World completion unlock behavior matches PRD."
+      ],
+      "required_evidence": "Three scenes, balance notes, unlock run.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-041.md"
+    },
+    {
+      "id": "RB-042",
+      "title": "[RB-042] Author and validate Portal Peaks holes 1\u20133",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Level Design",
+      "depends_on": [
+        "RB-036",
+        "RB-038",
+        "RB-039",
+        "RB-041",
+        "RB-046"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Teach portal pairing, exit direction, and bounce pads one at a time.",
+      "implementation_steps": [
+        "Build PP01\u2013PP03 with at most one visible portal pair per hole.",
+        "Keep exit destinations and pad landing areas inspectable.",
+        "Validate exit clearance, re-entry latch, and power tolerance."
+      ],
+      "acceptance_criteria": [
+        "Each hole has its own teaching focus and completed route.",
+        "No invisible teleport destination or mandatory exact-volume trick.",
+        "Safe recovery works after misses."
+      ],
+      "required_evidence": "Three scenes, route evidence, trigger tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-042.md"
+    },
+    {
+      "id": "RB-043",
+      "title": "[RB-043] Author and validate Portal Peaks holes 4\u20136",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "L",
+      "owner_role": "Level Design",
+      "depends_on": [
+        "RB-037",
+        "RB-038",
+        "RB-039",
+        "RB-042",
+        "RB-046"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Deliver a satisfying finale through recombination rather than unbounded new systems.",
+      "implementation_steps": [
+        "Build PP04\u2013PP06 using existing mechanics and meaningful alternate decisions.",
+        "Avoid adding wind/lava/moving-platform scope.",
+        "Tune final pars and complete Robot/final-results progression."
+      ],
+      "acceptance_criteria": [
+        "All final holes are independently solved on the pinned build.",
+        "PP06 completion ends cleanly and equips only earned cosmetics.",
+        "No unavoidable precision beyond tested intended difficulty."
+      ],
+      "required_evidence": "Three scenes, finale run, solution reports.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-043.md"
+    },
+    {
+      "id": "RB-044",
+      "title": "[RB-044] Implement three cosmetic balls and collection screen",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Art/UI",
+      "depends_on": [
+        "RB-027",
+        "RB-017",
+        "RB-018",
+        "RB-045"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md"
+      ],
+      "goal": "Reward completion with Lion, Panda, and Robot without changing physics.",
+      "implementation_steps": [
+        "Author Panda/Robot visuals using the same sphere contract.",
+        "Build one live preview and three static cards with clear lock criteria.",
+        "Separate selected preview from equipped state and persist equipment."
+      ],
+      "acceptance_criteria": [
+        "All cosmetics use identical physics resources/collider settings.",
+        "Locked preview cannot be equipped.",
+        "No rarity, purchase, currency, or random unlock subsystem is required."
+      ],
+      "required_evidence": "Cosmetic equality tests and collection states.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-044.md"
+    },
+    {
+      "id": "RB-045",
+      "title": "[RB-045] Implement validated local progress/settings and recovery",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "Systems",
+      "depends_on": [
+        "RB-007",
+        "RB-017"
+      ],
+      "references": [
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Preserve completed progress through duplicate events and interrupted writes.",
+      "implementation_steps": [
+        "Implement schema validation, best-result merge, and derived unlocks.",
+        "Write/validate temp snapshots, preserve last-good backup, and check replacement errors.",
+        "Separate settings/calibration from progress and expose save failure status."
+      ],
+      "acceptance_criteria": [
+        "Worse replay/duplicate completion never erases a best result.",
+        "Truncated/future-schema/invalid values fail safely.",
+        "Failure at each write step preserves a valid prior durable copy where available."
+      ],
+      "required_evidence": "Migration/merge fixtures and write-failure tests.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-045.md"
+    },
+    {
+      "id": "RB-046",
+      "title": "[RB-046] Implement content catalog and scene validators",
+      "scope": "mvp",
+      "milestone": "M1",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Tools",
+      "depends_on": [
+        "RB-009",
+        "RB-007"
+      ],
+      "references": [
+        "docs/08_CONTENT_AND_SAVE_DATA.md"
+      ],
+      "goal": "Catch content errors before they appear as broken gameplay.",
+      "implementation_steps": [
+        "Validate JSON schema plus unique IDs/order/count/path/known mechanics.",
+        "Inspect required scene markers, safe anchors, portal pairs, and exit clearance.",
+        "Separate design metadata validation from real scene/solvability evidence."
+      ],
+      "acceptance_criteria": [
+        "Design-only catalog cannot be mislabeled production-validated.",
+        "Missing scene or marker fails the shipping build gate.",
+        "Every error reports level ID and actionable detail."
+      ],
+      "required_evidence": "Valid/invalid fixtures and build-gate output.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-046.md"
+    },
+    {
+      "id": "RB-047",
+      "title": "[RB-047] Run all-hole playtest and balance review",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "QA/Level Design",
+      "depends_on": [
+        "RB-040",
+        "RB-041",
+        "RB-042",
+        "RB-043",
+        "RB-044",
+        "RB-045"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Prove all twelve holes are playable, distinct, and fair in both input modes.",
+      "implementation_steps": [
+        "Run independent routes and power bands across every hole.",
+        "Review progression, par, stroke-limit failures, reset positions, and cosmetics.",
+        "Collect representative novice usability feedback without retaining voice recordings."
+      ],
+      "acceptance_criteria": [
+        "Each hole has independent completion evidence and approved par.",
+        "Full Touch run earns the same rewards as Voice.",
+        "No critical unfair trap, hidden target, or unexplained failure remains."
+      ],
+      "required_evidence": "Twelve-hole matrix, playtest notes, corrected catalog.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-047.md"
+    },
+    {
+      "id": "RB-048",
+      "title": "[RB-048] Conditional: add narrowly scoped Kotlin input/platform adapter",
+      "scope": "conditional",
+      "milestone": "Conditional",
+      "priority": "P2",
+      "size": "L",
+      "owner_role": "Audio/Platform",
+      "depends_on": [
+        "RB-005"
+      ],
+      "references": [
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md",
+        "docs/04_VOICE_INPUT_SPEC.md"
+      ],
+      "goal": "Address a demonstrated Android capability gap only after built-in engine validation fails.",
+      "implementation_steps": [
+        "Approve a reproduction-based ADR and finalize the smallest platform contract.",
+        "Use version-matched Godot v2 plugin packaging with exact exposed method names.",
+        "Own/release native resources safely; disable competing built-in capture when applicable."
+      ],
+      "acceptance_criteria": [
+        "Absent plugin preserves functional Touch/default supported path.",
+        "Two-device tests prove the original gap is fixed with no second input owner.",
+        "No gameplay, UI, score, or cloud audio service is moved into Kotlin."
+      ],
+      "required_evidence": "Approved ADR, minimal reproduction, native build and lifecycle matrix.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-048.md"
+    },
+    {
+      "id": "RB-049",
+      "title": "[RB-049] Externalize strings and prepare English/Indonesian localization",
+      "scope": "mvp",
+      "milestone": "M3",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "UI/Content",
+      "depends_on": [
+        "RB-030",
+        "RB-031",
+        "RB-032",
+        "RB-033",
+        "RB-034",
+        "RB-035",
+        "RB-044"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md"
+      ],
+      "goal": "Keep all interface copy editable and localizable rather than baked into art.",
+      "implementation_steps": [
+        "Move UI strings and errors into stable localization keys.",
+        "Complete English and review Indonesian translations when available.",
+        "Test longer strings and number formatting at narrow width."
+      ],
+      "acceptance_criteria": [
+        "No important instruction exists only in a texture.",
+        "Missing keys are detected automatically.",
+        "No clipping or mixed-language accidental fallback in selected locale."
+      ],
+      "required_evidence": "Localization key audit and language captures.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-049.md"
+    },
+    {
+      "id": "RB-050",
+      "title": "[RB-050] Verify accessibility, reduced motion, and equal Touch path",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "QA/UI",
+      "depends_on": [
+        "RB-047",
+        "RB-049",
+        "RB-034"
+      ],
+      "references": [
+        "docs/06_UI_UX_SPEC.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Ensure sound, motion, or voice ability is never a gate to completion.",
+      "implementation_steps": [
+        "Run full Touch/no-sound/reduced-motion journeys.",
+        "Check logical target sizes, visual/text state cues, safe areas, contrast, and focus.",
+        "Document supported accessibility behavior honestly."
+      ],
+      "acceptance_criteria": [
+        "All content/rewards accessible without microphone.",
+        "Color/audio/haptics are not the sole carrier of critical instructions.",
+        "No unsupported blanket accessibility compliance claim is made."
+      ],
+      "required_evidence": "Accessibility checklist, screenshots, observed limitations.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-050.md"
+    },
+    {
+      "id": "RB-051",
+      "title": "[RB-051] Build automated domain/state/scene regression suite",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "QA/Engineering",
+      "depends_on": [
+        "RB-007",
+        "RB-008",
+        "RB-020",
+        "RB-022",
+        "RB-045",
+        "RB-037",
+        "RB-038",
+        "RB-039",
+        "RB-046"
+      ],
+      "references": [
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Make the core contracts resistant to regressions during polish and content changes.",
+      "implementation_steps": [
+        "Automate unit fixtures for math, scoring, unlocks, saves, and invalid input.",
+        "Add fake-clock/input state tests and diagnostic scene tests.",
+        "Run headless import/parse plus content gates in clean CI."
+      ],
+      "acceptance_criteria": [
+        "Tests fail intentionally when a contract is broken.",
+        "Synthetic success is not reported as a passed hardware/GPU test.",
+        "CI commands/toolchain are pinned and documented."
+      ],
+      "required_evidence": "CI runs, fixture inventory, intentional-failure demonstration.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-051.md"
+    },
+    {
+      "id": "RB-052",
+      "title": "[RB-052] Profile and optimize sustained mobile performance",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "Rendering/QA",
+      "depends_on": [
+        "RB-029",
+        "RB-047",
+        "RB-051",
+        "RB-002"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Meet measured target/low tiers without changing gameplay behavior.",
+      "implementation_steps": [
+        "Run fifteen-minute release-like soaks on the full device matrix.",
+        "Identify CPU/GPU/audio/UI/resource bottlenecks and tune budgets.",
+        "Compare low/high tiers for visual cues and physics parity."
+      ],
+      "acceptance_criteria": [
+        "Selected tiers meet agreed p95/p99/memory/thermal gates or block release.",
+        "Repeated levels do not show unbounded resource growth.",
+        "Optimizations do not change collision, tick rate, power, or score."
+      ],
+      "required_evidence": "Profiler report, before/after data, signed-off device support.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-052.md"
+    },
+    {
+      "id": "RB-053",
+      "title": "[RB-053] Audit privacy, permissions, storage, and dependency provenance",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "QA/Platform",
+      "depends_on": [
+        "RB-024",
+        "RB-045",
+        "RB-025",
+        "RB-051"
+      ],
+      "references": [
+        "docs/04_VOICE_INPUT_SPEC.md",
+        "docs/07_ART_AND_ASSET_PIPELINE.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Confirm player-facing privacy claims match the actual implementation.",
+      "implementation_steps": [
+        "Inspect merged manifest, network activity, logs, saves, and crash attachments.",
+        "Verify native mic release and no persistent audio on target builds.",
+        "Review dependencies/assets and remove unused permissions/SDKs."
+      ],
+      "acceptance_criteria": [
+        "No PCM/transcript/audio upload or production amplitude history.",
+        "Hardware capture lifetime matches honest UI copy.",
+        "Asset/dependency licenses are recorded and no signing secret is committed."
+      ],
+      "required_evidence": "Audit report, manifest/storage/network evidence.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-053.md"
+    },
+    {
+      "id": "RB-054",
+      "title": "[RB-054] Run mobile interruption and navigation stability suite",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "L",
+      "owner_role": "QA",
+      "depends_on": [
+        "RB-047",
+        "RB-034",
+        "RB-051",
+        "RB-053"
+      ],
+      "references": [
+        "docs/10_QA_AND_ACCEPTANCE.md"
+      ],
+      "goal": "Exercise the complete app through real-life interruptions and repeated use.",
+      "implementation_steps": [
+        "Run thirty scene and capture cycles, permission revocation, route changes, and back-stack flows.",
+        "Test process kills during save and rolling/capturing suspension.",
+        "Validate load/save failures and no duplicate sessions."
+      ],
+      "acceptance_criteria": [
+        "No critical crash, accidental shot, lingering capture, or progress-loss defect.",
+        "Background never advances gate phase or spends a pending shot.",
+        "Recovery copy and actions work in the release-like build."
+      ],
+      "required_evidence": "Full device stability matrix and resolved-defect list.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-054.md"
+    },
+    {
+      "id": "RB-055",
+      "title": "[RB-055] Create reproducible signed Android release candidate",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "M",
+      "owner_role": "Release Engineering",
+      "depends_on": [
+        "RB-052",
+        "RB-053",
+        "RB-054",
+        "RB-050"
+      ],
+      "references": [
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Produce the actual tested release artifact with secure signing and exact toolchain records.",
+      "implementation_steps": [
+        "Configure publisher-owned identifier, release export, and secure signing.",
+        "Capture build/SDK/template versions and artifact checksums.",
+        "Install the signed candidate and repeat offline/permission/save smoke tests."
+      ],
+      "acceptance_criteria": [
+        "No production secrets are in Git or the handoff package.",
+        "Release build, not only debug, passes critical smoke tests.",
+        "Artifact version and source commit are traceable."
+      ],
+      "required_evidence": "Signed artifact metadata/checksum and release smoke report.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-055.md"
+    },
+    {
+      "id": "RB-056",
+      "title": "[RB-056] Prepare store materials, policy review, and asset/name clearance",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P1",
+      "size": "M",
+      "owner_role": "Publisher/Product",
+      "depends_on": [
+        "RB-036",
+        "RB-053"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md",
+        "docs/12_DECISIONS_AND_RISKS.md"
+      ],
+      "goal": "Prepare truthful release materials and obtain publisher decisions before submission.",
+      "implementation_steps": [
+        "Use actual in-engine screenshots, not concept images presented as gameplay.",
+        "Review current store target-API/privacy/content requirements and audience classification.",
+        "Complete asset licenses, final name check, support contact, and privacy copy."
+      ],
+      "acceptance_criteria": [
+        "Store claims match implemented offline/voice behavior.",
+        "Publisher has recorded audience/name/license decisions.",
+        "No compliance/approval guarantee is asserted from this checklist."
+      ],
+      "required_evidence": "Reviewed submission checklist and real-build screenshot set.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-056.md"
+    },
+    {
+      "id": "RB-057",
+      "title": "[RB-057] Approve MVP release gate and hand over operations",
+      "scope": "mvp",
+      "milestone": "M4",
+      "priority": "P0",
+      "size": "S",
+      "owner_role": "Product/QA",
+      "depends_on": [
+        "RB-055",
+        "RB-056",
+        "RB-047",
+        "RB-050",
+        "RB-051"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/10_QA_AND_ACCEPTANCE.md",
+        "docs/11_DELIVERY_PLAN.md"
+      ],
+      "goal": "Conclude the MVP only when product, engineering, and release evidence agree.",
+      "implementation_steps": [
+        "Review all P0/P1 MVP task evidence and unresolved defects.",
+        "Verify twelve holes, three cosmetics, offline progress, and both input modes.",
+        "Document known limitations, rollback/rebuild procedure, and follow-up backlog."
+      ],
+      "acceptance_criteria": [
+        "No unresolved critical/major issue without explicit release decision.",
+        "Release source/artifact/tests are traceable.",
+        "MVP scope is completed without conditional/later work silently claimed."
+      ],
+      "required_evidence": "Signed release checklist and handover notes.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-057.md"
+    },
+    {
+      "id": "RB-058",
+      "title": "[RB-058] Later: evaluate standalone iOS export and audio lifecycle",
+      "scope": "later",
+      "milestone": "Later",
+      "priority": "P2",
+      "size": "L",
+      "owner_role": "Platform",
+      "depends_on": [
+        "RB-057"
+      ],
+      "references": [
+        "docs/09_ANDROID_KOTLIN_AND_BUILD.md"
+      ],
+      "goal": "Plan an independent iOS release track only after Android MVP evidence exists.",
+      "implementation_steps": [
+        "Provision macOS/Xcode and matching Godot export templates.",
+        "Test iOS microphone/session/permission behavior and Swift bridge needs if any.",
+        "Define signing, device matrix, and release scope separately."
+      ],
+      "acceptance_criteria": [
+        "No claim that Kotlin solves iOS integration.",
+        "Physical iOS capture/lifecycle evidence precedes feature parity claims.",
+        "New platform work has approved scope."
+      ],
+      "required_evidence": "iOS feasibility ADR and test plan.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-058.md"
+    },
+    {
+      "id": "RB-059",
+      "title": "[RB-059] Later: evaluate wind/lava worlds and daily challenges",
+      "scope": "later",
+      "milestone": "Later",
+      "priority": "P2",
+      "size": "L",
+      "owner_role": "Product/Gameplay",
+      "depends_on": [
+        "RB-057"
+      ],
+      "references": [
+        "docs/02_GAME_DESIGN.md",
+        "docs/12_DECISIONS_AND_RISKS.md"
+      ],
+      "goal": "Expand only after the base game proves satisfying and maintainable.",
+      "implementation_steps": [
+        "Prioritize new mechanics from playtest evidence, not every old concept element.",
+        "Prototype wind/fan or a new world one at a time.",
+        "Define deterministic challenge content/clock policy before a daily system."
+      ],
+      "acceptance_criteria": [
+        "Separate approved PRD defines new content and regression impact.",
+        "New mechanic does not compromise comfortable Voice/Touch parity.",
+        "No new world is marketed before actual validation."
+      ],
+      "required_evidence": "Expansion proposal and prototype review.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-059.md"
+    },
+    {
+      "id": "RB-060",
+      "title": "[RB-060] Later: review online analytics or monetization as separate scope",
+      "scope": "later",
+      "milestone": "Later",
+      "priority": "P2",
+      "size": "M",
+      "owner_role": "Product/Platform",
+      "depends_on": [
+        "RB-057"
+      ],
+      "references": [
+        "docs/01_PRD.md",
+        "docs/08_CONTENT_AND_SAVE_DATA.md",
+        "docs/12_DECISIONS_AND_RISKS.md"
+      ],
+      "goal": "Prevent unreviewed SDK/data collection from creeping into an offline family-friendly design.",
+      "implementation_steps": [
+        "State the business/user problem before selecting SDKs.",
+        "Define consent, minimization, security, retention, audience, and store review requirements.",
+        "Keep raw player audio out of scope unless a separately reviewed feature truly requires it."
+      ],
+      "acceptance_criteria": [
+        "No network/account/ad/payment feature is added without an approved review.",
+        "Touch/Voice parity is preserved.",
+        "Data claims and dependencies are audited before shipping."
+      ],
+      "required_evidence": "Separate product/privacy/security design.",
+      "status": "proposed",
+      "body_path": "tasks/issues/RB-060.md"
+    }
+  ]
+}

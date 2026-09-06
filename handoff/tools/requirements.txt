@@ -1,0 +1,2 @@
+# Optional for full formal JSON Schema validation. Core tools use Python standard library.
+jsonschema>=4.18,<5

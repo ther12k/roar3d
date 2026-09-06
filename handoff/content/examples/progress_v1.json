@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "content_version": "mvp-1",
+  "best_results": {
+    "CC01": {
+      "best_strokes": 2,
+      "best_stars": 3
+    }
+  },
+  "completed_levels": [
+    "CC01"
+  ],
+  "equipped_cosmetic": "lion",
+  "last_played_level": "CC02",
+  "applied_completion_ids": [
+    "example-session:CC01:1"
+  ]
+}

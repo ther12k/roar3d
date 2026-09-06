@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "input_mode": "touch",
+  "music_volume": 0.7,
+  "effects_volume": 0.8,
+  "haptics": true,
+  "reduced_motion": false,
+  "quality": "medium",
+  "calibration": null
+}

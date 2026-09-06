@@ -1,0 +1,73 @@
+[gd_scene load_steps=12 format=3 uid="uid://roar3dgameroot"]
+
+[ext_resource type="Script" path="res://scripts/game/game_root.gd" id="1_root"]
+[ext_resource type="Script" path="res://scripts/game/game_session_controller.gd" id="2_session"]
+[ext_resource type="Script" path="res://scripts/game/input_coordinator.gd" id="3_input"]
+[ext_resource type="Script" path="res://scripts/game/level_controller.gd" id="4_level"]
+[ext_resource type="Script" path="res://scripts/game/ball_controller.gd" id="5_ball"]
+[ext_resource type="Script" path="res://scripts/game/camera_rig.gd" id="6_camera"]
+[ext_resource type="Script" path="res://scripts/audio/voice_input_service.gd" id="7_voice"]
+[ext_resource type="Script" path="res://scripts/ui/hud_presenter.gd" id="8_hud"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
+radius = 0.25
+
+[sub_resource type="SphereMesh" id="SphereMesh_ball_visual"]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball"]
+albedo_color = Color(1, 0.55, 0.2, 1)
+
+[node name="GameRoot" type="Node"]
+script = ExtResource("1_root")
+
+[node name="GameSessionController" type="Node" parent="."]
+script = ExtResource("2_session")
+
+[node name="InputCoordinator" type="Node" parent="."]
+script = ExtResource("3_input")
+
+[node name="VoiceInputService" type="Node" parent="."]
+script = ExtResource("7_voice")
+
+[node name="WorldRoot" type="Node3D" parent="."]
+
+[node name="LevelController" type="Node3D" parent="WorldRoot"]
+script = ExtResource("4_level")
+
+[node name="Ball" type="RigidBody3D" parent="WorldRoot"]
+collision_layer = 1
+collision_mask = 6
+script = ExtResource("5_ball")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WorldRoot/Ball"]
+shape = SubResource("SphereShape3D_ball")
+
+[node name="BallMesh" type="MeshInstance3D" parent="WorldRoot/Ball"]
+mesh = SubResource("SphereMesh_ball_visual")
+material_override = SubResource("StandardMaterial3D_ball")
+
+[node name="VisualPivot" type="Node3D" parent="WorldRoot/Ball"]
+
+[node name="CameraRig" type="Node3D" parent="WorldRoot"]
+script = ExtResource("6_camera")
+
+[node name="Camera3D" type="Camera3D" parent="WorldRoot/CameraRig"]
+current = true
+
+[node name="Lighting" type="Node3D" parent="WorldRoot"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldRoot/Lighting"]
+transform = Transform3D(1, 0, 0, 0, 0.643, -0.766, 0, 0.766, 0.643, 6, 10, 4)
+shadow_enabled = true
+
+[node name="GameUI" type="CanvasLayer" parent="."]
+
+[node name="SafeAreaRoot" type="Control" parent="GameUI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_hud")

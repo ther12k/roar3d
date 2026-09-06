@@ -1,0 +1,19 @@
+# Godot generated cache
+.godot/
+*.translation
+
+# Export artifacts
+export/
+build/
+*.apk
+*.aab
+*.keystore
+*.jks
+secrets/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Test scratch output (tests write to a temp dir, but just in case)
+*.tmp.json

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://roar3dmain"]
+
+[ext_resource type="Script" path="res://scripts/app/main_boot.gd" id="1_boot"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_boot")

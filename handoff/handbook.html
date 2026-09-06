@@ -1,0 +1,1253 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Roarball — Product and Engineering Handbook</title><style>
+:root{--navy:#132b3a;--blue:#1d4258;--cyan:#2dceff;--green:#63dc65;--ink:#182b38;--muted:#516775;--line:#dce5eb;--bg:#f2f6f8}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}a{color:#126384}main{max-width:1020px;margin:auto;background:white;padding:48px 60px}h1,h2,h3{line-height:1.16;color:var(--navy);break-after:avoid-page}h1{font-size:30px;margin:0 0 22px}h2{font-size:22px;margin:32px 0 12px;border-top:1px solid var(--line);padding-top:16px}h3{font-size:18px;margin:22px 0 10px}p{margin:0 0 12px}li{margin-bottom:5px}table{width:100%;border-collapse:collapse;margin:16px 0 22px;font-size:13px;line-height:1.4}th{background:var(--navy);color:white;text-align:left}th,td{padding:9px 10px;border:1px solid var(--line);vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}code{font-size:.9em;background:#edf3f6;padding:1px 4px;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf3f6;border-left:3px solid #3aa3be;padding:14px;font-size:12px;line-height:1.4;break-inside:avoid}pre code{padding:0;background:none}blockquote{border-left:4px solid var(--cyan);padding-left:18px;color:var(--muted)}.cover{background:var(--navy);color:white;padding:36px;border-radius:24px;display:grid;grid-template-columns:1fr 230px;gap:26px;align-items:center;min-height:600px;margin-bottom:40px}.cover h1{font-size:54px;color:white;letter-spacing:-2px;margin:12px 0}.kicker{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--cyan)}.cover .lead{font-size:23px;line-height:1.28;color:#dbeaf1}.cover img{width:100%;border-radius:15px}.cover .small{font-size:12px;color:#c0d4df}.pill{display:inline-block;border:1px solid #597384;border-radius:20px;padding:5px 12px;font-size:12px;margin:5px 4px 5px 0}.note{background:#e9f7f9;border-left:4px solid #2e9fba;padding:16px;margin:20px 0;font-size:14px}.chapter{margin-top:70px;padding-top:28px;border-top:4px solid var(--navy)}.chapter-number{font-size:11px;color:#286c86;letter-spacing:2px;font-weight:bold;margin-bottom:10px}.toc{columns:2;column-gap:32px}.toc p{break-inside:avoid;font-size:14px;margin-bottom:10px}.ref-page{margin:50px 0}.ref-page img{display:block;max-height:720px;max-width:100%;margin:18px auto;border-radius:14px;border:1px solid var(--line)}.ref-page p{font-size:14px}.footer-note{font-size:12px;color:var(--muted)}
+@page{size:A4;margin:17mm 17mm 18mm} @media print{body{background:white;font-size:10pt;line-height:1.46}main{padding:0;max-width:none}a{color:inherit;text-decoration:none}h1{font-size:23pt;margin:0 0 15pt}h2{font-size:15pt;margin-top:18pt;padding-top:9pt}h3{font-size:12pt}p{margin-bottom:8pt;orphans:3;widows:3}li{orphans:2;widows:2;margin-bottom:3pt}table{font-size:8.2pt;line-height:1.35}th,td{padding:5pt 6pt}pre{font-size:8pt;line-height:1.4}.cover{min-height:230mm;grid-template-columns:1fr 66mm;padding:9mm;border-radius:0;margin:0;break-after:page}.cover h1{font-size:39pt}.cover .lead{font-size:18pt}.cover .small{font-size:9pt}.cover .pill{font-size:9pt;padding:4pt 6pt}.kicker{font-size:8pt}.toc-section{break-after:page}.toc{columns:1}.toc p{font-size:10pt;margin-bottom:6pt}.chapter{break-before:page;border-top:0;margin:0;padding:0}.chapter-number{font-size:8pt}.note{font-size:9pt;padding:10pt}.ref-page{break-before:page;margin:0;break-inside:avoid}.ref-page img{max-height:193mm;max-width:122mm;margin:5mm auto;border-radius:0}.ref-page h1{font-size:21pt}.ref-page p{font-size:9pt}.no-print{display:none}.footer-note{font-size:8pt}}
+@media print{.cover{height:235mm;min-height:0}#backlog th,#backlog td{padding:3.5pt 6pt}#backlog table{font-size:8pt}p{overflow-wrap:anywhere}}</style></head><body><main><section class="cover"><div><div class="kicker">PRODUCT + ENGINEERING HANDOFF</div><h1>Roarball</h1><p class="lead">Small shots.<br>Big roars.</p><p>Voice-powered 3D mini-golf.<br>Godot + typed GDScript.<br>Kotlin only when justified.</p><p><span class="pill">12 authored holes</span><span class="pill">2 worlds</span><span class="pill">3 cosmetics</span></p><p class="small">Version 1.0 · September 5, 2026<br>Android-first implementation plan</p><p class="small">Planning package, not a runnable game.<br>Cover image: existing concept reference.</p></div><img src="design/references/02_home.png" alt="Existing Roarball home-screen concept; non-MVP economy features are excluded in the specification"></section><section class="toc-section"><div class="kicker" style="color:#126384">READING MAP</div><h1>From concept to playable game</h1><p>This handbook contains the full product and technical specifications. Editable Markdown, 60 issue bodies, schemas, examples, and an offline mockup gallery are included in the ZIP.</p><div class="note"><b>Scope rule:</b> the written requirements override decorative or extra features shown in the concept images. There is no economy, mandatory screaming, cloud audio, or Flutter shell in the MVP.</div><div class="toc"><p><a href="#01_PRD"><b>01</b> &nbsp; Roarball — Product Requirements Document</a></p><p><a href="#02_GAME_DESIGN"><b>02</b> &nbsp; Game Design and Rules</a></p><p><a href="#03_TECHNICAL_ARCHITECTURE"><b>03</b> &nbsp; Technical Architecture</a></p><p><a href="#04_VOICE_INPUT_SPEC"><b>04</b> &nbsp; Voice Input, Calibration, and Privacy Specification</a></p><p><a href="#05_PHYSICS_AND_CAMERA"><b>05</b> &nbsp; Physics, Obstacles, and Camera Specification</a></p><p><a href="#06_UI_UX_SPEC"><b>06</b> &nbsp; UI/UX Implementation Specification</a></p><p><a href="#07_ART_AND_ASSET_PIPELINE"><b>07</b> &nbsp; Art Direction and Asset Pipeline</a></p><p><a href="#08_CONTENT_AND_SAVE_DATA"><b>08</b> &nbsp; Content, Local Saves, and Data Validation</a></p><p><a href="#09_ANDROID_KOTLIN_AND_BUILD"><b>09</b> &nbsp; Android Delivery, Optional Kotlin, and Build Runbook</a></p><p><a href="#10_QA_AND_ACCEPTANCE"><b>10</b> &nbsp; QA, Acceptance, and Release Evidence</a></p><p><a href="#11_DELIVERY_PLAN"><b>11</b> &nbsp; Delivery Plan and GitHub Workflow</a></p><p><a href="#12_DECISIONS_AND_RISKS"><b>12</b> &nbsp; Decisions, Risks, and Open Questions</a></p><p><a href="#13_SOURCES"><b>13</b> &nbsp; Sources and Verification Boundaries</a></p><p><a href="#backlog"><b>14</b> &nbsp; Task overview and execution gates</a></p><p><a href="#visual-01"><b>15</b> &nbsp; Seven visual references with implementation notes</a></p></div><p class="footer-note">External platform/API facts refer to source IDs [S01–S15] in the Sources chapter. Gameplay thresholds and budgets are proposed decisions, not measured results. Full agent prompt: AI_AGENT_HANDOFF.md.</p></section><section class="chapter" id="01_PRD"><div class="chapter-number">CHAPTER 01</div><h1>Roarball — Product Requirements Document</h1>
+<p>Version 1.0 · September 5, 2026 · Proposed implementation baseline</p>
+<h2>1. Product decision</h2>
+<p>Roarball is a mobile-first, single-player 3D mini-golf puzzle game. Players aim a cute lion-faced ball with touch and set shot power using a short, comfortable sound. A soft sound produces a gentle putt; a stronger calibrated sound produces a stronger shot. Touch-only power is an equal, permanent alternative.</p>
+<p>Build the entire game and interface in <strong>Godot 4.7.2 stable with typed GDScript</strong>. The official archive listed this stable version when checked on September 5, 2026 [S01]. Use the integrated Jolt 3D physics engine, subject to a physical-device spike [S03]. Kotlin is a conditional Android integration language, not a second gameplay language. No Flutter shell, Unity bridge, or external physics extension is required by the proposed MVP.</p>
+<p>The product promise is <strong>“Small shots. Big roars.”</strong> It describes personality, not a requirement to scream. Roarball is about precision, timing, and playful physical consequences. Loudness is not a score multiplier.</p>
+<h2>2. Goals and non-goals</h2>
+<p>Primary goals are to make the first shot understandable without a text-heavy tutorial, make quiet and strong shots both useful, deliver repeatable physical behavior, and translate the reference art into readable real-time mobile scenes.</p>
+<p>The first playable milestone must prove one complete hole on an Android phone: enter, aim, choose power, shoot, roll, finish, save, retry. The visual slice must then prove one polished hole before all remaining content is produced.</p>
+<p>MVP non-goals: multiplayer, online leaderboards, user accounts, cloud saves, advertising, in-app purchases, energy/hearts, paid retries, daily challenges, generated courses, AI services, speech recognition, voice uploads, realistic water simulation, destructible terrain, and an in-game level editor. The extra worlds and economy elements in the earlier mockups are future concepts, not committed scope.</p>
+<h2>3. Audience and platform assumptions</h2>
+<p>The design targets casual puzzle players and families who enjoy short, expressive play sessions. This is a proposed audience, not a validated market claim. Do not infer a child-directed regulatory classification from cute art alone; the publisher must make and review that decision before release.</p>
+<p>Android phones are the first release target. Desktop editor builds support development and QA. iOS is a later delivery track; keep platform boundaries clean but do not claim an iOS release is included. Portrait is primary. A landscape fallback and tablet layout must remain usable; the gameplay does not depend on a narrow device-specific screenshot.</p>
+<p>Sessions are intended to contain a few holes; hole duration is a design target of roughly 30–120 seconds, not a hard timer. There is no mandatory microphone use and no need to pronounce English words. UI copy starts in English with localization keys; Indonesian is a planned translation task rather than hardcoded mixed-language text.</p>
+<h2>4. Core player journey</h2>
+<p>Boot to Home without an immediate microphone permission dialog. “Play” resumes the next unlocked hole. A first-session choice offers Voice or Touch. Choosing Voice explains local sound-level processing, requests permission, checks room noise, and calibrates comfortable soft and strong sounds. Denial goes directly to the full Touch experience.</p>
+<p>The player enters a safe introductory hole, drags to aim, holds the microphone button, produces a short sound, sees the exact power that will be committed, and releases to shoot. A drag into Cancel aborts without a stroke. In Touch mode, the same place contains a power slider and Shoot button.</p>
+<p>The ball rolls under physics. Shot controls are disabled while moving. The player can inspect the course or pause. If the ball goes out of bounds, one penalty stroke is added and the ball returns to its last safe resting position. Finishing produces a results screen with strokes, par, earned stars, and progress. Next Hole and Retry are always clear.</p>
+<h2>5. Scope at release</h2>
+<p>Two worlds contain twelve authored holes: Cloud Cliffs (CC01–CC06) and Portal Peaks (PP01–PP06). Every hole has a playable <code>.tscn</code> scene, validated metadata, an authored par, a twelve-stroke attempt limit, and an internal reference solution. Metadata in this package is a design brief; it is not evidence that geometry has been built or solved.</p>
+<p>Cloud Cliffs introduces putting, strength control, rebounds, ramps, moving gates, and combinations. Portal Peaks introduces paired portals, bounce pads, and later recombinations. Wind fans, lava environments, multiple moving platforms, and full physics trajectory prediction are deferred.</p>
+<p>MVP collection has three cosmetics: Lion (default), Panda (unlock after CC06), and Robot (unlock after PP06). All share identical collider, mass, friction, and shot curve. No stat boosts, rarity economy, currencies, purchases, or random unlocks.</p>
+<h2>6. Functional requirements</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>Home, level selection, collection, settings, pause, and results are usable without a mic.</td>
+<td>End-to-end Touch run through all holes.</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Permissions are requested in context after Voice is selected.</td>
+<td>Fresh-install grant, deny, and permanently-denied recordings.</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Calibration distinguishes room noise, soft input, and comfortable strong input.</td>
+<td>Synthetic tests plus device session records.</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>The power shown on release equals the power used by physics.</td>
+<td>Logged shot command and UI value differ by at most 0.01.</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Invalid/no-signal capture, cancel, and interruption never spend a stroke.</td>
+<td>State-transition tests.</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>One accepted release produces one impulse and one stroke.</td>
+<td>Double-event and multi-touch regression tests.</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Touch and Voice use the same normalized power-to-impulse curve.</td>
+<td>Same-power trajectory comparison on one device/build.</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>A settled, supported ball can be aimed; a moving ball cannot be shot again.</td>
+<td>Flat, ramp, and bumper tests.</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Out-of-bounds recovery uses a verified safe anchor with one penalty.</td>
+<td>Repeat fall and blocked-anchor tests.</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Cup completion requires eligible proximity, height, and low speed.</td>
+<td>Near-miss, flyover, and high-speed pass tests.</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Stars and best strokes persist without duplicate rewards.</td>
+<td>Replay and interrupted-save tests.</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>Sequential hole unlocks depend on completion, not three-star mastery.</td>
+<td>Low-score progression test.</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>All twelve holes have meaningful layout/mechanic differences.</td>
+<td>Content review with solution evidence.</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Cosmetic choices never change physics.</td>
+<td>Collider and tuning equality tests.</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>Pause, app background, focus loss, route change, and input-mode change safely cancel capture.</td>
+<td>Physical-device lifecycle matrix.</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>No raw microphone audio is written to disk, transmitted, or included in telemetry.</td>
+<td>Storage/network inspection and code review.</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>Settings expose input mode, recalibration, music, effects, haptics, reduced motion, and quality.</td>
+<td>Screen and persistence tests.</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>Invalid content or save data fails safely with recovery UI.</td>
+<td>Corrupt-file fixtures.</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td>Scene loading and back navigation cannot leave two active sessions or microphones.</td>
+<td>Thirty enter/exit cycles.</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>Shipped interface components replace, rather than screenshot, the reference art.</td>
+<td>Visual review and node inspection.</td>
+</tr>
+</tbody>
+</table>
+<h2>7. Scoring and progression rules</h2>
+<p>A committed shot adds one stroke. An out-of-bounds event adds one additional penalty stroke, exactly once for that shot. Scores are evaluated after the ball resolves: a ball can finish on the twelfth stroke; exceeding the limit cannot earn stars. At twelve strokes without completion, show Attempt Finished with Retry and Map. At eleven strokes, a shot followed by a fall resolves as thirteen and fails.</p>
+<p>A completion within the limit earns three stars at or below par; two stars at par + 1; one star above par + 1. Store the best star result and the fewest completed strokes independently. A failed attempt does not replace a prior best. No timer-based score, voice-quality score, “best whisper,” accuracy percentage, gem reward, or loudness bonus is included.</p>
+<p>Unlock CC01 initially and each next hole on completing the previous hole. PP01 unlocks after CC06; do not gate it on a star total. Show 0–18 stars per world. Finishing PP06 unlocks free replay and the Robot cosmetic. There is no consumable attempt counter.</p>
+<h2>8. UX and accessibility requirements</h2>
+<p>The course and landing area have priority over decorative UI. In gameplay, use a compact header and a thumb-reachable bottom control tray; do not repeat the oversized logo from the concept images. The first playfield should not hide the flag behind the power panel.</p>
+<p>Use a 390 × 844 logical portrait design reference, flexible containers, explicit safe-area margins, and minimum 48-logical-unit interaction targets as our internal design standard. These are design choices, not claims that Godot uses Android dp automatically. Map device safe areas into the actual viewport transform. Test narrow phones, tall phones, and tablet proportions.</p>
+<p>Voice states must be indicated by text/icon as well as color. A visible Listening indicator accompanies capture; a mic icon alone is insufficient. Calibrated power is relative to the device; never label it as real-world sound pressure in decibels. The strongest shot must be reachable at a comfortable voice level.</p>
+<p>All holes and rewards must be reachable in Touch mode. Reduced Motion suppresses screen shake, camera overshoot, and excessive celebrations. Do not rely on audio-only instructions or vibration-only feedback. Prefer large icons and concise copy; UI text is editable and localized.</p>
+<h2>9. Nonfunctional targets</h2>
+<p>These are proposed budgets to validate, not measured results. Aim for sustained 60 fps on the selected mid-tier Android target and a stable 30 fps quality tier on the minimum supported target. Physics stays at 60 ticks per second across quality tiers. Record p50/p95/p99 frame times and long-run temperature behavior; average FPS alone is insufficient.</p>
+<p>Initial budgets: at most 150,000 visible triangles, 100 visible draw calls, 32 MB compressed content per world, one shadow-casting directional light, and no dynamic global illumination. Start with a 150 MB installed-content budget and 450 MB peak process-memory target, then revise based on measured device data. Do not treat arbitrary budget numbers as engine limits.</p>
+<p>Voice target: a visible power response within 120 ms p95 of usable incoming samples and a committed shot on the next physics tick after an accepted release. Hardware capture latency must be measured separately. Level-to-level transitions should avoid blocking hitches and release unused resources. Final minimum Android/API/device support remains a release gate until the device matrix is selected and measured.</p>
+<h2>10. Privacy and resilience</h2>
+<p>The game must work offline after installation. Voice analysis is local, temporary, and limited to explicit interactions. Store only calibration numbers and user settings, not recordings. Do not put PCM, transcripts, amplitude timelines, hardware identifiers, or permission decisions into production analytics. The MVP has no network analytics SDK.</p>
+<p>Stopping GDScript analysis is not proof that the operating system released the microphone. A specific device gate must verify the hardware privacy indicator and audio-driver behavior after release, pause, and background. If Godot's built-in capture cannot meet this requirement, document the reproduction and evaluate a narrowly scoped native input adapter. Do not hide this issue by relabeling the UI “Mic off.”</p>
+<p>Save at completed holes, collection changes, and settings changes. A killed application resumes at the last completed progress state; mid-shot resume is not required. The player may lose the current attempt, never previously completed holes. Corrupted primary saves should recover from the last validated backup where possible.</p>
+<h2>11. Success and validation plan</h2>
+<p>Run a formative usability session with at least eight representative testers; this is a discovery sample, not statistical proof. Proposed acceptance targets: seven can take an intentional first shot without spoken coaching, six can intentionally distinguish gentle and strong power, and everyone can find Touch fallback after denial. Capture observations, not user voice recordings.</p>
+<p>Compare replay enjoyment and frustration qualitatively between Touch and Voice. If voice feels less predictable, fix calibration and feedback before adding content. A visually impressive screenshot does not compensate for unreliable input.</p>
+<h2>12. Release gates and ownership</h2>
+<p>Gate G0: pin tools, identify device tiers, validate capture lifecycle and renderer/physics behavior. Gate G1: one complete graybox hole playable in Touch and Voice. Gate G2: one polished vertical slice approved against the reference direction. Gate G3: all twelve holes, three cosmetics, and local progression complete. Gate G4: device, content, save, accessibility, and release checks pass.</p>
+<p>Product/design owns mechanics and scope; gameplay owns the shot/physics loop; audio/platform owns capture and permissions; art owns reusable assets; QA owns reproducible evidence. A small team may combine roles but must not omit their acceptance work.</p>
+<p>No delivery dates or market outcomes are implied. <code>tasks/</code> contains the proposed work breakdown, dependencies, and completion criteria. Any later addition of accounts, ads, purchases, children's targeting, or audio sharing requires a new product and privacy review.</p>
+</section><section class="chapter" id="02_GAME_DESIGN"><div class="chapter-number">CHAPTER 02</div><h1>Game Design and Rules</h1>
+<h2>1. Design pillars</h2>
+<p><strong>Precision before loudness.</strong> Every course must reward at least one deliberately restrained action. A stronger voice does not grant a better score; it supplies a different physical tool.</p>
+<p><strong>Readable physical play.</strong> Give the player a clear launch point, a visible or discoverable landing area, and an understandable obstacle. No foreground foliage on collision edges. Interactive hazards use consistent silhouettes and feedback.</p>
+<p><strong>Playful recovery.</strong> Falls are short, comprehensible setbacks, not punishment screens. Retry is immediate, free, and does not reset world progress. Celebrate smart short shots as much as long jumps.</p>
+<p><strong>Small authored spaces.</strong> Build compact islands from a modular kit. Distant islands are scenery, not mandatory simulated geometry. A complete course should be understood through one camera overview.</p>
+<h2>2. Shot interaction</h2>
+<ol>
+<li>In Ready, drag on the playfield to change horizontal aim; the bottom tray remains stationary.</li>
+<li>Hold the mic button to enter CaptureWarmup, then Capturing after samples are valid. Lock aim for the hold. The pointer that started the interaction owns it.</li>
+<li>Speak softly or comfortably strongly. Show a live level plus a labeled “Shot power” preview. Only the preview becomes the shot.</li>
+<li>Release within the active hit region to commit. Drag into the explicit cancel region and release to abort. A hold above three seconds cancels with “Try a short sound.” It never fires automatically.</li>
+<li>Consume the immutable ShotCommand on the next physics tick, then disable shooting until supported and settled.</li>
+</ol>
+<p>No signal, a canceled gesture, losing focus, or an audio-route change returns to Ready with zero additional strokes. During Capturing, camera gestures and other shot controls are disabled; Pause and Cancel remain available.</p>
+<p>Touch mode uses drag-to-aim plus a 0–100% slider and Shoot. Zero power cannot fire. An accessibility alternative to hold is a tap-to-start, tap-to-confirm voice interaction with a clear Cancel button; introduce only after the default loop passes tests. Both paths use the same ShotCommand and stroke rules.</p>
+<h2>3. Course mechanics</h2>
+<table>
+<thead>
+<tr>
+<th>Mechanic</th>
+<th>MVP behavior</th>
+<th>Feedback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Turf</td>
+<td>Predictable rolling surface with authored resistance.</td>
+<td>Soft roll sound; grass color.</td>
+</tr>
+<tr>
+<td>Rail/wall</td>
+<td>Solid bank surface; no hidden collision protrusions.</td>
+<td>Brief collision sound and squash accent.</td>
+</tr>
+<tr>
+<td>Ramp</td>
+<td>Transfers horizontal momentum into a jump through geometry.</td>
+<td>Clear chevrons and visible landing platform.</td>
+</tr>
+<tr>
+<td>Moving gate</td>
+<td>Fixed-period kinematic bumper; timing affects route.</td>
+<td>Visible travel range; no lethal spikes in early holes.</td>
+</tr>
+<tr>
+<td>Portal pair</td>
+<td>Moves ball to paired exit once, transforms direction, preserves allowed speed.</td>
+<td>Matching color, arrows, short pulse.</td>
+</tr>
+<tr>
+<td>Bounce pad</td>
+<td>Adds a configured one-shot impulse on entering.</td>
+<td>Compression then bounce cue.</td>
+</tr>
+<tr>
+<td>Cup</td>
+<td>Low-speed entry captures ball and ends attempt.</td>
+<td>Distinct ring, flag, completion animation.</td>
+</tr>
+<tr>
+<td>Void</td>
+<td>One penalty; reset to last safe rest anchor.</td>
+<td>Short fall/fade; “+1 penalty” once.</td>
+</tr>
+</tbody>
+</table>
+<p>Avoid moving platforms as resting surfaces in MVP. Avoid physics-driven chains or destructible meshes. Curved art ramps may use simplified segmented collision surfaces with no seams large enough to trap a ball.</p>
+<h2>4. Rules and numerical tuning</h2>
+<p>The first tuning pass uses one world unit as one meter, a 0.25 m sphere radius, 1.0 kg mass, gravity 9.8 m/s², and a 1.5–10.0 N·s impulse range. These are starting values, not realistic golf simulation or tested balance.</p>
+<p>Normalized power p is in [0, 1]. Reject p &lt;= 0. For accepted p, impulse magnitude is <code>1.5 + (10.0 - 1.5) * p^1.6</code>. Apply once along a normalized horizontal direction tangent to the world XZ plane. Ramps and pads create vertical movement; the standard shot adds no arbitrary upward boost.</p>
+<p>Power curve tuning must be versioned with content. Re-run authored solutions after changing ball radius, collision, mass, resistance, physics engine, impulse curve, or physics tick rate. Cosmetics cannot override these parameters.</p>
+<p>Par is authored from playtests. Initial pars in the content catalog are proposals. The reference solution need not be the only solution. Do not promise exact cross-platform physics determinism or replay by input alone.</p>
+<h2>5. Rest, failure, and completion</h2>
+<p>Ready requires translational speed below 0.06 m/s, angular speed below 0.3 rad/s, stable support on allowed static terrain, and 0.4 seconds of continuous settlement. The system must not freeze a ball that is still descending or on an ineligible slope. Minor cosmetic animation can continue after physical rest.</p>
+<p>A terminal fall occurs in the kill volume or below the authored kill plane. A watchdog also offers recovery if the ball remains moving with no useful progress for 20 seconds; it does not silently teleport a possibly valid long roll. Player-confirmed stuck recovery uses the same +1 penalty rule. Timeout during background is not a fall.</p>
+<p>For cup capture, require horizontal center distance &lt;= 0.28 m, ball center within the authored cup height band, and speed &lt;= 1.2 m/s. Test these candidate thresholds with actual cup geometry. Do not let a ball passing high above the cup win. Completion owns its own idempotence key and suppresses any subsequent fall signal from the celebration animation.</p>
+<h2>6. Level progression</h2>
+<p>Cloud Cliffs: CC01 First Putt; CC02 Soft Landing; CC03 Bank Buddy; CC04 Little Leap; CC05 Gate Timing; CC06 Cliff Combo.</p>
+<p>Portal Peaks: PP01 Through the Ring; PP02 Exit Angle; PP03 Spring Step; PP04 Portal and Pad; PP05 Gate Escape; PP06 Royal Route.</p>
+<p>Each level card in <code>content/level_catalog.json</code> records the teaching goal, layout brief, route alternatives, common failure, and validation checklist. Three internal graybox diagnostic scenes are also required: straight roll distance, ramp/CCD collision, and cup capture. These are engineering tools, not additional advertised holes.</p>
+<h2>7. Camera and emotional feedback</h2>
+<p>Use a consistent three-quarter perspective with the ball in the lower-middle playable zone and the target in the upper area. Ready camera moves slowly and stops before capture begins. Follow mode tracks rolling without hiding the next relevant surface. Overview is a deliberate inspection action, not a mandatory free-camera skill.</p>
+<p>A face mesh or decal may be presented toward the camera independently from the sphere's rolling transform for readability. This is a cosmetic convention; the collision body still behaves as a sphere. Avoid rotating a large protruding mane collider with every bounce.</p>
+<p>Provide quiet, short sonic feedback. Suppress shot-button clicks, voice playback, and music during capture so the game does not power itself. The lion's roar sound plays only after input has been closed. No screen shake is necessary for ordinary putting.</p>
+<h2>8. Balancing review</h2>
+<p>A hole fails design review if a newcomer cannot distinguish the route from background scenery, if perfect loudness is required to cross an unavoidable gap, if the cup is hidden by HUD, if one missed shot causes an inescapable position, or if touch users cannot earn the same reward.</p>
+<p>Record minimum/recommended/maximum successful power bands for major shots, not only a single ideal value. For introductory holes aim for forgiving bands around at least ±10 percentage points in the primary route, subject to playtesting. Later holes can ask for more accuracy but must offer understandable feedback.</p>
+</section><section class="chapter" id="03_TECHNICAL_ARCHITECTURE"><div class="chapter-number">CHAPTER 03</div><h1>Technical Architecture</h1>
+<h2>1. Stack and boundaries</h2>
+<p>Use the standard Godot 4.7.2 editor/export templates and typed GDScript. Start with integrated Jolt, not an external Jolt addon [S01, S03]. Godot renders both world and UI; there is no Flutter dependency. Build authoring assets in Blender and export <code>.glb</code> for reproducible import [S11]. Kotlin is introduced only after a platform requirement passes the decision gate in document 09.</p>
+<p>Pin engine version in <code>ENGINE_VERSION</code>, CI, export templates, and the contributor guide. A version bump is a tested change, not an automatic update. The exact Android SDK/Gradle requirements must be captured from the selected export template at implementation time [S09].</p>
+<h2>2. Proposed repository structure</h2>
+<pre><code class="language-text">project.godot
+ENGINE_VERSION
+scenes/app/             # boot, loading, home, map, settings
+scenes/game/            # gameplay root, ball, camera, cup, HUD
+scenes/levels/          # CC01.tscn ... PP06.tscn
+scenes/obstacles/       # reusable gate, pad, portal
+scripts/domain/        # shot math, scoring, save migrations
+scripts/game/          # session controller and scene adapters
+scripts/audio/         # VoiceInputService and calibration
+scripts/platform/      # GodotPlatformAdapter; native fallback
+resources/             # themes, tuning .tres, catalog, cosmetics
+assets/models/         # imported .glb; no baked UI text
+assets/audio/          # original/licensed music and effects
+assets/localization/   # keyed strings
+addons/                # empty unless an approved dependency exists
+android/plugins/       # absent until a Kotlin decision is approved
+tests/unit/
+tests/integration/
+tests/fixtures/
+tools/
+</code></pre>
+<p>Keep imported art separate from hand-authored wrapper scenes. A re-export must not erase collision, signals, or spawn markers. Use Git LFS for large art sources once the team chooses its repository policy; do not commit engine caches or signing secrets.</p>
+<h2>3. Runtime responsibilities</h2>
+<p><strong>AppRouter</strong> owns top-level transitions and one active GameSession. <strong>SettingsStore</strong> owns user preferences and calibration. <strong>ProgressStore</strong> owns completed results and cosmetics. <strong>AudioDirector</strong> owns music/effects ducking, not microphone permission. These may be small autoload services; do not make every gameplay node global.</p>
+<p><strong>GameSessionController</strong> is the sole shot/stroke authority. <strong>InputCoordinator</strong> transforms touch/voice into intent. <strong>VoiceInputService</strong> owns capture buffers and explicit listening state. <strong>BallController</strong> applies accepted impulses and reports settlement. <strong>LevelController</strong> owns spawn anchors and win/fall routing. <strong>CameraRig</strong> consumes session state. <strong>HUDPresenter</strong> displays immutable view data and emits UI intent.</p>
+<p>The UI never writes ball velocity, changes stroke totals, or saves best scores directly. A portal cannot increment score. The microphone service never launches the ball. This separation keeps repeated signals and platform callbacks from becoming duplicate shots.</p>
+<h2>4. Scene composition</h2>
+<pre><code class="language-text">GameRoot (Node)
+  GameSessionController (Node)
+  InputCoordinator (Node)
+  WorldRoot (Node3D)
+    LevelInstance (Node3D)
+      Visuals (Node3D)
+      StaticCollision (Node3D)
+      Spawn (Marker3D)
+      Cup (Area3D + visual cup)
+      SafeAnchors (Node3D)
+      KillVolume (Area3D)
+      Obstacles (Node3D)
+    Ball (RigidBody3D)
+      CollisionShape3D (sphere)
+      VisualPivot (Node3D)
+    CameraRig (Node3D)
+      Camera3D
+    Lighting (Node3D)
+  GameUI (CanvasLayer)
+    SafeAreaRoot (Control)
+      HUD (Control)
+      PauseLayer (Control)
+      ResultLayer (Control)
+</code></pre>
+<p>Use <code>Control</code> containers and theme resources for UI rather than a single composited mockup PNG [S12]. Place scene art under Node3D and labels/buttons under CanvasLayer. Collision ownership belongs to wrapper scenes, not arbitrary mesh names.</p>
+<h2>5. State machine</h2>
+<p>Top-level states: Boot, Home, Loading, Playing, Results, RecoverableError. Inside Playing: Intro, Ready, CaptureWarmup, Capturing, CommitPending, Rolling, Settling, Resetting, Paused, Complete, Failed.</p>
+<table>
+<thead>
+<tr>
+<th>Current</th>
+<th>Event / guard</th>
+<th>Next / effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ready</td>
+<td>valid mic press, consent/calibration ready</td>
+<td>CaptureWarmup; allocate session token, lock aim</td>
+</tr>
+<tr>
+<td>CaptureWarmup</td>
+<td>first fresh frames, still held</td>
+<td>Capturing; show Listening</td>
+</tr>
+<tr>
+<td>Capturing</td>
+<td>valid release and stable signal</td>
+<td>CommitPending; close capture; queue one ShotCommand</td>
+</tr>
+<tr>
+<td>Capturing</td>
+<td>cancel, timeout, focus loss, route change</td>
+<td>Ready or Paused; close capture; no stroke</td>
+</tr>
+<tr>
+<td>Ready</td>
+<td>positive touch power + Shoot</td>
+<td>CommitPending; queue same command type</td>
+</tr>
+<tr>
+<td>CommitPending</td>
+<td>valid session token at physics tick</td>
+<td>Rolling; +1 stroke, apply one impulse</td>
+</tr>
+<tr>
+<td>Rolling</td>
+<td>below thresholds with support</td>
+<td>Settling</td>
+</tr>
+<tr>
+<td>Settling</td>
+<td>stable duration reached</td>
+<td>Ready; update safe anchor</td>
+</tr>
+<tr>
+<td>Rolling / Settling</td>
+<td>fall</td>
+<td>Resetting; +1 penalty once</td>
+</tr>
+<tr>
+<td>Rolling / Settling</td>
+<td>eligible cup entry</td>
+<td>Complete; persist completion once</td>
+</tr>
+<tr>
+<td>Resetting</td>
+<td>verified reset finished, limit not exceeded</td>
+<td>Ready</td>
+</tr>
+<tr>
+<td>Any playing state</td>
+<td>pause/background</td>
+<td>Paused; preserve simulation snapshot, cancel uncommitted shot</td>
+</tr>
+<tr>
+<td>Paused</td>
+<td>resume</td>
+<td>prior non-capture state, never auto-restart mic</td>
+</tr>
+</tbody>
+</table>
+<p>An accepted but not yet applied command is canceled if background/pause happens before the physics tick. Once applied, the stroke remains spent. Resume a Rolling ball with its paused state, not a fresh impulse. Intro/Ready/Capturing cannot win from stale cup signals.</p>
+<h2>6. Data contracts</h2>
+<p><code>ShotCommand</code>: session_id, shot_id, source (voice/touch), normalized_power, direction_world, level_id, tuning_version. The main thread creates it after validation. No PCM or microphone identity is attached.</p>
+<p><code>ShotResolved</code>: shot_id, outcome (rest/cup/out_of_bounds), resting_transform, strokes_total. Resolution accepts each shot_id only once. Compound signals from kill volume and kill plane coalesce.</p>
+<p><code>LevelResult</code>: completion_id, level_id, content_version, completed, strokes, par, stars, elapsed_active_seconds. Time is informational, not a rank. ProgressStore rejects duplicate completion IDs and does not overwrite a better result.</p>
+<p><code>VoiceStatus</code>: capture_id, phase, relative_live_level, preview_power, signal_valid, error_code. Errors include permission_denied, no_input, too_noisy, route_changed, interrupted, timeout, and buffer_overrun. UI maps error codes to localized copy.</p>
+<h2>7. Dependency and event policy</h2>
+<p>Use typed signals for one-way events and explicit methods for commands. Pass dependencies through constructors/setup methods or exported node references where practical. Avoid stringly typed global event buses. Never connect the same handler on each scene re-entry without disconnecting it.</p>
+<p>Main-thread code owns the scene tree. DSP over short buffers should remain bounded; introduce a worker only after profiling. Native callbacks must marshal safely to Godot's expected thread rather than mutate scenes from an Android audio callback. No per-frame Kotlin bridge messages are needed for default capture.</p>
+<h2>8. Loading, saves, and failure recovery</h2>
+<p>Validate catalog data before displaying locked levels. Map validated level IDs to a packaged allowlist of <code>.tscn</code> resources. Do not instantiate arbitrary paths from a save file. Clear the previous LevelInstance, capture, pending commands, and listeners before loading a new session.</p>
+<p>Read local settings/progress using a versioned schema, strict type/range validation, and a last-good backup. FileAccess and JSON are supported building blocks, not an automatic transactional database [S13]. See document 08 for replacement/recovery rules.</p>
+<p>If loading fails, show Retry and Home. Do not show a fake course or silently unlock the next hole. Errors should include a non-sensitive diagnostic code usable by QA.</p>
+<h2>9. Rendering approach</h2>
+<p>Choose the Mobile renderer as the initial 3D candidate, then compare with Compatibility on target devices [S02]. Keep visual requirements within a shared, deliberately modest feature set: static lighting where possible, simple PBR/stylized materials, one main shadow light, modest particles, and cheap waterfall ribbons.</p>
+<p>Quality tiers may change resolution scale, particles, foliage, and shadows. They must not change collision, input timing, physics tick rate, or scoring. Changing renderer is a tested configuration change; do not assume that a live low/high quality toggle can replace the rendering backend safely.</p>
+<h2>10. Testing seams</h2>
+<p>Pure domain functions cover voice normalization, power curve, scoring, unlocks, and save validation. Integration scenes cover impulse, settlement, cup, portal, and reset behavior. UI tests cover safe area, focus, selected/disabled states, and screen navigation. Device tests cover rendering, latency, native privacy indicators, and interruptions.</p>
+<p>This handoff is a specification and reference-code package. It does not include a complete Godot project, imported game assets, or a tested Android binary. Do not mark a task Done solely because a design document or interface stub exists.</p>
+</section><section class="chapter" id="04_VOICE_INPUT_SPEC"><div class="chapter-number">CHAPTER 04</div><h1>Voice Input, Calibration, and Privacy Specification</h1>
+<h2>1. Scope</h2>
+<p>Detect relative sound level, not words, identity, emotion, or a literal whisper classification. No speech model, transcription service, cloud inference, audio upload, or persistent recording is necessary. The in-game labels Soft and Strong describe calibrated power bands.</p>
+<p>Godot exposes microphone playback through AudioStreamMicrophone and raw stereo floating-point bus frames through AudioEffectCapture [S05, S06]. Input must be enabled in project settings and operating-system permission must be handled [S07, S08]. Hardware/device behavior must be verified rather than inferred from desktop success.</p>
+<h2>2. Bus and lifecycle design</h2>
+<p>Proposed routing: <code>MicPlayer -&gt; MicCapture bus (AudioEffectCapture first) -&gt; MicSilence bus -&gt; Master</code>. Silence the monitoring path after the capture effect, never the Master bus. Confirm on devices that the capture effect still receives frames and the microphone is never played through the speakers. Do not apply gain/limiting before measurement unless explicitly modeled in calibration.</p>
+<p><code>MicPlayer.autoplay = false</code>. Capture starts only through VoiceInputService after the user explicitly selects Voice/calibration or starts a shot interaction. Allocate a fresh capture token, clear stale frames, duck game audio, start playback/capture, and wait for fresh frames. UI says “Starting mic” until frames arrive; only then says “Listening.”</p>
+<p>On release/cancel/pause/background/route change, stop capture playback, stop processing, clear the ring buffer and rolling level history, invalidate the token, and restore output audio after shutdown. Never restart automatically on resume. Test the OS microphone indicator separately: stopping analysis or muting a bus is not equivalent to releasing the input device.</p>
+<p>If the engine/driver leaves input active outside the expected capture period, fail the privacy gate. Investigate the selected engine's driver behavior first. A native Android audio adapter is permitted only after a documented need; it must acquire/release the actual recorder, and the built-in path must then be disabled to prevent two microphone owners. See document 09.</p>
+<h2>3. Capture and computation parameters</h2>
+<p>Starting values (all configurable): warmup discard 100 ms; frame analysis windows 20 ms; capture ring 250 ms; power smoothing time constant 80 ms; recent commit window 250 ms; minimum qualified duration 150 ms; maximum hold 3,000 ms; no-fresh-samples timeout 500 ms.</p>
+<p>For AudioEffectCapture, determine the frame rate of its bus stream from the active mixer rather than hardcoding a device input rate. Compute window sample counts from that rate. The engine exposes rate-related APIs; input hardware and output mix rates may differ [S07]. The buffer API consumes frame counts and can report discarded frames [S06].</p>
+<p>For stereo frame i, energy is <code>(left_i^2 + right_i^2) / 2</code>. Window RMS is <code>sqrt(mean(energy))</code>. This avoids cancellation from averaging out-of-phase channels before squaring. Convert to relative digital dBFS as <code>20 * log10(max(rms, 0.000001))</code>. Internally clamp to [-120, 0]. UI must not display this as measured real-world dB SPL.</p>
+<p>Reject non-finite samples. Clamp only for numeric safety; count clipping separately when either channel magnitude &gt;= 0.98. A capture overrun invalidates the current shot rather than making old audio appear current. Do not retain more than the small bounded window required for the algorithm.</p>
+<h2>4. Calibration procedure</h2>
+<p>Calibration is a skippable three-stage interaction plus a test shot. Soft/strong requests must say “Use a comfortable voice; no shouting needed.” Never reward longer or louder calibration.</p>
+<p>Stage A: after permission, capture 1.5 seconds of room noise while the player stays quiet. Use the 90th percentile of valid window dBFS as <code>noise_db</code>. Stage B: capture a comfortable soft sound for up to 1.5 seconds and compute the median qualified window level as <code>soft_db</code>. Stage C: capture a comfortable stronger sound for up to 1.5 seconds and use its median as <code>strong_db</code>. Stop early only when enough qualified samples are stable.</p>
+<p>Candidate quality checks: <code>soft_db &gt;= noise_db + 6</code>, <code>strong_db &gt;= soft_db + 8</code>, no excessive clipping (&gt;5% of samples), and at least 0.3 seconds of qualified soft and strong data. These are proposed thresholds, not universal microphone truths. If failed, offer Recalibrate, Move closer/choose a quieter place, or Use Touch. Do not require repeated escalating vocal effort.</p>
+<p>Set <code>gate_db = noise_db + 4</code>, <code>lower_db = max(noise_db + 6, soft_db - 3)</code>, and <code>upper_db = strong_db</code>. Store only these numbers, calibration algorithm version, and a non-sensitive route category (built-in/wired/Bluetooth/unknown). Never store a hardware identifier. Recalibrate on route change and when signal/noise behavior changes significantly.</p>
+<h2>5. Runtime power mapping</h2>
+<p>For an eligible window above the gate, compute <code>raw = clamp((dbfs - lower_db) / (upper_db - lower_db), 0, 1)</code>. If the denominator is invalid or too small, require recalibration and do not shoot.</p>
+<p>Smooth with frame-time-correct exponential interpolation: <code>alpha = 1 - exp(-dt / 0.08)</code>; <code>smooth += alpha * (raw - smooth)</code>. A longer frame must not make control radically slower. Clamp smooth to [0, 1]. This is relative power input, not yet the physical impulse curve.</p>
+<p>The <strong>Shot power preview</strong> is the 75th percentile of qualified smoothed windows in the most recent 250 ms. Require at least 150 ms of qualified windows within that window and preview &gt; 0. The same value is displayed and committed. A live amplitude bar may coexist but must have a different label. If the player stops making sound, preview expires as qualified samples age out; do not keep an old maximum forever.</p>
+<p>On pointer release, use the last published preview from the same capture token. Stop/clear input and enqueue one ShotCommand. The UI does not pretend to account for unobserved device latency. Playback of the lion's sound occurs after capture closes.</p>
+<h2>6. Interaction edge cases</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Required outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Permission is pending</td>
+<td>Disable capture; offer Touch; no stroke.</td>
+</tr>
+<tr>
+<td>Permission denied</td>
+<td>Explain without nagging; persist Touch preference.</td>
+</tr>
+<tr>
+<td>Permission permanently denied</td>
+<td>Offer app settings plus Touch; no prompt loop.</td>
+</tr>
+<tr>
+<td>All-zero samples</td>
+<td>“No microphone signal”; do not interpret as a quiet shot.</td>
+</tr>
+<tr>
+<td>Device too noisy</td>
+<td>Cancel invalid shot and offer recalibration/Touch.</td>
+</tr>
+<tr>
+<td>Phone tap / single clap</td>
+<td>A transient shorter than qualified duration cannot shoot.</td>
+</tr>
+<tr>
+<td>Sustained background sound</td>
+<td>May resemble voice; disclose amplitude-only limitation and offer Touch.</td>
+</tr>
+<tr>
+<td>Strong input clips</td>
+<td>Saturate display safely; advise gentler input; never exceed maximum impulse.</td>
+</tr>
+<tr>
+<td>Multitouch</td>
+<td>Only initiating pointer controls capture; secondary release cannot fire.</td>
+</tr>
+<tr>
+<td>Background or incoming interruption</td>
+<td>Cancel uncommitted shot; close input; never auto-fire on return.</td>
+</tr>
+<tr>
+<td>Bluetooth route changes</td>
+<td>Cancel; invalidate calibration; no simultaneous input owners.</td>
+</tr>
+<tr>
+<td>Release arrives twice</td>
+<td>Token and shot-ID guard accept at most one command.</td>
+</tr>
+</tbody>
+</table>
+<p>Do not claim amplitude processing rejects speech from other people or knows which sound is the player's. This is a limitation to communicate and test, not hide with an “AI noise filter” label.</p>
+<h2>7. User-facing copy</h2>
+<p>Permission pre-prompt: “Use your sound to set shot power. Sound is processed on this device and is not saved or uploaded. You can play with touch instead.” This copy may ship only after implementation proves it.</p>
+<p>Calibration prompt: “First, stay quiet. Then try a soft sound and a comfortable stronger sound.” Gameplay: “Hold, make a sound, release to shoot.” Cancel: “Slide here to cancel.” No signal: “We couldn't detect a usable sound. Try again or use touch.”</p>
+<p>Do not say “Mic off” until the native release behavior has been validated. Accessibility copy should not imply that a speech impairment is a player failure. A soft hum or other comfortable sound can be used; no word matching is involved.</p>
+<h2>8. Synthetic and device validation</h2>
+<p>Synthetic fixtures must cover silence, fixed amplitudes, opposite-phase stereo, clipped values, short impulse noise, irregular frame times, too-small calibration ranges, stale frames, and duplicated release events. Calibration tests use digital values, not invented acoustic measurements.</p>
+<p>Device validation must include room noise, phone speaker playback, headphones, permission revocation, repeated holds, a thirty-cycle input stress test, background/foreground, route changes, and microphone privacy indicator observation. Report measured capture/UI latency with the device/build/route. No physical microphone or Android audio path has been tested in this package.</p>
+</section><section class="chapter" id="05_PHYSICS_AND_CAMERA"><div class="chapter-number">CHAPTER 05</div><h1>Physics, Obstacles, and Camera Specification</h1>
+<h2>1. Physics setup</h2>
+<p>Use one RigidBody3D ball with a SphereShape3D collider, integrated Jolt, fixed 60 Hz physics, and continuous collision detection enabled for the fast-moving ball. Godot documents impulse-based rigid-body control and CCD behavior [S03, S04]. CCD reduces missed collisions; it is not a guarantee against every tunneling case.</p>
+<p>Start with radius 0.25 m, mass 1.0 kg, and gravity 9.8 m/s². Keep visual scale independent of collision scale. Avoid nonuniformly scaling the physics body. A decorative lion mane cannot protrude into a larger gameplay collider than other cosmetics.</p>
+<p>Use static collision for course surfaces, kinematic/AnimatableBody3D wrappers for moving obstacles, and Area3D triggers for cup, pads, portals, and kill volumes. Complex scenery must not accidentally become collidable. A fixed collision-layer convention is part of the project setup: Ball, Course, MovingObstacle, GameplayTrigger, and CameraBlocker.</p>
+<h2>2. Impulse and movement</h2>
+<p>An accepted shot becomes <code>direction.normalized() * impulse_magnitude</code>. Apply once via the rigid body's impulse API on a physics tick. Do not apply the same impulse every rendered frame or multiply an impulse by delta. Do not directly overwrite position each frame to imitate a rolling simulation [S04].</p>
+<p>At Ready, remove only measured numerical drift; do not reset a still-moving body's angular motion to force readiness. The initial impulse curve is the shared domain function in document 02. The candidate upper speed cap is 18 m/s for bug containment after pad/portal interactions. If cap use becomes frequent, fix tuning rather than silently flattening every strong shot.</p>
+<p>Use modest physical friction and explicitly tune rolling resistance. Friction alone is not a reliable design specification for how far a golf ball should roll. Proposed turf resistance decelerates tangential speed at 0.55 m/s² while supported; wood uses 0.35 m/s². Compute only the tangential component relative to contact/support normal. Preserve gravity and vertical momentum; do not apply ground resistance in flight.</p>
+<p>Avoid double-counting resistance through both heavy engine damping and a custom term. An initial small global damping of 0.05 can be evaluated; keep a tuning log. Reduce tangential speed toward zero, never reverse it. The implementation belongs in the safe physics integration path, with tests on flat terrain and slopes.</p>
+<h2>3. Support and resting anchors</h2>
+<p>A rest detector checks speed, angular speed, support, and duration. The authored thresholds are 0.06 m/s, 0.3 rad/s, and 0.4 seconds. Require a valid static support with a normal close enough to up for a safe reset position. Proposed maximum safe-anchor slope: 15 degrees. Being almost motionless in midair is not rest.</p>
+<p>Store the last safe resting transform, not the ball's last position before a fall. Exclude portals, pads, moving gates, cup capture zones, and positions too close to a cliff. A sphere overlap/sweep verifies free space before reset. If the saved anchor is blocked or no longer valid, use the last authored checkpoint or Spawn marker.</p>
+<p>Reset must clear linear/angular velocity and active forces, move through the engine's safe physics-state mechanism, and restore motion without producing a residual impulse. Disable relevant trigger reactions during the reset window, then re-enable after the ball is safely supported. A one-shot penalty token prevents double counting.</p>
+<h2>4. Cup capture</h2>
+<p>Keep the cup collision and cup trigger distinct. Model a real opening/rim or intentionally use a visually convincing assisted capture; document the chosen approach. Do not cover a visual hole with invisible flat floor and expect a convincing drop.</p>
+<p>The trigger verifies horizontal distance, a center-height band relative to cup surface, and low speed. Candidate thresholds: &lt;=0.28 m horizontal, ball center from 0.15 to 0.40 m above cup plane, speed &lt;=1.2 m/s. Adjust these against the actual 0.25 m radius and rim geometry. High-speed flyovers and underside entries must not complete.</p>
+<p>Once accepted, GameSessionController enters Complete exactly once. Turn off shot input and fall resolution, then use a short cosmetic sink animation. Persist the result before presenting Next Hole. A celebratory visual copy of the ball may bounce; the scoring body is no longer active.</p>
+<h2>5. Portals</h2>
+<p>Portals are authored pairs with entry/exit transforms and explicit local forward axes. Construct a mapping basis from the entry frame to the exit frame; define the art's facing convention once. Transform velocity direction through that mapping and preserve allowed speed, rather than blindly reversing X or Z.</p>
+<p>Place the ball at the exit clearance marker plus a safe radius offset. Check for collision-free space. A paired-portal cooldown is per ball and pair: candidate 0.4 seconds and until the ball has left the exit trigger. Do not rely on time alone while the ball remains inside. Mark teleport as a controlled transform update and ignore stale triggers for the transfer tick.</p>
+<p>The exit must be visible in Overview and share the pair's symbol/color. Level validation ensures each portal has exactly one valid counterpart, an unobstructed exit, and no unavoidable immediate re-entry loop. Allow at most one pair per MVP hole to control complexity.</p>
+<h2>6. Bounce pads and moving gates</h2>
+<p>A pad applies its authored impulse only on a new eligible contact/entry. A contact latch clears after leaving. Holding a ball inside an Area3D must not add energy every frame. Use shared tuning with an allowed-speed cap and tests for side entry and repeated bounces.</p>
+<p>Move gates using fixed physics-time motion and a clear period/phase. Candidate initial period is 3.0 seconds. Motion pauses with the session, not with wall-clock time; returning from background must not suddenly sweep through the ball. Kinematic collider movement must match the visible obstacle.</p>
+<p>No gate should seal the only possible resting location. Gate collision feedback is harmless and readable; it may knock the ball away but must not trap it indefinitely. Avoid elaborate chained rigid bodies for the first release.</p>
+<h2>7. Camera modes</h2>
+<p>Ready camera: proposed 45-degree field of view, elevation 45–55 degrees, distance fit to ball and next relevant target. These are starting settings, not mandatory fixed coordinates. Keep the player ball above the bottom tray. Orient world-forward consistently within each hole; camera rotation is not part of the puzzle.</p>
+<p>Follow camera: smoothed positional tracking with bounded speed; small look-ahead in travel direction; no automatic spin as the ball rolls. If the ball drops, keep its last useful course view then transition to reset; do not dive into the void after it.</p>
+<p>Overview camera: fit authored course bounds excluding remote decorative islands. Freeze aim changes, but do not let overview pause moving hazards only when it benefits scoring; either overview is available only in Ready or explicitly pause the whole session consistently. MVP chooses Overview only in Ready, with simulation paused during inspection.</p>
+<p>During Capturing, lock camera and aim so a thumb motion does not accidentally redirect the shot. On narrow screens adjust camera framing, not collision geometry. Reduced Motion uses direct or gentle transitions and no shakes.</p>
+<h2>8. Aiming visualization</h2>
+<p>MVP uses a direction ray and short dotted guide projected onto nearby terrain, plus explicit shot power. It is not an exact trajectory simulator. Clip it at the first obstruction and avoid promising a landing point past an unseen collision.</p>
+<p>A later predictive preview must run the same physics/tuning model or clearly indicate uncertainty. Do not build a fake parabola that ignores rolling resistance, ramps, gates, or portals. That feature is outside the MVP and is not required to match the reference image.</p>
+<h2>9. Regression evidence</h2>
+<p>Each tuning change runs flat roll distances at 25/50/75/100% power, oblique wall rebounds, ramp launch, high-speed thin barrier, pad latch, portal exit/loop protection, cup flyover, slope settlement, safe reset, and duplicate fall events. Save a tolerance band per engine/content version, not an assertion of bit-identical outcomes across all devices.</p>
+</section><section class="chapter" id="06_UI_UX_SPEC"><div class="chapter-number">CHAPTER 06</div><h1>UI/UX Implementation Specification</h1>
+<h2>1. Source of truth</h2>
+<p>The seven supplied Roarball PNGs are the existing AI-generated concept references from this conversation. They establish the lion-ball identity, floating islands, saturated warm/cool palette, and rounded game UI. They are not layered assets, real-time screenshots, final text, validated navigation, or measured performance targets.</p>
+<p>Use this specification and PRD when a concept image conflicts with the MVP. Do not ship a full-screen mockup PNG with invisible buttons on top. World, camera, lighting, UI, icons, and interactions must be separate implementation elements.</p>
+<h2>2. Reference reconciliation</h2>
+<table>
+<thead>
+<tr>
+<th>Reference</th>
+<th>Keep</th>
+<th>Change for MVP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01_original_gameplay.png</td>
+<td>Mascot, floating turf, clear flag, playful obstacles.</td>
+<td>Smaller header; no coins; real shot/cancel states.</td>
+</tr>
+<tr>
+<td>02_home.png</td>
+<td>Hero scene, dominant Play, friendly brand.</td>
+<td>Remove daily challenge, player level, coins; use Play, Map, Balls, Settings.</td>
+</tr>
+<tr>
+<td>03_world_map.png</td>
+<td>Islands, connected hole nodes, star results.</td>
+<td>Only two worlds/six nodes each; remove hearts/shop/lava world.</td>
+</tr>
+<tr>
+<td>04_calibration.png</td>
+<td>Large mic, simple scale, practice setting.</td>
+<td>Real noise/soft/strong steps, Touch skip, cancel/error states.</td>
+</tr>
+<tr>
+<td>05_advanced_gameplay.png</td>
+<td>Ramps, gates, portals, readable depth.</td>
+<td>No wind fan in MVP; never introduce every hazard in one early hole.</td>
+</tr>
+<tr>
+<td>06_collection.png</td>
+<td>Selected ball pedestal and Equip action.</td>
+<td>Lion/Panda/Robot only; no currency/rarity/Trails/Emotes shop.</td>
+</tr>
+<tr>
+<td>07_results.png</td>
+<td>Celebration, stars, clear Next Hole.</td>
+<td>Strokes/par/stars only; no whisper %, accuracy %, gems, or Share requirement.</td>
+</tr>
+</tbody>
+</table>
+<h2>3. Design tokens and layout</h2>
+<p>Reference canvas: 390 × 844 logical units. Base spacing: 4; regular gaps: 8/12/16/24. Page margin: 16 plus mapped safe inset. Panel radius: 20; button radius: 16. Small controls have minimum 48 × 48 touch boxes even when visible icons are smaller. Primary buttons are 56–64 high. Mic control is 80 × 80 with an outer cancel-safe gesture area.</p>
+<p>Typography target: title 28/34, screen heading 24/30, body 16/22, compact label 14/18. Use a separately licensed rounded typeface or Godot's default during development. No font files are bundled here. Never bake localization text into textures. Avoid all-caps paragraphs and long slogans across scenery.</p>
+<p>Palette: dark navy panels #132B3A, panel variant #1D4258, light text #F5F9FC, secondary text #B9CDDA, voice cyan #2DCEFF, primary green #63DC65, warm accent #FFBE42, danger #EF6A6A. Verify final contrast in rendered states; these are proposed tokens, not a completed accessibility audit. Disabled controls need shape/label distinction, not only lower opacity.</p>
+<p>Use a reusable Theme resource, StyleBoxFlat/texture-backed nine-patch panels, Buttons, Sliders, Labels, and Container nodes. Godot's stretch and multi-resolution behavior must be configured deliberately [S12]. Do not interpret 390 logical units as 390 physical pixels on every device.</p>
+<h2>4. Screen inventory and acceptance</h2>
+<h3>UI-01 Boot and loading</h3>
+<p>Show compact logo, meaningful progress if available, and no mic dialog. Loading failure offers Retry and Home with a diagnostic code. Animated background is optional; never block input with an endless spinner. Do not fabricate percentage progress from an unrelated timer.</p>
+<h3>UI-02 Home</h3>
+<p>Hero lion on one simplified tee with distant islands. Top bar: Roarball and Settings, not a faux player account. Primary Play; secondary World Map and Balls. Small input-mode chip says Voice or Touch and opens settings. After first completion, Play opens next unlocked hole; after full completion, Play opens last played level.</p>
+<h3>UI-03 Mode choice and permission pre-prompt</h3>
+<p>Two equally visible options: Use Voice and Use Touch. Explain local temporary processing. Continue requests the platform permission only for Voice. Back returns home. Denial does not launch calibration repeatedly. A desktop keyboard testing shortcut is a developer tool, not a mobile onboarding option.</p>
+<h3>UI-04 Calibration</h3>
+<p>Header Back and “Find your shot power.” Step display: Room / Soft / Strong. Each step includes one sentence, visible duration/progress, a Start action, current signal validity, and Use Touch. A test shot follows valid calibration. No automatic recording begins just because this screen was navigated to.</p>
+<p>Display comfortable input range, not a red demand to scream. Invalid signal shows a reason and Retry Step. Keep previous valid calibration until a replacement succeeds. A route change marks old calibration stale without deleting player progress.</p>
+<h3>UI-05 World map</h3>
+<p>Two chapter cards or a lightweight vertically scrolling island map. Each has six numbered nodes, earned stars, lock explanation, and a current-level indicator. Each node offers title, par, best strokes, and Play in a small detail sheet. Buttons remain two-dimensional Controls even when the map art looks 3D.</p>
+<p>Avoid a heavy active 3D scene per visible node. Use one background/map scene or rendered thumbnails. Navigation: Home / Map / Balls. Locked PP01 explains “Finish Cloud Cliffs” rather than showing a price.</p>
+<h3>UI-06 Gameplay Ready</h3>
+<p>Top safe row: Hole name/number, Par, Strokes, Pause. A small objective chip can appear below for the first introduction, then dismiss. Center: course, ball, target. Bottom tray: input-mode chip, power preview, mic or touch slider/Shoot, and Overview. Omit collection shopping and currencies during play.</p>
+<p>Aim gestures operate only outside UI hit regions. In Voice mode initial copy says “Aim, then hold to power.” Power is visibly zero/unset until usable input. In Touch mode slider preserves its last selected value between shots but requires a new Shoot press.</p>
+<h3>UI-07 Gameplay Capturing</h3>
+<p>Same composition, with camera locked. Label Starting mic then Listening; live level and clearly labeled Shot power. Mic ring animates gently. A Cancel region appears above/aside the thumb; release rules are discoverable in tutorial. Other game navigation is disabled, but Pause and Cancel always work. Invalid signal never creates a hidden shot.</p>
+<h3>UI-08 Rolling, falling, and reset</h3>
+<p>Power controls are dimmed and labeled “Ball moving.” Do not leave a mic glow that suggests listening. On fall show “Out of bounds · +1 stroke,” then a brief reset without a modal penalty screen. Disable repeated taps during reset. At attempt limit, show Retry and Map.</p>
+<h3>UI-09 Pause and settings</h3>
+<p>Pause sheet offers Resume, Restart Hole, Input &amp; Sound, and Map. Restart/exit while an attempt is underway asks for confirmation; completed progress remains safe. Resume never restarts capture. In settings expose Touch/Voice, Recalibrate, volume, haptics, reduced motion, and quality. Input switching mid-hold cancels that hold.</p>
+<h3>UI-10 Results</h3>
+<p>Lion celebration above a panel: Hole Complete, earned stars, strokes and par, world completion progress. Primary Next Hole, secondary Retry and Map. Best-result improvement can be labeled New Best. No fabricated accuracy or voice-performance metric. On final hole, replace Next with World Map and show all-holes completion.</p>
+<p>The first result write must complete or yield a recoverable Save Warning before navigation. If saving fails, keep the result in memory, show Retry Save, and avoid pretending progress is durable.</p>
+<h3>UI-11 Collection</h3>
+<p>One selected 3D preview; three cards with names and unlock criteria. Locked cards are informative, not purchase funnels. Equip changes visuals only. Selected and equipped are separate states: previewing a locked Robot does not equip it. Use a static thumbnail grid, not multiple animated viewports.</p>
+<h3>UI-12 Recoverable errors</h3>
+<p>Include designed states for no microphone, denied permission, too-noisy calibration, stale route, save failure, missing level data, and graphics incompatibility. Each state has one clear recovery action and a safe exit. Do not silently fall back to a different input mode while the user's finger is committing a shot.</p>
+<h2>5. Responsive behavior</h2>
+<p>At 360-wide phone reference size, collapse secondary labels and keep controls at least the target size; do not scale the entire UI down to fit. On taller phones add course space above the tray. On tablets cap menu content width and use a two-column settings/collection layout. In landscape, move the control tray to the right with course framing adjusted; portrait remains the preferred orientation.</p>
+<p>Read the device safe region and convert it into the chosen canvas coordinates before applying margins. Test notches, gesture/navigation bars, and display cutouts on real devices. The UI's minimum hit sizes apply in logical canvas coordinates after the stretch policy, not in untransformed native screen pixels.</p>
+<h2>6. Interaction and motion</h2>
+<p>Button press: 80–120 ms subtle scale/color change; screen navigation: 180–250 ms; results: &lt;1.5 seconds before Next is usable. Reduced Motion can remove transforms and shorten celebrations. Do not use long entry animations that lock every tap. These are proposed feel targets.</p>
+<p>Back stack is explicit. Android Back dismisses the top sheet first, pauses gameplay second, and never exits mid-capture without cancellation. Home does not request a microphone. A settings toggle must not accidentally pass through to the 3D world.</p>
+<h2>7. Visual handoff checklist</h2>
+<p>For every screen, submit portrait and narrow-device captures, default/pressed/disabled/error states where relevant, safe-area overlay, and a short interaction recording. Compare hierarchy, silhouette, color, and affordance to the references; do not demand pixel identity with impossible concept geometry.</p>
+<p>A vertical slice is approved only after real buttons, real camera framing, the real ball, real input feedback, and at least one real course are shown together. UI-only reskins of a graybox do not satisfy this visual gate.</p>
+</section><section class="chapter" id="07_ART_AND_ASSET_PIPELINE"><div class="chapter-number">CHAPTER 07</div><h1>Art Direction and Asset Pipeline</h1>
+<h2>1. Translation from concept to real-time</h2>
+<p>Keep the cheerful lion ball, rich green turf, pale stone cliffs, wood ramps, blue sky, and warm flags. Replace expensive cinematic detail with stylized shape, baked detail, readable silhouettes, and a small modular kit. The reference images are direction, not production assets or a performance promise.</p>
+<p>Distant waterfalls use ribbons/planes and lightweight material animation. Distant islands may be low-detail meshes or background cards. Do not simulate water, render an entire kingdom, or use dozens of dynamic shadow lights to copy a concept image.</p>
+<h2>2. Asset roster</h2>
+<table>
+<thead>
+<tr>
+<th>Asset group</th>
+<th>MVP contents</th>
+<th>Initial budget</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ball</td>
+<td>Lion, Panda, Robot; common sphere collider.</td>
+<td>2–4k triangles each; 1 material preferred.</td>
+</tr>
+<tr>
+<td>Course kit</td>
+<td>Straight, corner, wide green, cliff edge, ramp, rail.</td>
+<td>0.5–2k triangles/module; shared materials.</td>
+</tr>
+<tr>
+<td>Cup kit</td>
+<td>Rim, flagpole, flag, bottom/sink visual.</td>
+<td>&lt;2k triangles, simple collider.</td>
+</tr>
+<tr>
+<td>Obstacles</td>
+<td>Gate, portal entry/exit, pad.</td>
+<td>1–3k triangles each; collision simplified.</td>
+</tr>
+<tr>
+<td>Environment</td>
+<td>Rocks, trees, bushes, distant islands, waterfall ribbons.</td>
+<td>Instanced repeats; no decorative collision.</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Panels, icons, stars, input badges, map thumbnails.</td>
+<td>Reusable theme; no baked text.</td>
+</tr>
+<tr>
+<td>Effects</td>
+<td>Collision puff, pad pulse, portal flash, small confetti.</td>
+<td>Bounded particle count; reduced-motion variant.</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>Putt, impact, fall, cup, pad, portal, result, ambient music.</td>
+<td>Short licensed/original clips; no recorded player sound.</td>
+</tr>
+</tbody>
+</table>
+<p>These budgets are proposals. Final visible-scene budget is more important than the sum of every library asset. Record draw calls, material instances, texture memory, and transparency cost on the target device.</p>
+<h2>3. Blender and Godot workflow</h2>
+<p>Author using a consistent real-world scale and apply transforms before export. Use one meter per Godot unit. Export GLB/glTF with predictable names, origins, and material paths; this is a supported/recommended Godot import route [S11]. Keep <code>.blend</code> source under the team's art-source policy, with exported <code>.glb</code> as the runtime interchange artifact.</p>
+<p>Store pivot conventions in an asset checklist: ball centered at origin; course module grid alignment; gate hinge/slide axis; portal local forward and exit marker; pad up-axis. Reimport one test asset before committing the whole kit.</p>
+<p>Hand-authored Godot wrapper scenes own collision, interaction areas, scripts, sounds, and semantic markers. An artist's re-export must not replace a tested cup trigger or portal link. Use simplified box/convex collision for active objects; detailed background cliff meshes do not need colliders.</p>
+<h2>4. Material and lighting plan</h2>
+<p>Start with a shared turf/stone/wood palette atlas and no more than one or two material slots per common prop. Use 512–1024 textures for most props and at most 2048 where justified. Bake surface detail rather than using extra geometry everywhere. Avoid layered transparent foliage covering much of the phone screen.</p>
+<p>One primary directional light and baked/static ambient treatment are the baseline. Establish the look on the chosen mobile renderer before producing final materials. Do not rely on unsupported or expensive effects simply because they appear in an editor screenshot [S02]. Low quality removes decorative effects, not gameplay cues.</p>
+<h2>5. Mascot and cosmetics</h2>
+<p>Make the ball's face readable at ordinary gameplay size. Use a compact mane integrated into the spherical silhouette; protruding horns and ears remain cosmetic. Panda and Robot change materials/face shells, not collider shape or mass.</p>
+<p>Required expressions: idle, concentrating, rolling, surprised, success. Start with simple blend/material swaps or transform-based expressions instead of a complex rig. Optional face stabilization should not alter the physics transform.</p>
+<h2>6. UI construction</h2>
+<p>Rebuild panels and controls in a theme. Export only original icons and decorative textures as transparent assets with padding for nine-patch use where needed. Never crop a screenshot's button including text and use it as the final control. All text remains real UI text for localization and scaling.</p>
+<p><code>design/design_tokens.json</code> is a machine-readable starting point, not a generated Godot Theme. A task explicitly implements and verifies the theme. Fonts must be selected/licensed by the implementation team; no font binaries are included in this delivery.</p>
+<h2>7. Asset acceptance and provenance</h2>
+<p>For each asset, record author/source, license, modifications, source file, export file, triangle/material count, collider owner, and usage. The supplied AI concept images remain references; they are not proof of trademark clearance, exclusive rights, or a third-party asset license. The working name Roarball has not been cleared for commercial use.</p>
+<p>Before approving a level, review it at actual phone size and in low quality. Collision boundaries, cup, gate timing, and portal pairing must remain readable without visual effects. Artifact files in this package contain no final <code>.glb</code> meshes or production audio.</p>
+</section><section class="chapter" id="08_CONTENT_AND_SAVE_DATA"><div class="chapter-number">CHAPTER 08</div><h1>Content, Local Saves, and Data Validation</h1>
+<h2>1. Content approach</h2>
+<p>Author geometry as Godot scenes with modular reusable objects. Use a small JSON catalog for ordered metadata and build-time validation. This package includes twelve metadata briefs and a JSON Schema. It does not include the twelve playable scenes; the scene paths are the target contract for implementation.</p>
+<p>The application maps a validated catalog ID to a packaged scene allowlist. Saves reference IDs only, not arbitrary scene paths or scripts. JSON metadata cannot invoke methods, choose classes, or load network content. IDs are permanent once released.</p>
+<p>Required level scene markers: Spawn, Cup, KillVolume or kill plane config, CourseBounds, and at least one safe fallback anchor. Optional obstacles expose stable IDs so validation can check portal pairs and references. Each hole has at most one portal pair in MVP.</p>
+<h2>2. Catalog fields</h2>
+<p>Each level entry has <code>id</code>, <code>world_id</code>, <code>order</code>, <code>title</code>, <code>scene_path</code>, <code>par</code>, <code>max_strokes</code>, <code>mechanics</code>, <code>teaching_goal</code>, <code>layout_brief</code>, <code>solution_brief</code>, <code>validation_checks</code>, and <code>status</code>. Status is <code>design_only</code> in this delivery. A built level may become <code>graybox</code>, <code>playtest_ready</code>, then <code>validated</code> with evidence stored separately.</p>
+<p>Schema validation enforces types/ranges. Semantic validation additionally enforces uniqueness, contiguous order, exactly six levels per world for this release, twelve total levels, known mechanics, matching path/ID, and <code>max_strokes &gt;= par + 2</code>. A schema passing does not prove a course is fun or solvable.</p>
+<p>Reference solutions record an engine version, tuning version, level scene/content hash, device/build, aim/power bands, stroke count, and notes. Do not store only an ideal float sequence and call it deterministic playback. A human tester must independently reproduce a successful route.</p>
+<h2>3. Local save format</h2>
+<p>Store local progress separately from settings. Use schema version 1 initially. Proposed progress envelope:</p>
+<pre><code class="language-json">{
+  &quot;schema_version&quot;: 1,
+  &quot;content_version&quot;: &quot;mvp-1&quot;,
+  &quot;best_results&quot;: {
+    &quot;CC01&quot;: {&quot;best_strokes&quot;: 2, &quot;best_stars&quot;: 3}
+  },
+  &quot;completed_levels&quot;: [&quot;CC01&quot;],
+  &quot;equipped_cosmetic&quot;: &quot;lion&quot;,
+  &quot;last_played_level&quot;: &quot;CC02&quot;,
+  &quot;applied_completion_ids&quot;: [&quot;local-session-id:CC01:1&quot;]
+}
+</code></pre>
+<p>Unlocks are derived from completed IDs and current catalog order, not trusted free-form booleans. Validate positive integer strokes, star range 1–3, allowed cosmetics, and known IDs. Do not allow malformed data to equip an unearned cosmetic or crash the game. Preserve unknown future fields only through an explicit migration policy, not blind dictionary merging.</p>
+<p>Settings store input mode, volume, haptics, reduced motion, quality, and calibration constants/version. Do not store PCM, a waveform history, audio recordings, transcripts, user names, or hardware device identifiers.</p>
+<h2>4. Write and recovery algorithm</h2>
+<p>Godot's FileAccess and JSON APIs are appropriate primitives for local persistence [S13]. The game still needs explicit validation and recovery.</p>
+<ol>
+<li>Build an immutable new save snapshot in memory and validate it.</li>
+<li>Write a temporary file in the same <code>user://</code> directory. Flush and close; re-read and validate the bytes/JSON.</li>
+<li>Keep the previous validated primary as the last-good backup. Replace the primary through a checked rename/replacement operation appropriate to the platform. Do not delete the only valid copy first.</li>
+<li>On any write/rename error, retain the in-memory snapshot and previous durable version; show Save Warning with Retry Save.</li>
+<li>On boot, validate primary; if invalid, validate backup. Recover the last valid one and inform the player. If neither is valid, offer a fresh local profile without pretending the old data was recovered.</li>
+</ol>
+<p>Test failure at every step. “Atomic” must not be claimed universally from a desktop test; mobile process-kill and filesystem behavior require validation. Temporary files must never be trusted automatically without schema validation.</p>
+<h2>5. Completion idempotency</h2>
+<p>Generate one completion ID per completed attempt. Apply the result once even if cup trigger, animation callback, and result screen all fire. Better stars and lower strokes update only on a valid completed result. Limit stored completion IDs to a bounded recent set sufficient for local duplicate prevention; better-result merging makes older replayed duplicates harmless because MVP has no currency.</p>
+<p>Completed-level membership never shrinks because of a worse replay. Cosmetic unlocks are derived from CC06 and PP06 completion. At max-stroke failure, no completion entry is written. Save settings independently to avoid reverting progress when input preferences change.</p>
+<h2>6. Versioning and migration</h2>
+<p>Every engine/physics/tuning change records a version. Existing best strokes may remain as historical personal results, but content designers must decide how materially changed holes affect comparison. Never silently reset all player progress because an obstacle was moved.</p>
+<p>A future schema migration must back up old data, transform to a new object, validate, then commit. Unit fixtures cover missing optional settings, unknown level IDs, invalid numeric values, duplicate completions, future schema version, and truncated JSON. Future schema version should produce a safe unsupported-save state instead of guessing.</p>
+<h2>7. Diagnostics</h2>
+<p>Use developer-only logs with level IDs, state transitions, normalized shot power, and non-sensitive errors. Normalized power can be logged in controlled QA builds without any PCM; disable histories in production. Never include capture buffers or full device identifiers in crash attachments.</p>
+<p>The MVP has no server schema, authentication, leaderboard, or analytics event collection. A future online layer must have its own security, consent, data-retention, and abuse design; it is not a hidden prerequisite of the local game.</p>
+</section><section class="chapter" id="09_ANDROID_KOTLIN_AND_BUILD"><div class="chapter-number">CHAPTER 09</div><h1>Android Delivery, Optional Kotlin, and Build Runbook</h1>
+<h2>1. Default: no Kotlin module</h2>
+<p>Implement gameplay, HUD, calibration logic, input state, saves, and scene flow in typed GDScript. The normal Godot Android export workflow does not require the team to build a separate Kotlin app [S09]. Do not create a Flutter host or Android Activity wrapper just to keep a familiar language in the stack.</p>
+<p>Kotlin becomes eligible only for a demonstrated Android capability gap: microphone acquisition/release control that the built-in path cannot satisfy, a required native settings/deep-link action unavailable through a supported API, or a later explicitly approved Android SDK integration. Ads, billing, notifications, and Play services are not MVP requirements.</p>
+<h2>2. Native-integration decision gate</h2>
+<p>First create a minimal reproduction on the pinned Godot version and two physical Android devices. Record expected behavior, observed driver/permission/lifecycle behavior, and why the supported GDScript/engine path cannot meet it. Check if the problem is misuse of audio buses or permission timing rather than a missing API.</p>
+<p>Approve a native adapter only if it fixes the documented gap with bounded scope, adds no required network service, and preserves a complete Touch fallback. An Android-specific solution does not automatically solve iOS. Add the platform boundary now; add native implementation only when evidence justifies it.</p>
+<h2>3. Optional Kotlin contract</h2>
+<p>Use Godot's v2 Android plugin architecture and the version-matched Godot Android library [S10]. Extend GodotPlugin, annotate exposed methods with <code>@UsedByGodot</code>, declare plugin metadata, and package through the v2 export-plugin workflow. Method names are exact; do not assume camelCase/snake_case conversion [S10].</p>
+<p>Proposed singleton name: <code>RoarballAndroid</code>. GDScript accesses it behind a PlatformAdapter after <code>Engine.has_singleton(...)</code>. Missing plugin means supported fallback, not a crash. If the plugin owns mic capture, expose permission/capture/error state and bounded RMS summaries; it should not move the ball or mutate UI nodes.</p>
+<p>Suggested contract (design only; signatures must be finalized against the selected plugin template):</p>
+<pre><code class="language-text">getCapabilities() -&gt; Dictionary
+requestMicrophonePermission(requestId: String) -&gt; void
+startLevelCapture(captureId: String) -&gt; void
+stopLevelCapture(captureId: String) -&gt; void
+openAppSettings() -&gt; void
+signals:
+  permissionResult(requestId, granted, canAskAgain)
+  captureStarted(captureId)
+  levelWindow(captureId, rms, clipRatio, windowSeconds)
+  captureStopped(captureId)
+  platformError(requestId, code)
+</code></pre>
+<p>The Android adapter releases its recorder on stop, pause, destruction, and errors. Never hold both Godot and native microphone capture simultaneously. Bound buffering and make stop idempotent. Marshal callback data to the appropriate engine thread; do not pass raw PCM through a UI bridge at 60 fps. Do not claim native noise cancellation without device evidence.</p>
+<p>No compiled Kotlin library, Gradle module, or native capture implementation is included in this planning package. Conditional task RB-048 covers it and is excluded from the default import set.</p>
+<h2>4. Permission behavior</h2>
+<p>Declare the microphone permission in the Android export configuration. Request it only after the player's pre-prompt choice and handle the asynchronous result. Godot's OS permission API documents that a true return can mean already granted, not a completed new dialog [S08]. Test the selected version; do not use obsolete short permission-name examples blindly.</p>
+<p>Fresh denial, permanent denial, revocation in Settings, and revocation while paused have explicit UX. Touch must remain available. Avoid permission requests at boot. Verify the merged manifest contains only permissions required by the actual shipped features.</p>
+<h2>5. Toolchain and export</h2>
+<p>Pin Godot 4.7.2 and matching export templates [S01]. Use the selected version's Android export guide for Java/SDK/tooling; the stable guide checked for this document recommends OpenJDK 17 [S09]. Capture the exact SDK packages, build tools, NDK, Gradle and Android plugin versions in the repository once the release template is installed. Do not guess a dependency matrix from old snippets.</p>
+<p>The engine's build requirements and the store's target-API policy are separate. Check the current store policy before each submission; this document does not assert that a particular API level is sufficient for September 2026 publishing. Choose final minimum device/API support after the physical-device gate.</p>
+<p>Create a debug APK for device testing and a signed release artifact using the store-appropriate format. Use the final publisher-owned package identifier, not an assumed ShieldTech domain. Keep keystores/passwords in secure release storage and CI secrets, never this ZIP or Git.</p>
+<h2>6. Build sequence</h2>
+<ol>
+<li>Install the pinned editor and matching templates; record <code>godot --version</code>.</li>
+<li>Import the project headlessly once, then run pure GDScript and integration tests.</li>
+<li>Validate catalog/schema/scene markers and check missing assets.</li>
+<li>Export debug Android build with the selected renderer and microphone permission.</li>
+<li>Run the device gate: frame timing, microphone lifecycle, no-feedback audio, pause/resume, and repeated scene entry.</li>
+<li>Freeze toolchain and content version; produce signed release build only after QA approval.</li>
+<li>Install the release build, not only the debug build, and repeat smoke/permission/save tests.</li>
+</ol>
+<p>Signing details are intentionally absent. Use a clean CI workspace with no production credentials on pull requests. Engine caches, generated build folders, export credentials, and local saves must not be committed.</p>
+<h2>7. Suggested CI jobs</h2>
+<p>Static/content validation: JSON schema, dependency graph, localization keys, missing file references, script parse checks. Domain tests: shot power, scoring, unlocks, save migrations. Integration tests: small headless scenes where applicable. Device performance/audio tests are separate; headless success cannot certify GPU/audio behavior.</p>
+<p>Use a documented headless import/check/test command suited to the implemented project. The reference <code>.gd</code> files in this package are illustrative and have not been parsed by a Godot executable here. Do not copy a green Python validation badge into a claim that the Android game compiles.</p>
+<h2>8. Optional iOS track</h2>
+<p>Godot documents a standalone iOS export workflow through macOS and Xcode [S14]. Kotlin does not provide iOS integration. If native iOS capture is required, it needs its own Swift/Objective-C boundary and tests. iOS build/signing/permission work is post-MVP and not a reason to embed Godot in Flutter.</p>
+</section><section class="chapter" id="10_QA_AND_ACCEPTANCE"><div class="chapter-number">CHAPTER 10</div><h1>QA, Acceptance, and Release Evidence</h1>
+<h2>1. Evidence policy</h2>
+<p>A requirement is complete only with reproducible evidence on the relevant runtime. Written architecture is not a tested feature. A scene screenshot is not a successful physics run. A synthetic amplitude test is not an Android microphone test. All numbers below are proposed acceptance thresholds, not completed measurements.</p>
+<p>For each failure record build hash, engine/export-template version, device/OS, renderer, input route, level ID, steps, expected/actual outcome, and non-sensitive logs. Do not record player audio to reproduce a voice-input bug; use synthetic fixtures or consented observations without retained PCM.</p>
+<h2>2. Proposed device matrix</h2>
+<p>Select actual inventory before G0 closes. Minimum set: one intended minimum-tier Android phone, one mid-tier target phone, and one newer phone with a different GPU/driver family. Include at least two OS generations where the support policy requires them, a notched/gesture-navigation device, and a tablet/aspect-ratio test. Device names remain unfilled until measured; no compatibility is asserted in this delivery.</p>
+<p>Test built-in microphone, wired audio where available, and Bluetooth as a compatibility case. Bluetooth voice play may fall back to Touch if latency/route behavior is inadequate; communicate this instead of claiming every headset works. Desktop emulation is useful but does not replace the mobile gate.</p>
+<h2>3. Acceptance test catalog</h2>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Scenario</th>
+<th>Expected result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA-001</td>
+<td>Fresh install, choose Touch.</td>
+<td>No mic prompt; complete CC01.</td>
+</tr>
+<tr>
+<td>QA-002</td>
+<td>Fresh install, choose Voice and grant.</td>
+<td>Calibration starts only after action/permission.</td>
+</tr>
+<tr>
+<td>QA-003</td>
+<td>Deny or permanently deny mic.</td>
+<td>Full Touch route; no prompt loop.</td>
+</tr>
+<tr>
+<td>QA-004</td>
+<td>Revoke mic in OS settings.</td>
+<td>Safe recovery; no stale Listening state.</td>
+</tr>
+<tr>
+<td>QA-005</td>
+<td>Stay silent during shot hold.</td>
+<td>No accepted shot/stroke.</td>
+</tr>
+<tr>
+<td>QA-006</td>
+<td>Single short tap/clap noise.</td>
+<td>Below duration gate; no accidental launch.</td>
+</tr>
+<tr>
+<td>QA-007</td>
+<td>Sustained qualified soft/strong input.</td>
+<td>Distinct reachable powers, capped at 1.0.</td>
+</tr>
+<tr>
+<td>QA-008</td>
+<td>Opposite-phase stereo fixture.</td>
+<td>Energy is not canceled by channel averaging.</td>
+</tr>
+<tr>
+<td>QA-009</td>
+<td>All-zero/nonfinite/clipped/overrun input.</td>
+<td>Bounded error handling; no NaN physics.</td>
+</tr>
+<tr>
+<td>QA-010</td>
+<td>Irregular window/update durations.</td>
+<td>Frame-time-aware smoothing behaves consistently.</td>
+</tr>
+<tr>
+<td>QA-011</td>
+<td>Release twice / two fingers.</td>
+<td>At most one impulse and one stroke.</td>
+</tr>
+<tr>
+<td>QA-012</td>
+<td>Cancel gesture and &gt;3 s hold.</td>
+<td>No auto-fire; zero added strokes.</td>
+</tr>
+<tr>
+<td>QA-013</td>
+<td>Background during capture/warmup/commit pending.</td>
+<td>Pending shot canceled; capture closed.</td>
+</tr>
+<tr>
+<td>QA-014</td>
+<td>Background while rolling.</td>
+<td>Simulation pauses; no new impulse on resume.</td>
+</tr>
+<tr>
+<td>QA-015</td>
+<td>Change audio route mid-hold.</td>
+<td>Cancel and mark calibration stale.</td>
+</tr>
+<tr>
+<td>QA-016</td>
+<td>Thirty capture/start/stop cycles.</td>
+<td>No duplicate owner, buffer leak, or lingering mic indicator.</td>
+</tr>
+<tr>
+<td>QA-017</td>
+<td>Game audio active during capture.</td>
+<td>No voice monitoring; game does not power itself.</td>
+</tr>
+<tr>
+<td>QA-018</td>
+<td>Same normalized Touch/Voice input.</td>
+<td>Same command/impulse; outcome within same-build tolerance.</td>
+</tr>
+<tr>
+<td>QA-019</td>
+<td>Positive/zero/out-of-range shot power.</td>
+<td>Reject zero/invalid; clamp only valid range contract.</td>
+</tr>
+<tr>
+<td>QA-020</td>
+<td>Shoot while rolling or settling.</td>
+<td>Action rejected; no hidden stroke.</td>
+</tr>
+<tr>
+<td>QA-021</td>
+<td>Flat roll distance sweep.</td>
+<td>Stable stopping-distance bands at 25/50/75/100%.</td>
+</tr>
+<tr>
+<td>QA-022</td>
+<td>Ramp and high-speed thin obstacle.</td>
+<td>No unacceptable tunneling or invisible snag.</td>
+</tr>
+<tr>
+<td>QA-023</td>
+<td>Slow ball on slope / midair apex.</td>
+<td>No false safe rest.</td>
+</tr>
+<tr>
+<td>QA-024</td>
+<td>Cup slow entry, fast pass, high flyover, underside.</td>
+<td>Only eligible entry completes once.</td>
+</tr>
+<tr>
+<td>QA-025</td>
+<td>Kill plane and kill volume fire together.</td>
+<td>One penalty; one reset.</td>
+</tr>
+<tr>
+<td>QA-026</td>
+<td>Last safe anchor blocked.</td>
+<td>Valid fallback anchor/spawn; no reset loop.</td>
+</tr>
+<tr>
+<td>QA-027</td>
+<td>Portal pair exit and re-entry.</td>
+<td>Correct direction, clear exit, latch prevents loop.</td>
+</tr>
+<tr>
+<td>QA-028</td>
+<td>Pad holds overlapping ball.</td>
+<td>One impulse per eligible entry.</td>
+</tr>
+<tr>
+<td>QA-029</td>
+<td>Moving gate pause/resume.</td>
+<td>Phase preserved; no wall-clock teleport.</td>
+</tr>
+<tr>
+<td>QA-030</td>
+<td>Ball stuck for watchdog period.</td>
+<td>Explicit recovery option, not silent teleport.</td>
+</tr>
+<tr>
+<td>QA-031</td>
+<td>Twelfth shot completes vs misses vs falls.</td>
+<td>Win at &lt;=12; failure otherwise; penalties correct.</td>
+</tr>
+<tr>
+<td>QA-032</td>
+<td>Par, par+1, par+2 finishes.</td>
+<td>3/2/1 stars; failed result gives 0.</td>
+</tr>
+<tr>
+<td>QA-033</td>
+<td>Replay worse result; duplicate completion.</td>
+<td>Best data retained; no extra unlock mutation.</td>
+</tr>
+<tr>
+<td>QA-034</td>
+<td>Complete CC06 with one star.</td>
+<td>PP01 and Panda unlock.</td>
+</tr>
+<tr>
+<td>QA-035</td>
+<td>Complete PP06.</td>
+<td>Robot unlock; final result navigates correctly.</td>
+</tr>
+<tr>
+<td>QA-036</td>
+<td>Truncated/invalid/future-version save.</td>
+<td>Valid backup or clear recovery, no crash.</td>
+</tr>
+<tr>
+<td>QA-037</td>
+<td>Kill process during each save step.</td>
+<td>Prior durable progress remains recoverable.</td>
+</tr>
+<tr>
+<td>QA-038</td>
+<td>Disk-write failure.</td>
+<td>Save warning, retry, no false durable-success claim.</td>
+</tr>
+<tr>
+<td>QA-039</td>
+<td>Invalid catalog/scene marker/portal pair.</td>
+<td>Build validation or safe loading error.</td>
+</tr>
+<tr>
+<td>QA-040</td>
+<td>All twelve holes independent playtest.</td>
+<td>Successful reference routes and meaningful variation.</td>
+</tr>
+<tr>
+<td>QA-041</td>
+<td>Narrow/tall/notched/tablet UI.</td>
+<td>No clipped controls; course/cup readable.</td>
+</tr>
+<tr>
+<td>QA-042</td>
+<td>Every screen pressed/disabled/error state.</td>
+<td>Consistent feedback and no input fall-through.</td>
+</tr>
+<tr>
+<td>QA-043</td>
+<td>Reduced Motion / Touch-only full run.</td>
+<td>Equal completion/rewards; no mandatory sound cues.</td>
+</tr>
+<tr>
+<td>QA-044</td>
+<td>Android Back through sheets and gameplay.</td>
+<td>Correct stack; capture canceled safely.</td>
+</tr>
+<tr>
+<td>QA-045</td>
+<td>Thirty level enter/exit/retry cycles.</td>
+<td>One session, no runaway nodes/resources.</td>
+</tr>
+<tr>
+<td>QA-046</td>
+<td>Fifteen-minute gameplay soak per quality tier.</td>
+<td>Frame-time/memory/thermal targets met or documented blocker.</td>
+</tr>
+<tr>
+<td>QA-047</td>
+<td>Storage/network/log inspection.</td>
+<td>No retained/transmitted PCM; no hidden network SDK.</td>
+</tr>
+<tr>
+<td>QA-048</td>
+<td>Signed release install and offline smoke.</td>
+<td>Same core behavior as tested debug build.</td>
+</tr>
+</tbody>
+</table>
+<h2>4. Unit and integration suites</h2>
+<p>Domain tests cover calibration math, quantile selection, smoothing, clamp/rejection, shot curve, star thresholds, attempt limits, sequential unlocks, and save merge/idempotency. Use injected clocks and synthetic level windows. Avoid game-state changes depending on wall clock.</p>
+<p>Scene tests exercise the ball/controller boundary, start-stop capture tokens using a fake provider, cup eligibility, fall coalescing, portal transforms, pad latching, gate motion, safe reset, and loading cleanup. Assertions must distinguish simulation ticks from rendered frames.</p>
+<p>Content validation checks schema and authored scene invariants. A metadata file saying “solvable” is not proof. Attach QA evidence to each final hole, including route screenshots and achieved strokes in the pinned build.</p>
+<h2>5. Performance protocol</h2>
+<p>Measure release-like builds after a warmup run. Use at least 15 minutes of repeated play per device/quality tier; track frame-time distribution, memory trend, loading hitches, and thermal slowdown. Proposed targets: 60 fps target tier and stable 30 fps low tier, with 60 Hz physics on both. If p95 frame time exceeds the chosen tier budget, identify CPU/GPU/UI/audio cost before cutting mechanics.</p>
+<p>Initial budgets in PRD are adjustable only through an explicit decision with evidence. Test the most demanding actual level and worst-case particles. No performance result in this ZIP has been measured on a phone.</p>
+<h2>6. Usability protocol</h2>
+<p>Ask testers to select an input mode, take a gentle shot, take a strong shot, cancel, recover after a fall, use Overview, and switch to Touch. Observe without coaching until they get stuck. Record confusion around release-to-shoot versus power slider, whether the target is hidden by UI, and whether they feel pressured to be loud.</p>
+<p>Afterward ask which moments felt intentional, which failures felt unfair, and whether voice adds enjoyment over Touch. Do not interpret “funny once” as durable retention. If voice control is frustrating, prioritize calibration/feedback rather than more rewards.</p>
+<h2>7. Definition of done</h2>
+<p>An implementation task needs code/assets, review, relevant automated tests, reproducible manual evidence where necessary, no new errors/warnings accepted without explanation, and updated documentation if contracts change. Visual tasks require device-scale captures, not only editor screenshots. Native tasks require physical-device evidence and fallback tests.</p>
+<p>A release requires all P0 gates, no unresolved critical/major defects, content validation for twelve holes, first-run/offline/save recovery evidence, signed-build smoke, asset/license inventory, privacy-copy audit, and current store submission review. Store approval is not guaranteed by a technical checklist.</p>
+</section><section class="chapter" id="11_DELIVERY_PLAN"><div class="chapter-number">CHAPTER 11</div><h1>Delivery Plan and GitHub Workflow</h1>
+<h2>1. Milestones without invented dates</h2>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Outcome</th>
+<th>Exit gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0 Foundation &amp; feasibility</td>
+<td>Toolchain, device inventory, renderer/physics/capture spikes.</td>
+<td>Capture lifecycle and mobile rendering risks understood.</td>
+</tr>
+<tr>
+<td>M1 Playable loop</td>
+<td>One graybox hole, Touch and Voice, scoring/reset/results.</td>
+<td>End-to-end physical-device run.</td>
+</tr>
+<tr>
+<td>M2 Polished vertical slice</td>
+<td>One production-quality course plus real menus/HUD.</td>
+<td>Approved visual/interaction evidence.</td>
+</tr>
+<tr>
+<td>M3 MVP content &amp; progression</td>
+<td>Twelve holes, two worlds, three cosmetics, robust local saves.</td>
+<td>Independent level validation and progression run.</td>
+</tr>
+<tr>
+<td>M4 Hardening &amp; Android release</td>
+<td>Performance, accessibility, privacy, stability, signing.</td>
+<td>Signed release candidate passes gate.</td>
+</tr>
+<tr>
+<td>Later / conditional</td>
+<td>Kotlin adapter only if justified; iOS/new content afterward.</td>
+<td>Separate approved scope.</td>
+</tr>
+</tbody>
+</table>
+<p>Do not set dates until actual team capacity and spike evidence exist. Task sizes are relative complexity (S/M/L), not time estimates or a commitment. P0 denotes a gate/critical-path item; P1 is needed for MVP but can follow the core path; P2 is deferred or conditional.</p>
+<h2>2. Critical path</h2>
+<p>Toolchain -&gt; device/renderer/audio spike -&gt; shot state and Touch physics -&gt; microphone calibration and unified command -&gt; complete graybox loop -&gt; polished slice -&gt; remaining content -&gt; stability/privacy/performance -&gt; signed release.</p>
+<p>Art can explore mascot/module silhouettes during M0, but do not build twelve elaborate environments before the renderer and visual-slice gates pass. UI theme and save domain work can proceed in parallel after contracts are stable.</p>
+<h2>3. Task package</h2>
+<p><code>tasks/backlog.json</code> is the canonical proposed backlog. <code>tasks/backlog.csv</code> is a convenience export, not a native GitHub import promise. Individual Markdown issues contain goals, implementation steps, acceptance checks, dependencies, evidence, and scope.</p>
+<p><code>tools/import_github_issues.py</code> uses GitHub CLI, which supports creating issues with titles and body files [S15]. It defaults to a local preview with no network/writes. <code>--apply --repo OWNER/REPO</code> is required to create actual issues. Default import includes only MVP tasks. Native/platform-later work requires <code>--include-conditional</code> or <code>--include-later</code> explicitly.</p>
+<p>The importer uses stable issue IDs in titles/bodies and checks existing repository issue titles on apply to avoid ordinary duplicate reruns. It does not create a repository, set milestones, link GitHub Projects, or close existing issues. Milestone/priority/dependency metadata remains in each body. Dependencies use stable RB IDs; actual GitHub issue-number links can be added after import.</p>
+<h2>4. Working conventions</h2>
+<p>Small pull requests should reference RB IDs and explain the reproduced behavior, implementation, tests, visual/device evidence, and remaining risks. The included <code>.github</code> templates are optional repository setup material.</p>
+<p>Keep a decision log for engine changes, voice thresholds, physical tuning, art budgets, and scope changes. Do not bury a Kotlin integration decision inside a feature branch. An AI agent must report its actual tests and failures; it must not describe untested screenshots as a finished game.</p>
+<h2>5. First implementation batch</h2>
+<p>Start RB-001 through RB-006 and the relevant shot-domain tasks. Produce a device report before expanding to expensive art. Then implement the full one-hole Touch loop, add Voice through the same command, and submit the first visual slice. Use the exact handoff prompt in the root file to keep the agent focused.</p>
+</section><section class="chapter" id="12_DECISIONS_AND_RISKS"><div class="chapter-number">CHAPTER 12</div><h1>Decisions, Risks, and Open Questions</h1>
+<h2>Architecture decisions</h2>
+<p>ADR-001: One Godot runtime owns both UI and world. Rationale: avoid a second rendering/input/lifecycle boundary for a standalone game. Revisit only if this game becomes part of a larger existing application.</p>
+<p>ADR-002: Typed GDScript is the default gameplay language. Kotlin is a conditional Android adapter, never a parallel gameplay layer. No mandatory native addon is selected.</p>
+<p>ADR-003: Integrated Jolt is the initial physics choice, pinned with the engine [S03]. Validate actual ball/ramp/portal behavior before content scaling; engine choice is not proof of appropriate golf tuning.</p>
+<p>ADR-004: Offline local progression and cosmetic-only rewards. No account, economy, advertising, purchases, or analytics SDK in MVP. Reference art containing these elements is explicitly superseded.</p>
+<p>ADR-005: Voice uses local calibrated amplitude; Touch is equivalent. No speech model or actual scream threshold. Hardware capture lifetime must be measured independently of UI state.</p>
+<p>ADR-006: Twelve authored holes across two worlds; one polished vertical slice precedes full content. Par and power bands remain provisional until playtested.</p>
+<p>ADR-007: Menus use Godot Controls and theme resources. Reference PNGs are review material only; they are not production UI layers or 3D assets.</p>
+<h2>Risk register</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Mitigation / owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Microphone remains active outside interaction.</td>
+<td>Privacy failure; possible native work.</td>
+<td>G0 physical indicator/lifecycle test; audio/platform owner.</td>
+</tr>
+<tr>
+<td>Ambient noise or automatic gain makes power unpredictable.</td>
+<td>Frustration; false shots.</td>
+<td>Per-route calibration, valid-duration gate, clear Touch fallback; audio owner.</td>
+</tr>
+<tr>
+<td>Game music powers the next shot.</td>
+<td>Broken control.</td>
+<td>Silent monitoring path and ducked output during capture; audio owner.</td>
+</tr>
+<tr>
+<td>Concept art drives excessive geometry/effects.</td>
+<td>Low frame rate or scope explosion.</td>
+<td>One measured mobile slice and modest modular kit; art/tech lead.</td>
+</tr>
+<tr>
+<td>Ball never settles or tunnels through edges.</td>
+<td>Unplayable holes.</td>
+<td>Rolling-resistance tuning, CCD tests, simplified collision; gameplay owner.</td>
+</tr>
+<tr>
+<td>Portal/pad triggers repeat.</td>
+<td>Infinite acceleration or loops.</td>
+<td>Per-shot IDs, pair/contact latches, regression scenes; gameplay owner.</td>
+</tr>
+<tr>
+<td>Physics changes invalidate authored pars.</td>
+<td>Unfair progression.</td>
+<td>Versioned tuning and solution revalidation; design/QA.</td>
+</tr>
+<tr>
+<td>Save write interruption loses progress.</td>
+<td>Trust loss.</td>
+<td>Validate/backup/recover and kill-step tests; systems owner.</td>
+</tr>
+<tr>
+<td>AI implementation delivers a UI facade.</td>
+<td>False completion.</td>
+<td>Real-device video, node/code inspection, strict task evidence; lead.</td>
+</tr>
+<tr>
+<td>Child/family positioning adds compliance work.</td>
+<td>Release risk.</td>
+<td>Publisher decision and current policy review before submission.</td>
+</tr>
+<tr>
+<td>Working name conflicts with existing product.</td>
+<td>Branding/release risk.</td>
+<td>Commercial name/trademark review; publisher.</td>
+</tr>
+</tbody>
+</table>
+<h2>Open decisions with defaults</h2>
+<p>Final Android minimum device/API: default is unresolved until M0 measurement; do not advertise compatibility early. Default input choice: show Voice and Touch equally on first run; do not default into a permission dialog. Renderer: evaluate Mobile first, Compatibility fallback as an explicit tested target [S02].</p>
+<p>Monetization: none in MVP. iOS: later. Kotlin: absent unless RB-048 is approved with reproduction evidence. Final art tools/font/license selection: team-owned approval; no font binaries or third-party art packs are bundled.</p>
+<h2>Change policy</h2>
+<p>Changes affecting controls, privacy copy, physics, stars, unlocks, or engine version require an updated decision entry, impacted-task list, and targeted regression plan. Adding new mockups does not automatically expand scope. Any business request for analytics, recording, accounts, or purchases is a separate privacy/security review.</p>
+</section><section class="chapter" id="13_SOURCES"><div class="chapter-number">CHAPTER 13</div><h1>Sources and Verification Boundaries</h1>
+<p>All sources were checked September 5, 2026. Primary official engine/API documentation and the GitHub CLI manual are used for factual platform capabilities. Stable documentation can move; implementation must compare it with the pinned engine version.</p>
+<p>References such as [S06] resolve below. Gameplay thresholds, budgets, scope, UI dimensions, level designs, and milestones are proposed product decisions, not externally measured facts. No page is reproduced in full.</p>
+<h2>S01 — Godot official download archive</h2>
+<p>https://godotengine.org/download/archive/</p>
+<p>Supports: Stable baseline: 4.7.2 listed with release date August 18, 2026. Version selection, not local binary verification.</p>
+<h2>S02 — Godot overview of renderers</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/rendering/renderers.html</p>
+<p>Supports: Mobile and Compatibility roles, features, and hardware tradeoffs.</p>
+<h2>S03 — Godot using Jolt Physics</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/physics/using_jolt_physics.html</p>
+<p>Supports: Integrated physics engine and relevant behavioral differences.</p>
+<h2>S04 — Godot RigidBody3D API</h2>
+<p>https://docs.godotengine.org/en/stable/classes/class_rigidbody3d.html</p>
+<p>Supports: Impulse control, CCD, rigid-body properties; not application-specific tuning.</p>
+<h2>S05 — Godot AudioStreamMicrophone API</h2>
+<p>https://docs.godotengine.org/en/stable/classes/class_audiostreammicrophone.html</p>
+<p>Supports: Microphone stream and enabled-input requirement.</p>
+<h2>S06 — Godot AudioEffectCapture API</h2>
+<p>https://docs.godotengine.org/en/stable/classes/class_audioeffectcapture.html</p>
+<p>Supports: Stereo floating-point capture frames, ring buffer, availability/discard APIs.</p>
+<h2>S07 — Godot ProjectSettings API</h2>
+<p>https://docs.godotengine.org/en/stable/classes/class_projectsettings.html</p>
+<p>Supports: Audio input permission caveats and mix/input rate distinctions.</p>
+<h2>S08 — Godot OS API</h2>
+<p>https://docs.godotengine.org/en/stable/classes/class_os.html</p>
+<p>Supports: Permission request semantics and platform limits.</p>
+<h2>S09 — Godot exporting for Android</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html</p>
+<p>Supports: Export setup and Java/SDK guide; not current store-policy certification.</p>
+<h2>S10 — Godot Android plugins</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/platform/android/android_plugin.html</p>
+<p>Supports: v2 plugin architecture, Kotlin/Java methods, metadata and export packaging.</p>
+<h2>S11 — Godot available 3D formats</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html</p>
+<p>Supports: Blender/glTF import workflow.</p>
+<h2>S12 — Godot multiple resolutions</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/rendering/multiple_resolutions.html</p>
+<p>Supports: Viewport/stretch design; our pixel sizes and layout are proposals.</p>
+<h2>S13 — Godot saving games</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/io/saving_games.html</p>
+<p>Supports: FileAccess/JSON persistence primitives; transactional protocol is our design.</p>
+<h2>S14 — Godot exporting for iOS</h2>
+<p>https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_ios.html</p>
+<p>Supports: Separate macOS/Xcode export track, outside default MVP.</p>
+<h2>S15 — GitHub CLI issue create manual</h2>
+<p>https://cli.github.com/manual/gh_issue_create</p>
+<p>Supports: Issue creation flags used by the optional local import helper.</p>
+<h2>Supplied visual provenance</h2>
+<p>Seven existing Roarball concept PNGs were recovered from the active conversation files. They are copied without new generation or editing into design/references. No new images were generated for this documentation task. They are not layered art, GLB models, production textures, or tested gameplay screenshots.</p>
+<h2>Not verified in this delivery</h2>
+<p>No Godot runtime, Android/iOS build, GPU benchmark, physical microphone capture, name clearance, store-policy compliance, Kotlin compilation, or level solvability has been verified. Package-level checks are reported separately and must not be confused with runtime QA.</p>
+</section><section class="chapter" id="backlog"><div class="chapter-number">EXECUTION</div><h1>Task overview</h1><p>60 proposed tasks: <b>56 MVP</b>, one conditional Kotlin task, and three later-scope tasks. Individual issue bodies in tasks/issues contain implementation steps, acceptance criteria, dependencies, and required evidence. No remote issues have been created.</p><p>Milestones are evidence gates, not calendar commitments. IDs remain stable and are not necessarily dependency order. The import helper orders selected issues by dependencies and previews locally by default.</p><table><thead><tr><th>ID</th><th>Task</th><th>Gate</th><th>Priority</th></tr></thead><tbody><tr><td>RB-001</td><td>Pin Godot toolchain and initialize repository</td><td>M0</td><td>P0</td></tr><tr><td>RB-002</td><td>Select physical Android test matrix</td><td>M0</td><td>P0</td></tr><tr><td>RB-003</td><td>Benchmark Mobile and Compatibility renderers</td><td>M0</td><td>P0</td></tr><tr><td>RB-004</td><td>Validate Jolt ball, ramp, and collision behavior</td><td>M0</td><td>P0</td></tr><tr><td>RB-005</td><td>Prove mic permissions and hardware release lifecycle</td><td>M0</td><td>P0</td></tr><tr><td>RB-006</td><td>Approve MVP flows and reconcile concept mockups</td><td>M0</td><td>P0</td></tr><tr><td>RB-007</td><td>Implement typed shot, score, and tuning domain contracts</td><td>M1</td><td>P0</td></tr><tr><td>RB-008</td><td>Implement authoritative gameplay state machine</td><td>M1</td><td>P0</td></tr><tr><td>RB-009</td><td>Create level wrapper and scene-marker contract</td><td>M1</td><td>P0</td></tr><tr><td>RB-010</td><td>Implement ball impulse and rolling resistance</td><td>M1</td><td>P0</td></tr><tr><td>RB-011</td><td>Implement playfield aiming and input ownership</td><td>M1</td><td>P0</td></tr><tr><td>RB-012</td><td>Implement complete Touch shot controls</td><td>M1</td><td>P0</td></tr><tr><td>RB-013</td><td>Implement Ready, Follow, and Overview cameras</td><td>M1</td><td>P1</td></tr><tr><td>RB-014</td><td>Implement support, rest detection, and safe anchors</td><td>M1</td><td>P0</td></tr><tr><td>RB-015</td><td>Implement out-of-bounds and stuck recovery</td><td>M1</td><td>P0</td></tr><tr><td>RB-016</td><td>Implement cup capture and completion ownership</td><td>M1</td><td>P0</td></tr><tr><td>RB-017</td><td>Implement stars, attempt limits, and unlock rules</td><td>M1</td><td>P0</td></tr><tr><td>RB-018</td><td>Build shared Godot UI theme and safe-area shell</td><td>M1</td><td>P1</td></tr><tr><td>RB-019</td><td>Implement mode choice and contextual permission UX</td><td>M1</td><td>P0</td></tr><tr><td>RB-020</td><td>Implement bounded VoiceInputService and silent monitoring</td><td>M1</td><td>P0</td></tr><tr><td>RB-021</td><td>Implement room/soft/strong calibration</td><td>M1</td><td>P0</td></tr><tr><td>RB-022</td><td>Implement preview power and stable release selection</td><td>M1</td><td>P0</td></tr><tr><td>RB-023</td><td>Connect hold/release/cancel voice gestures</td><td>M1</td><td>P0</td></tr><tr><td>RB-024</td><td>Handle pause, background, route changes, and scene disposal</td><td>M1</td><td>P0</td></tr><tr><td>RB-025</td><td>Implement game audio ducking and nonverbal feedback</td><td>M1</td><td>P1</td></tr><tr><td>RB-026</td><td>Pass one-hole end-to-end playable-loop gate</td><td>M1</td><td>P0</td></tr><tr><td>RB-027</td><td>Create lion mascot production asset and expressions</td><td>M2</td><td>P1</td></tr><tr><td>RB-028</td><td>Create modular course kit and collision wrappers</td><td>M2</td><td>P1</td></tr><tr><td>RB-029</td><td>Establish mobile lighting, materials, and quality tiers</td><td>M2</td><td>P1</td></tr><tr><td>RB-030</td><td>Implement Home and loading/error navigation</td><td>M2</td><td>P1</td></tr><tr><td>RB-031</td><td>Implement two-world twelve-hole selection</td><td>M2</td><td>P1</td></tr><tr><td>RB-032</td><td>Polish calibration UI and recovery states</td><td>M2</td><td>P1</td></tr><tr><td>RB-033</td><td>Polish Ready/Capturing/Rolling gameplay HUD</td><td>M2</td><td>P1</td></tr><tr><td>RB-034</td><td>Implement Pause, Settings, and Android Back behavior</td><td>M2</td><td>P1</td></tr><tr><td>RB-035</td><td>Implement truthful results and save-warning UI</td><td>M2</td><td>P1</td></tr><tr><td>RB-036</td><td>Approve one polished visual and interaction slice</td><td>M2</td><td>P0</td></tr><tr><td>RB-037</td><td>Implement moving gate obstacle</td><td>M3</td><td>P1</td></tr><tr><td>RB-038</td><td>Implement paired portals and exit validation</td><td>M3</td><td>P1</td></tr><tr><td>RB-039</td><td>Implement one-shot bounce pad</td><td>M3</td><td>P1</td></tr><tr><td>RB-040</td><td>Author and validate Cloud Cliffs holes 1–3</td><td>M3</td><td>P1</td></tr><tr><td>RB-041</td><td>Author and validate Cloud Cliffs holes 4–6</td><td>M3</td><td>P1</td></tr><tr><td>RB-042</td><td>Author and validate Portal Peaks holes 1–3</td><td>M3</td><td>P1</td></tr><tr><td>RB-043</td><td>Author and validate Portal Peaks holes 4–6</td><td>M3</td><td>P1</td></tr><tr><td>RB-044</td><td>Implement three cosmetic balls and collection screen</td><td>M3</td><td>P1</td></tr><tr><td>RB-045</td><td>Implement validated local progress/settings and recovery</td><td>M1</td><td>P0</td></tr><tr><td>RB-046</td><td>Implement content catalog and scene validators</td><td>M1</td><td>P1</td></tr><tr><td>RB-047</td><td>Run all-hole playtest and balance review</td><td>M3</td><td>P0</td></tr><tr><td>RB-048</td><td>Conditional: add narrowly scoped Kotlin input/platform adapter</td><td>Conditional</td><td>P2</td></tr><tr><td>RB-049</td><td>Externalize strings and prepare English/Indonesian localization</td><td>M3</td><td>P1</td></tr><tr><td>RB-050</td><td>Verify accessibility, reduced motion, and equal Touch path</td><td>M4</td><td>P0</td></tr><tr><td>RB-051</td><td>Build automated domain/state/scene regression suite</td><td>M4</td><td>P0</td></tr><tr><td>RB-052</td><td>Profile and optimize sustained mobile performance</td><td>M4</td><td>P0</td></tr><tr><td>RB-053</td><td>Audit privacy, permissions, storage, and dependency provenance</td><td>M4</td><td>P0</td></tr><tr><td>RB-054</td><td>Run mobile interruption and navigation stability suite</td><td>M4</td><td>P0</td></tr><tr><td>RB-055</td><td>Create reproducible signed Android release candidate</td><td>M4</td><td>P0</td></tr><tr><td>RB-056</td><td>Prepare store materials, policy review, and asset/name clearance</td><td>M4</td><td>P1</td></tr><tr><td>RB-057</td><td>Approve MVP release gate and hand over operations</td><td>M4</td><td>P0</td></tr><tr><td>RB-058</td><td>Later: evaluate standalone iOS export and audio lifecycle</td><td>Later</td><td>P2</td></tr><tr><td>RB-059</td><td>Later: evaluate wind/lava worlds and daily challenges</td><td>Later</td><td>P2</td></tr><tr><td>RB-060</td><td>Later: review online analytics or monetization as separate scope</td><td>Later</td><td>P2</td></tr></tbody></table></section><section class="ref-page" id="visual-01"><div class="chapter-number">VISUAL REFERENCE 01 / 07</div><h1>Original gameplay</h1><p><b>MVP interpretation:</b> Keep the lion, floating turf, flags and playful depth. Use a compact header, real shot/cancel states and no currency UI.</p><img src="design/references/01_original_gameplay.png" alt="Roarball Original gameplay concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-02"><div class="chapter-number">VISUAL REFERENCE 02 / 07</div><h1>Home</h1><p><b>MVP interpretation:</b> Keep the hero and clear Play button. MVP navigation is Play, Map, Balls and Settings. Remove daily challenge, account level and coins.</p><img src="design/references/02_home.png" alt="Roarball Home concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-03"><div class="chapter-number">VISUAL REFERENCE 03 / 07</div><h1>World map</h1><p><b>MVP interpretation:</b> MVP has Cloud Cliffs and Portal Peaks, six holes each. Remove hearts, shop and extra worlds. Completion unlocks the next hole.</p><img src="design/references/03_world_map.png" alt="Roarball World map concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-04"><div class="chapter-number">VISUAL REFERENCE 04 / 07</div><h1>Voice calibration</h1><p><b>MVP interpretation:</b> Implement explicit Room / Soft / Strong stages, a Touch alternative, real permission/error states and verified capture lifetime.</p><img src="design/references/04_calibration.png" alt="Roarball Voice calibration concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-05"><div class="chapter-number">VISUAL REFERENCE 05 / 07</div><h1>Advanced course</h1><p><b>MVP interpretation:</b> Use reusable ramps, gates, one portal pair and pads. Wind is deferred. Concept composition is not proof a layout is solvable.</p><img src="design/references/05_advanced_gameplay.png" alt="Roarball Advanced course concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-06"><div class="chapter-number">VISUAL REFERENCE 06 / 07</div><h1>Ball collection</h1><p><b>MVP interpretation:</b> Lion, Panda and Robot only, with identical physics. No rarity, shop, currency, trails or emote economy in MVP.</p><img src="design/references/06_collection.png" alt="Roarball Ball collection concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section><section class="ref-page" id="visual-07"><div class="chapter-number">VISUAL REFERENCE 07 / 07</div><h1>Results</h1><p><b>MVP interpretation:</b> Show earned stars, strokes, par and world progress. Remove fabricated whisper/accuracy percentages, gems and required sharing.</p><img src="design/references/07_results.png" alt="Roarball Results concept reference"><p class="footer-note">Existing concept image, not a real-time engine screenshot. Original full-resolution PNG is included. Build the interface as Godot Controls and the world as real 3D scenes.</p></section></main></body></html>
