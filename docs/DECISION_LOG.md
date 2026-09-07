@@ -156,6 +156,8 @@ environment, primitives keep the kit code-reviewable and budget-trivial
 **Impact.** Levels CC02+ should compose these modules instead of sculpting
 turf boxes. Seam behavior is regression-tested at low/high speed, up/down the
 ramp, through the corner, and off the cliff (`run_course_kit_tests.tscn`).
+*Amendment (round 4):* a bare `plateau` module (no rails) was added when CC02
+needed an open-edged risk area — no railed module could expose a fall edge.
 
 ## D-018 · Flat-turf deceleration is velocity-dependent; tuning log updated
 **Decision.** Record measured reality: on the pinned engine the effective

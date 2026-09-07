@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Material" path="res://scenes/course_kit/materials/kit_turf.tres" id="1_turf"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_turf"]
+size = Vector3(5, 0.5, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_turf"]
+size = Vector3(5, 0.5, 5)
+
+[node name="Plateau" type="Node3D"]
+
+[node name="StaticCollision" type="Node3D" parent="."]
+
+[node name="TurfBody" type="StaticBody3D" parent="StaticCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+collision_layer = 2
+collision_mask = 0
+
+[node name="TurfShape" type="CollisionShape3D" parent="StaticCollision/TurfBody"]
+shape = SubResource("BoxShape3D_turf")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="TurfMesh" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+mesh = SubResource("BoxMesh_turf")
+material_override = ExtResource("1_turf")
+
+[node name="Connect" type="Node3D" parent="."]
+
+[node name="In" type="Marker3D" parent="Connect"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.5)
+
+[node name="Out" type="Marker3D" parent="Connect"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)

@@ -146,6 +146,7 @@ func _test_modules_own_their_collision() -> void:
 		"ramp": {"connect_out": true, "bodies_min": 3},
 		"rail": {"connect_out": false, "bodies_min": 1},
 		"cliff_edge": {"connect_out": false, "bodies_min": 3},
+		"plateau": {"connect_out": true, "bodies_min": 1},
 	}
 	for module_name: String in expectations:
 		var packed: PackedScene = load(KIT + module_name + ".tscn")
@@ -221,6 +222,12 @@ func _test_kit_collision_geometry() -> void:
 			[Vector3(-2.65, 5, 0), 0.4], [Vector3(2.65, 5, 0), 0.4],
 		], "open": [
 			Vector3(0, 5, -2.8), Vector3(0, 5, 2.6),
+		]},
+		{"module": "plateau", "at": Vector3.ZERO, "probes": [
+			[Vector3(0, 5, 2.4), 0.0], [Vector3(0, 5, -2.4), 0.0],
+			[Vector3(-2.4, 5, 0), 0.0], [Vector3(2.4, 5, 0), 0.0],
+		], "open": [
+			Vector3(0, 5, 2.6), Vector3(0, 5, -2.6), Vector3(2.6, 5, 0),
 		]},
 	]
 	for case: Dictionary in cases:

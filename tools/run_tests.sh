@@ -39,3 +39,7 @@ XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --pat
 echo
 echo "== Course-kit seam tests (real Jolt physics; takes ~2 min; isolated user://) =="
 XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . res://tests/integration/run_course_kit_tests.tscn 2>&1 | grep -E "FAIL|TESTS:|SCRIPT ERROR" | head -20
+
+echo
+echo "== Level route tests (CC02/CC03 routes; takes ~2 min; isolated user://) =="
+XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . res://tests/integration/run_level_route_tests.tscn 2>&1 | grep -E "FAIL|TESTS:|SCRIPT ERROR" | head -20

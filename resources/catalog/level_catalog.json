@@ -60,7 +60,7 @@
         "A newcomer can stage two safe shots.",
         "No unseen cliff behind UI."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "CC03",
@@ -84,7 +84,7 @@
         "Multiple approach directions remain solvable.",
         "No clipping at corner module seams."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "CC04",

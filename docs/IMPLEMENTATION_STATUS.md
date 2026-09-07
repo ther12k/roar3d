@@ -1,8 +1,29 @@
 # Implementation Status
 
-Last updated: 2026-09-07 (round 3: modular course kit) · Engine: Godot
+Last updated: 2026-09-07 (round 4: CC02 + CC03 authored) · Engine: Godot
 **4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`; `tools/run_tests.sh`
 refuses to run on any other version).
+
+## Round 4 — Cloud Cliffs holes 2–3 (RB-040, issue #46)
+
+- **CC02 "Soft Landing"** and **CC03 "Bank Buddy"** authored as the first
+  kit-composed levels (straight/plateau/corridor/green instances, not
+  sculpted turf). A bare `plateau` kit module was added for CC02's open-edged
+  risk area. Packaged catalog: CC01–CC03 now `graybox`; CC04+ remain
+  `design_only` and refuse to load.
+- **Route suite** `tests/integration/run_level_route_tests.tscn` (112 checks,
+  4th suite): marker contracts, CC02 staged newcomer route (par), finishing
+  power-band sweep (3 powers all complete), open-edge fall + exactly-one-
+  penalty recovery, strong-shot rail stop; CC03 bank redirect band, bank
+  route within par, deliberate two-turn alternate route, per-level full-stack
+  smokes (game_root READY + touch shot + teardown).
+- Level capture tool `tools/capture_level.tscn` (LEVEL_ID env) — CC02/CC03
+  ready-state PNGs are release assets.
+- Route tuning notes: finishing putts need overrun room behind the cup
+  (impulse floor ≈1.5 m/s makes sub-0.6 m taps arrive >1.2 m/s), so CC02's
+  cup sits 1.2 m off the back rail; bank lines must clear the tee rail end
+  (shallow diagonals) — head-on bank shots stop dead at restitution 0 by
+  design (Jolt bounce=0), which is the "hit the wall at an angle" lesson.
 
 ## Round 3 — modular course kit (RB-028, issue #17)
 

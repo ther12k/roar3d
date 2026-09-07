@@ -48,10 +48,13 @@ the `Connect` pivots rotate with them.
 | Green module | `scenes/course_kit/green.tscn` | ther12k | Hand-written .tscn | Original | 36 | 2 shared | Wrapper | 10×5 turf, side+far rails, open entry |
 | Ramp module | `scenes/course_kit/ramp.tscn` | ther12k | Hand-written .tscn | Original | 48 | 3 shared | Wrapper | 5 m run, 1 m rise (11.3°), sloped rails, stone skirt (visual only) |
 | Rail module | `scenes/course_kit/rail.tscn` | ther12k | Hand-written .tscn | Original | 12 | 1 shared | Wrapper | 5 m barrier for custom edges |
+| Plateau module | `scenes/course_kit/plateau.tscn` | ther12k | Hand-written .tscn | Original | 12 | 1 shared | Wrapper | Bare 5×5 turf, no rails — open-edge risk areas (added round 4 for CC02) |
 | Cliff edge module | `scenes/course_kit/cliff_edge.tscn` | ther12k | Hand-written .tscn | Original | 60 | 3 shared | Wrapper | Far edge open (fall hazard); stone faces are visual-only, no collision |
 | Kit showcase | `scenes/course_kit/kit_showcase.tscn` | ther12k | Hand-written .tscn | Original | — | — | n/a | All modules laid out; evidence capture via `tools/capture_course_kit.gd` |
 | Kit materials | `scenes/course_kit/materials/*.tres` | ther12k | Hand-written .tres | Original | — | 3 files | n/a | Shared across modules (budget: ≤3 material slots) |
 | CC01 level | `scenes/levels/CC01.tscn` | ther12k | Hand-written .tscn | Original | ~150 | 6 inline (pre-kit) | Wrapper | Graybox hole; predates the kit, refactor optional |
+| CC02 level | `scenes/levels/CC02.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | First kit-composed hole: straight tee → 2 plateaus → green |
+| CC03 level | `scenes/levels/CC03.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Kit-composed L: tee → corner → corridor → rotated green |
 | Game scene | `scenes/game/game_root.tscn` | ther12k | Hand-written .tscn | Original | ~2k (lion ball) | ~8 inline | Wrapper | Sky, lighting, lion ball (mane/eyes/muzzle), HUD |
 | Ball visuals | `game_root.tscn` sub-resources | ther12k | Godot primitives | Original | ~2k | inline | n/a | Sphere collider 0.25 m owned by `BallController`; cosmetics never change it |
 
