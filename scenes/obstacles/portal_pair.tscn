@@ -1,0 +1,73 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/portal_pair.gd" id="1_portal"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_portal"]
+height = 1.6
+radius = 0.7
+
+[sub_resource type="TorusMesh" id="TorusMesh_entry"]
+inner_radius = 0.62
+outer_radius = 0.78
+
+[sub_resource type="TorusMesh" id="TorusMesh_exit"]
+inner_radius = 0.62
+outer_radius = 0.78
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_entry"]
+albedo_color = Color(0.18, 0.81, 1, 1)
+emission_enabled = true
+emission = Color(0.1, 0.45, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_exit"]
+albedo_color = Color(1, 0.75, 0.26, 1)
+emission_enabled = true
+emission = Color(0.45, 0.3, 0.05, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_portal_base"]
+albedo_color = Color(0.24, 0.42, 0.55, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+top_radius = 0.85
+bottom_radius = 0.95
+height = 0.1
+
+[node name="PortalPair" type="Node3D"]
+script = ExtResource("1_portal")
+
+[node name="Entry" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+collision_layer = 8
+collision_mask = 1
+
+[node name="EntryShape" type="CollisionShape3D" parent="Entry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("CylinderShape3D_portal")
+
+[node name="EntryRing" type="MeshInstance3D" parent="Entry"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.8, 0)
+mesh = SubResource("TorusMesh_entry")
+material_override = SubResource("StandardMaterial3D_entry")
+
+[node name="EntryBase" type="MeshInstance3D" parent="Entry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("CylinderMesh_base")
+material_override = SubResource("StandardMaterial3D_portal_base")
+
+[node name="Exit" type="Area3D" parent="."]
+collision_layer = 8
+collision_mask = 1
+
+[node name="ExitShape" type="CollisionShape3D" parent="Exit"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("CylinderShape3D_portal")
+
+[node name="ExitRing" type="MeshInstance3D" parent="Exit"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.8, 0)
+mesh = SubResource("TorusMesh_exit")
+material_override = SubResource("StandardMaterial3D_exit")
+
+[node name="ExitBase" type="MeshInstance3D" parent="Exit"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("CylinderMesh_base")
+material_override = SubResource("StandardMaterial3D_portal_base")

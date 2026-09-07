@@ -33,6 +33,7 @@ var _support_normal := UP
 var _support_is_static := false
 var _teleport_pending := false
 var _teleport_transform := Transform3D.IDENTITY
+var _teleport_velocity := Vector3.ZERO
 var _fall_emitted := false
 
 
@@ -96,13 +97,19 @@ func apply_shot(command: ShotCommand) -> bool:
 ## Engine-safe teleport: applied inside _integrate_forces, clearing all
 ## velocity so the move cannot produce a residual impulse (docs/05 §3).
 func teleport_to(target: Transform3D) -> void:
+	teleport_with_velocity(target, Vector3.ZERO)
+
+
+## Teleport that preserves an authored exit velocity (portal transit, docs/05
+## §5: transform the direction through the pair mapping, keep the speed).
+func teleport_with_velocity(target: Transform3D, exit_velocity: Vector3) -> void:
 	_teleport_pending = true
 	_teleport_transform = target
+	_teleport_velocity = exit_velocity
 	_fall_emitted = false
 	_resting = false
 	_settle_timer = 0.0
-	# Neutralize immediately so nothing else reads stale motion.
-	linear_velocity = Vector3.ZERO
+	linear_velocity = exit_velocity
 	angular_velocity = Vector3.ZERO
 
 
@@ -110,8 +117,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if _teleport_pending:
 		_teleport_pending = false
 		state.transform = _teleport_transform
-		state.linear_velocity = Vector3.ZERO
+		state.linear_velocity = _teleport_velocity
 		state.angular_velocity = Vector3.ZERO
+		_teleport_velocity = Vector3.ZERO
 		_supported = true  # re-verified on the next step
 		_support_normal = UP
 		return

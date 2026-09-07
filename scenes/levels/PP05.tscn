@@ -1,0 +1,114 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/level_config.gd" id="1_config"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/plateau.tscn" id="m_plateau"]
+[ext_resource type="PackedScene" path="res://scenes/obstacles/portal_pair.tscn" id="m_portal"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/straight.tscn" id="m_straight"]
+[ext_resource type="PackedScene" path="res://scenes/obstacles/moving_gate.tscn" id="m_gate"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/green.tscn" id="m_green"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_cup"]
+height = 1.4
+radius = 0.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cup_ring"]
+top_radius = 0.22
+bottom_radius = 0.22
+height = 0.06
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_flag"]
+size = Vector3(0.42, 0.3, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flag"]
+albedo_color = Color(1, 0.75, 0.26, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kill"]
+size = Vector3(100, 6, 100)
+
+[node name="PP05" type="Node3D"]
+
+[node name="LevelConfig" type="Node3D" parent="."]
+script = ExtResource("1_config")
+kill_plane_y = -6.0
+turf_resistance = 0.55
+course_bounds = AABB(-2.5, -1, -7.5, 29, 4, 15)
+cup_plane_y = 0.0
+cup_anchor_exclusion_radius = 0.6
+
+[node name="Course" type="Node3D" parent="."]
+
+[node name="Plateau1" parent="Course" instance=ExtResource("m_plateau")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0, 5)
+
+[node name="Plateau2" parent="Course" instance=ExtResource("m_plateau")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0, 0)
+
+[node name="Portal1" parent="Course" instance=ExtResource("m_portal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0, -2.5)
+exit_offset = Vector3(10.0, 0, 0)
+exit_yaw_deg = -90.0
+
+[node name="Straight1" parent="Course" instance=ExtResource("m_straight")]
+transform = Transform3D(6.12323e-17, 0, -1, 0, 1, 0, 1, 0, 6.12323e-17, 12.5, 0, -2.5)
+
+[node name="Gate1" parent="Course" instance=ExtResource("m_gate")]
+transform = Transform3D(6.12323e-17, 0, -1, 0, 1, 0, 1, 0, 6.12323e-17, 12.5, 0.45, -2.5)
+
+[node name="Straight2" parent="Course" instance=ExtResource("m_straight")]
+transform = Transform3D(6.12323e-17, 0, -1, 0, 1, 0, 1, 0, 6.12323e-17, 17.5, 0, -2.5)
+
+[node name="Green1" parent="Course" instance=ExtResource("m_green")]
+transform = Transform3D(6.12323e-17, 0, -1, 0, 1, 0, 1, 0, 6.12323e-17, 22.5, 0, -2.5)
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Ring" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0.03, -2.5)
+mesh = SubResource("CylinderMesh_cup_ring")
+
+[node name="Pole" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0.6, -2.5)
+mesh = SubResource("CylinderMesh_pole")
+
+[node name="FlagMesh" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.73, 1.03, -2.5)
+mesh = SubResource("BoxMesh_flag")
+material_override = SubResource("StandardMaterial3D_flag")
+
+[node name="Spawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 6)
+
+[node name="Cup" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0.3, -2.5)
+collision_layer = 0
+collision_mask = 1
+
+[node name="CupShape" type="CollisionShape3D" parent="Cup"]
+shape = SubResource("CylinderShape3D_cup")
+
+[node name="SafeAnchors" type="Node3D" parent="."]
+
+[node name="Anchor0" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 0, 0.25, 6)
+
+[node name="Anchor1" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 10.5, 0.25, -2.5)
+
+[node name="Anchor2" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 17, 0.25, -2.5)
+
+[node name="Anchor3" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 22, 0.25, -2.5)
+
+[node name="KillVolume" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -8, -2.5)
+collision_layer = 0
+collision_mask = 1
+
+[node name="KillShape" type="CollisionShape3D" parent="KillVolume"]
+shape = SubResource("BoxShape3D_kill")

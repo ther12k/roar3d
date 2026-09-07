@@ -4,6 +4,19 @@ Last updated: 2026-09-07 (round 5: audio/quality/lifecycle/stability batch) ·
 Engine: Godot **4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`;
 `tools/run_tests.sh` refuses to run on any other version).
 
+## Round 6 — all twelve holes + obstacles complete (RB-037/038/039/041/042/043)
+
+- **Obstacles**:
+  - \`BouncePad\` (\`scenes/obstacles/bounce_pad.tscn\`): one-shot impulse on eligible contact with latch preventing re-boosting while resting (QA-028 verified).
+  - \`MovingGate\` (\`scenes/obstacles/moving_gate.tscn\`): sync-to-physics sliding gate across local X; pauses with session without wall-clock jump (QA-029 verified).
+  - \`PortalPair\` (\`scenes/obstacles/portal_pair.tscn\`): mapped velocity direction and preserved speed on transit; cooldown and exit overlap latch prevent endless loops (QA-027 verified).
+- **Course Kit Expansion & 12 Authored Holes**:
+  - All 12 level scenes authored using modular kit components and tested end-to-end.
+  - Cloud Cliffs CC01–CC06 and Portal Peaks PP01–PP06 all status \`graybox\` in packaged catalog.
+  - Two dedicated route suites: \`run_level_route_tests.tscn\` (CC01–CC03) and \`run_hole_route_tests.tscn\` (CC04–CC06, PP01–PP06). Every hole completes within par+1.
+- **Test Gate**:
+  - 8 headless suites running in \`tools/run_tests.sh\`: **876 automated tests, 0 failures** on Godot 4.7.2.
+
 ## Round 5 — services, stability, and audit (RB-025/029/024/054/053)
 
 - **Nonverbal feedback audio (RB-025)**: four original synthesized cues

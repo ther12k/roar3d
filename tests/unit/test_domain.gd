@@ -237,7 +237,12 @@ func _catalog(h: TestHarness) -> void:
 	h.check_eq(packaged.ordered_ids[0], "CC01", "first level CC01")
 	h.check_eq(packaged.ordered_ids[6], "PP01", "world two starts at index 6")
 	h.check(packaged.is_playable("CC01"), "CC01 graybox playable (scene exists)")
-	h.check(not packaged.is_playable("PP01"), "design_only level not playable")
+	h.check(packaged.is_playable("PP01"), "PP01 graybox playable (scene exists)")
+	var design_sample := (packaged.levels[0] as Dictionary).duplicate(true)
+	design_sample["status"] = "design_only"
+	var mock_cat := LevelCatalog.CatalogData.new()
+	mock_cat.levels = [design_sample]
+	h.check(not mock_cat.is_playable("CC01"), "design_only level not playable")
 	var cc01 := packaged.level_by_id("CC01")
 	h.check_eq(cc01["par"], 2, "CC01 par 2")
 	var broken := {

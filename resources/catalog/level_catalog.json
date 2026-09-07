@@ -109,7 +109,7 @@
         "Fall returns to the last safe rest.",
         "Landing green is visible before shooting."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "CC05",
@@ -134,7 +134,7 @@
         "No inescapable pinning against a rail.",
         "Gate travel region is visually obvious."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "CC06",
@@ -160,7 +160,7 @@
         "Independent safe route and optional efficient route.",
         "No unfair simultaneous high-precision timing/power demand."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP01",
@@ -184,7 +184,7 @@
         "Pair latch prevents immediate return.",
         "Only one pair, visually matched."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP02",
@@ -209,7 +209,7 @@
         "Exit arrow agrees with behavior.",
         "Alternate slower setup route remains possible."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP03",
@@ -234,7 +234,7 @@
         "Slow/side/repeated entry tests pass.",
         "Misses reset to a valid safe anchor."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP04",
@@ -260,7 +260,7 @@
         "No pad/portal infinite-energy loop.",
         "Intermediate safe rest exists."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP05",
@@ -286,7 +286,7 @@
         "Overview shows full pairing and corridor.",
         "Primary route does not require simultaneous portal/gate precision."
       ],
-      "status": "design_only"
+      "status": "graybox"
     },
     {
       "id": "PP06",
@@ -313,7 +313,7 @@
         "Robot unlock and final results work.",
         "No mandatory exact-float shot or hidden target."
       ],
-      "status": "design_only"
+      "status": "graybox"
     }
   ]
 }

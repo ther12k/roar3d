@@ -56,6 +56,18 @@ the `Connect` pivots rotate with them.
 | CC01 level | `scenes/levels/CC01.tscn` | ther12k | Hand-written .tscn | Original | ~150 | 6 inline (pre-kit) | Wrapper | Graybox hole; predates the kit, refactor optional |
 | CC02 level | `scenes/levels/CC02.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | First kit-composed hole: straight tee → 2 plateaus → green |
 | CC03 level | `scenes/levels/CC03.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Kit-composed L: tee → corner → corridor → rotated green |
+| CC04 level | `scenes/levels/CC04.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Ramp jump over void to landing plateau & green |
+| CC05 level | `scenes/levels/CC05.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Sliding gate obstacle timing passage |
+| CC06 level | `scenes/levels/CC06.tscn` | ther12k | Kit composition (.tscn) | Original | ~80 + kit | 1 inline + shared | Kit wrappers | Gate timing + ramp jump combo finale |
+| PP01 level | `scenes/levels/PP01.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Portal pair introduction: tee to approach |
+| PP02 level | `scenes/levels/PP02.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Portal exit angle onto green |
+| PP03 level | `scenes/levels/PP03.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | Bounce pad launch over void to raised green |
+| PP04 level | `scenes/levels/PP04.tscn` | ther12k | Kit composition (.tscn) | Original | ~80 + kit | 1 inline + shared | Kit wrappers | Portal transit to staging, bounce pad to raised green |
+| PP05 level | `scenes/levels/PP05.tscn` | ther12k | Kit composition (.tscn) | Original | ~80 + kit | 1 inline + shared | Kit wrappers | Portal transit to sliding gate corridor |
+| PP06 level | `scenes/levels/PP06.tscn` | ther12k | Kit composition (.tscn) | Original | ~80 + kit | 1 inline + shared | Kit wrappers | Portal Peaks finale: portal to staging, pad to green |
+| Moving Gate | `scenes/obstacles/moving_gate.tscn` | ther12k | Hand-written .tscn | Original | 24 | 2 shared | Wrapper | Sliding obstacle with physics delta sync |
+| Bounce Pad | `scenes/obstacles/bounce_pad.tscn` | ther12k | Hand-written .tscn | Original | 32 | 1 shared | Wrapper | Trigger pad with entry latch |
+| Portal Pair | `scenes/obstacles/portal_pair.tscn` | ther12k | Hand-written .tscn | Original | 48 | 3 shared | Wrapper | Linked entry and exit with velocity mapping |
 | Game scene | `scenes/game/game_root.tscn` | ther12k | Hand-written .tscn | Original | ~2k (lion ball) | ~8 inline | Wrapper | Sky, lighting, lion ball (mane/eyes/muzzle), HUD |
 | Ball visuals | `game_root.tscn` sub-resources | ther12k | Godot primitives | Original | ~2k | inline | n/a | Sphere collider 0.25 m owned by `BallController`; cosmetics never change it |
 

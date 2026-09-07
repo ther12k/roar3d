@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://roar3dobsttest"]
+
+[ext_resource type="Script" path="res://tests/integration/run_obstacle_tests.gd" id="1_runner"]
+
+[node name="ObstacleTests" type="Node"]
+script = ExtResource("1_runner")

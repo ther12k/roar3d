@@ -1,0 +1,108 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/level_config.gd" id="1_config"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/straight.tscn" id="2_straight"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/plateau.tscn" id="3_plateau"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/ramp.tscn" id="4_ramp"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/green.tscn" id="5_green"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_cup"]
+height = 1.4
+radius = 0.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cup_ring"]
+top_radius = 0.22
+bottom_radius = 0.22
+height = 0.06
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pole"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_flag"]
+size = Vector3(0.42, 0.3, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flag"]
+albedo_color = Color(1, 0.75, 0.26, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kill"]
+size = Vector3(80, 6, 90)
+
+[node name="CC04" type="Node3D"]
+
+[node name="LevelConfig" type="Node3D" parent="."]
+script = ExtResource("1_config")
+kill_plane_y = -6.0
+turf_resistance = 0.55
+course_bounds = AABB(-3, -1, -19.5, 6, 4, 32.5)
+cup_plane_y = 0.0
+cup_anchor_exclusion_radius = 0.6
+
+[node name="Course" type="Node3D" parent="."]
+
+[node name="TeeA" parent="Course" instance=ExtResource("2_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="TeeB" parent="Course" instance=ExtResource("2_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+
+[node name="LaunchRamp" parent="Course" instance=ExtResource("4_ramp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.25)
+
+[node name="LandingA" parent="Course" instance=ExtResource("3_plateau")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+
+[node name="LandingB" parent="Course" instance=ExtResource("3_plateau")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9)
+
+[node name="FinalGreen" parent="Course" instance=ExtResource("5_green")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Ring" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -12.7)
+mesh = SubResource("CylinderMesh_cup_ring")
+
+[node name="Pole" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -12.7)
+mesh = SubResource("CylinderMesh_pole")
+
+[node name="FlagMesh" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.23, 1.03, -12.7)
+mesh = SubResource("BoxMesh_flag")
+material_override = SubResource("StandardMaterial3D_flag")
+
+[node name="Spawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 11)
+
+[node name="Cup" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -12.7)
+collision_layer = 0
+collision_mask = 1
+
+[node name="CupShape" type="CollisionShape3D" parent="Cup"]
+shape = SubResource("CylinderShape3D_cup")
+
+[node name="SafeAnchors" type="Node3D" parent="."]
+
+[node name="AnchorSpawn" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 11)
+
+[node name="AnchorMid" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 5)
+
+[node name="AnchorLanding" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -4.5)
+
+[node name="AnchorGreen" type="Marker3D" parent="SafeAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, -10)
+
+[node name="KillVolume" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, -3)
+collision_layer = 0
+collision_mask = 1
+
+[node name="KillShape" type="CollisionShape3D" parent="KillVolume"]
+shape = SubResource("BoxShape3D_kill")

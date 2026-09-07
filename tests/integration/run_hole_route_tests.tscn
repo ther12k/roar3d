@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://roar3dholeroute"]
+
+[ext_resource type="Script" path="res://tests/integration/run_hole_route_tests.gd" id="1_runner"]
+
+[node name="HoleRouteTests" type="Node"]
+script = ExtResource("1_runner")
