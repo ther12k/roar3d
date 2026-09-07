@@ -20,6 +20,7 @@ AppRouter="*res://scripts/app/app_router.gd"
 ProgressStore="*res://scripts/app/progress_store.gd"
 SettingsStore="*res://scripts/app/settings_store.gd"
 AudioDirector="*res://scripts/app/audio_director.gd"
+QualityDirector="*res://scripts/app/quality_director.gd"
 
 [display]
 

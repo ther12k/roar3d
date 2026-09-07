@@ -65,6 +65,10 @@ func _ready() -> void:
 	hud.restart_requested.connect(_restart_level)
 	hud.map_requested.connect(_to_map)
 	hud.next_hole_requested.connect(_next_hole)
+	# Nonverbal feedback cues (RB-025): effects bus only, never the mic path.
+	session.shot_committed.connect(func(_shot: ShotCommand) -> void: AudioDirector.play_effect("putt"))
+	session.hole_completed.connect(func(_result: Dictionary) -> void: AudioDirector.play_effect("cup"))
+	ball.fall_detected.connect(func(_reason: String) -> void: AudioDirector.play_effect("fall"))
 
 	_build_aim_guide()
 	ball.freeze = true

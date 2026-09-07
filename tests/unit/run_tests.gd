@@ -8,6 +8,7 @@ func _ready() -> void:
 		preload("res://tests/unit/test_domain.gd").new(),
 		preload("res://tests/unit/test_state_machine.gd").new(),
 		preload("res://tests/unit/test_save_file.gd").new(),
+	preload("res://tests/unit/test_app_services.gd").new(),
 	]
 	for suite in suites:
 		suite.run(harness)

@@ -51,6 +51,7 @@ the `Connect` pivots rotate with them.
 | Plateau module | `scenes/course_kit/plateau.tscn` | ther12k | Hand-written .tscn | Original | 12 | 1 shared | Wrapper | Bare 5×5 turf, no rails — open-edge risk areas (added round 4 for CC02) |
 | Cliff edge module | `scenes/course_kit/cliff_edge.tscn` | ther12k | Hand-written .tscn | Original | 60 | 3 shared | Wrapper | Far edge open (fall hazard); stone faces are visual-only, no collision |
 | Kit showcase | `scenes/course_kit/kit_showcase.tscn` | ther12k | Hand-written .tscn | Original | — | — | n/a | All modules laid out; evidence capture via `tools/capture_course_kit.gd` |
+| Sound effects | `assets/audio/{putt,cup,fall,click}.wav` | ther12k | Synthesized tones (python, generated for this repo) | Original | — | — | n/a | Nonverbal feedback cues on the Effects bus (RB-025); no recordings |
 | Kit materials | `scenes/course_kit/materials/*.tres` | ther12k | Hand-written .tres | Original | — | 3 files | n/a | Shared across modules (budget: ≤3 material slots) |
 | CC01 level | `scenes/levels/CC01.tscn` | ther12k | Hand-written .tscn | Original | ~150 | 6 inline (pre-kit) | Wrapper | Graybox hole; predates the kit, refactor optional |
 | CC02 level | `scenes/levels/CC02.tscn` | ther12k | Kit composition (.tscn) | Original | ~60 + kit | 1 inline + shared | Kit wrappers | First kit-composed hole: straight tee → 2 plateaus → green |

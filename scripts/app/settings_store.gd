@@ -54,6 +54,10 @@ func set_flag(key: String, value: bool) -> void:
 		_update({key: value})
 
 
+func quality() -> String:
+	return String(settings.get("quality", "medium"))
+
+
 func set_quality(quality: String) -> void:
 	if quality in ["low", "medium", "high"]:
 		_update({"quality": quality})

@@ -22,6 +22,7 @@ func _run_all() -> void:
 	await _test_out_of_bounds_penalty_and_reset()
 	await _test_attempt_limit_fails()
 	await _test_pause_cancels_pending_shot()
+	await _test_background_notification_pauses_safely()
 	await _test_voice_gesture_commits_one_shot()
 	await _test_voice_clap_cannot_shoot()
 	await _test_voice_cancel_and_interrupt_no_stroke()
@@ -257,6 +258,35 @@ func _test_pause_cancels_pending_shot() -> void:
 	harness.check_eq(session.strokes, 0, "no stroke spent on canceled command")
 	harness.check(ball.is_resting(), "ball never moved")
 	await _free_session(env)
+
+
+## OS background/focus loss mid-hold (RB-024 / QA-013): the same pause
+## authority fires from NOTIFICATION_APPLICATION_PAUSED; capture closes, no
+## stroke leaks, and resume never restarts the mic.
+func _test_background_notification_pauses_safely() -> void:
+	harness.suite = "ui.background_pause"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	var voice: VoiceInputService = env["voice"]
+	var source: VoiceFrameSource.SyntheticFrameSource = env["source"]
+	voice.calibration = {"gate_db": -50.0, "lower_db": -40.0, "upper_db": -20.0}
+	harness.check(coordinator.voice_hold_started(), "hold opens before backgrounding")
+	source.push_constant_ms(200, 0.05)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	(env["root"] as GameRoot).notification(GameRoot.NOTIFICATION_APPLICATION_PAUSED)
+	await get_tree().process_frame
+	harness.check(get_tree().paused, "background notification pauses the tree")
+	harness.check(not voice.is_listening(), "background closes capture (no hidden mic)")
+	harness.check_eq(session.strokes, 0, "backgrounded hold spends no stroke")
+	# Player returns and taps Resume: session READY, mic stays off.
+	(env["hud"] as HUDPresenter).resume_requested.emit()
+	await get_tree().process_frame
+	harness.check(not get_tree().paused, "resume unpauses the tree")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session resumed to READY")
+	harness.check(not voice.is_listening(), "mic never auto-restarts after background")
+	await _free_full_game(env)
 
 
 # --- voice gesture through the same ShotCommand path ---

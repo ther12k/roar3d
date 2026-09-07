@@ -1,8 +1,40 @@
 # Implementation Status
 
-Last updated: 2026-09-07 (round 4: CC02 + CC03 authored) · Engine: Godot
-**4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`; `tools/run_tests.sh`
-refuses to run on any other version).
+Last updated: 2026-09-07 (round 5: audio/quality/lifecycle/stability batch) ·
+Engine: Godot **4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`;
+`tools/run_tests.sh` refuses to run on any other version).
+
+## Round 5 — services, stability, and audit (RB-025/029/024/054/053)
+
+- **Nonverbal feedback audio (RB-025)**: four original synthesized cues
+  (`assets/audio/*.wav`: putt/cup/fall/click) played through a round-robin
+  pool on the Effects bus (which sends only to Master — unit-tested, never
+  the mic path). Wired: shot committed → putt, cup → cup chime, fall → fall,
+  Shoot button → click. Capture ducking (−18 dB on Music+Effects) restores
+  exactly; saved volumes now apply at boot and on change.
+- **Quality tiers (RB-029)**: `QualityDirector` autoload applies
+  low/medium/high to 3D resolution scale (0.7/1.0/1.0), MSAA (off/off/2x),
+  and shadow filter quality + atlas sizes via the actual 4.7.2 API
+  (`SHADOW_QUALITY_HARD/SOFT_HIGH` — there is no `shadow_quality_set` in this
+  build; pinned by usage). Applies at boot and on settings change; unknown
+  tiers fall back safely. Device performance *measurement* remains RB-052.
+- **Background/focus lifecycle (RB-024)**: integration test drives the real
+  `NOTIFICATION_APPLICATION_PAUSED` path mid-capture: tree paused, capture
+  closed, zero strokes, resume to READY, mic stays off.
+- **Stability suite** (`run_stability_tests.tscn`, 5th suite): QA-016 thirty
+  capture start/stop cycles (no duplicate owner, all reach Listening, clean
+  after), thirty pause-during-capture cycles (no stroke leak, mic stays off,
+  level teardown), QA-045 thirty level enter/exit cycles (node/memory growth
+  bounded ≤8 nodes / <8 MB). Desktop-sim stability; device interruptions
+  remain RB-002 matrix runs.
+- **Known cosmetic warning**: at headless-test exit the engine may report
+  2–4 leaked `AudioStreamPlayback` objects — playbacks still registered in
+  the audio server thread when the process quits mid-mix. `AudioDirector`
+  stops players and releases streams in `_exit_tree` (halves the count);
+  the rest is a shutdown race with no functional impact.
+- **Privacy/dependency audit (RB-053)**: `docs/PRIVACY_AND_DEPENDENCY_AUDIT.md`
+  — no network/telemetry surface (grep evidence), PCM structurally
+  un-persistable, single engine dependency, honest device-audit limits.
 
 ## Round 4 — Cloud Cliffs holes 2–3 (RB-040, issue #46)
 

@@ -520,6 +520,7 @@ func _error_copy(code: String) -> String:
 func _on_shoot() -> void:
 	if coordinator == null:
 		return
+	AudioDirector.play_effect("click")
 	var power := _power_slider.value / 100.0
 	coordinator.touch_shoot(power)
 
