@@ -1,8 +1,26 @@
 # Implementation Status
 
-Last updated: 2026-09-06 (round 2: review-fix pass) · Engine: Godot
+Last updated: 2026-09-07 (round 3: modular course kit) · Engine: Godot
 **4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`; `tools/run_tests.sh`
 refuses to run on any other version).
+
+## Round 3 — modular course kit (RB-028, issue #17)
+
+- **Six kit modules** under `scenes/course_kit/` (straight, corner, green,
+  ramp, rail, cliff_edge) on a 5 m grid with shared materials and wrapper-owned
+  collision — the M2 base for authoring CC02+ without sculpting each course.
+  Contract + provenance: `docs/ASSET_INVENTORY.md`; decisions D-017/D-018.
+- **Seam regression suite** `tests/integration/run_course_kit_tests.tscn`
+  (167 checks, third suite in `tools/run_tests.sh`): ray-probe seam contract
+  per module, low/high-speed seam crossing, roll-distance bands, corner
+  traversal without traps, ramp climb/descent across both seams, cliff-edge
+  openness, green containment — all through the real `ShotCommand` → impulse
+  path with per-tick containment sampling. Suite build caught and fixed a real
+  authoring bug (green far rail spanned the course lengthwise).
+- **Tuning log (D-018)**: measured flat deceleration is ≈ 0.55 + 0.08·v m/s²
+  (authored 0.55 + engine rolling losses), probe committed as
+  `tools/roll_decel_probe.gd`.
+- Kit showcase evidence capture is a release asset (see `docs/evidence/README.md`).
 
 ## Round 2 — review findings fixed
 

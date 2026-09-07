@@ -1,0 +1,53 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/course_kit/straight.tscn" id="1_straight"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/corner.tscn" id="2_corner"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/ramp.tscn" id="3_ramp"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/cliff_edge.tscn" id="4_cliff"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/green.tscn" id="5_green"]
+[ext_resource type="PackedScene" path="res://scenes/course_kit/rail.tscn" id="6_rail"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_showcase"]
+
+[sub_resource type="Sky" id="Sky_showcase"]
+sky_material = SubResource("SkyMaterial_showcase")
+
+[sub_resource type="Environment" id="Environment_showcase"]
+background_mode = 2
+sky = SubResource("Sky_showcase")
+
+[node name="KitShowcase" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_showcase")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.813798, -0.339207, 0.47192, 0, 0.812846, 0.582478, -0.581237, -0.47399, 0.661486, 0, 12, 0)
+shadow_enabled = true
+
+[node name="StraightA" parent="." instance=ExtResource("1_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CornerA" parent="." instance=ExtResource("2_corner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+
+[node name="StraightB" parent="." instance=ExtResource("1_straight")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5, 0, -5)
+
+[node name="RampA" parent="." instance=ExtResource("3_ramp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12)
+
+[node name="StraightC" parent="." instance=ExtResource("1_straight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -17)
+
+[node name="CliffA" parent="." instance=ExtResource("4_cliff")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -22)
+
+[node name="GreenA" parent="." instance=ExtResource("5_green")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -12)
+
+[node name="RailA" parent="." instance=ExtResource("6_rail")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -7)
+
+[node name="RailB" parent="." instance=ExtResource("6_rail")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -17)

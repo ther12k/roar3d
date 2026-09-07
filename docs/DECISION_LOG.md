@@ -141,3 +141,33 @@ experiments reverted); document the display quirk instead of chasing it.
 trait — e.g. the "orange" ball sampled (76,38,6) in PNG pixels. The quirk is
 in window capture on this X11/Vulkan config, not in scene authoring; device
 validation (RB-003) will judge the real look.
+
+## D-017 · Course kit is native Godot wrapper scenes on a 5 m grid
+**Decision.** RB-028 modules (straight/corner/green/ramp/rail/cliff_edge) are
+hand-written `.tscn` wrappers under `scenes/course_kit/`: 5 m pitch, origin at
+top-surface center, −Z forward, rails at x=±2.65, shared `.tres` materials,
+`Connect/In|Out` marker pivots, collision owned by wrapper `StaticBody3D`s
+(layer 2). A showcase scene + `tools/capture_course_kit.gd` provide visual
+evidence. Provenance and the full contract live in `docs/ASSET_INVENTORY.md`.
+**Why.** docs/07 §3 requires hand-owned wrappers so an artist re-export can
+never replace a tested collider; with no Blender toolchain in this
+environment, primitives keep the kit code-reviewable and budget-trivial
+(≤60 tris/module). GLB visuals slot under the same wrappers later.
+**Impact.** Levels CC02+ should compose these modules instead of sculpting
+turf boxes. Seam behavior is regression-tested at low/high speed, up/down the
+ramp, through the corner, and off the cliff (`run_course_kit_tests.tscn`).
+
+## D-018 · Flat-turf deceleration is velocity-dependent; tuning log updated
+**Decision.** Record measured reality: on the pinned engine the effective
+flat deceleration is ≈ **0.55 + 0.08·v m/s²**, not the authored constant
+0.55 (probe: `tools/roll_decel_probe.gd`). The extra v-proportional term
+comes from engine rolling losses (`angular_damp = 0.05` interacting with
+contact), accepted for now — balls stop a bit sooner than the pure model,
+which plays fine and matches docs/05 §2's "evaluate the small global damping"
+allowance. Kit stopping-distance bands assert against the measured model.
+**Why.** A p=0.25 roll measured 4.17 m vs the constant-0.55 prediction of
+5.35 m; asserting the ideal band would have been a false regression.
+**Impact.** Full tolerance-band sweep (QA-021) must use the measured model;
+re-run `tools/roll_decel_probe.gd` after any engine bump, friction, or
+damping change. Do not "fix" by raising authored resistance — that would
+double-count the same losses.
