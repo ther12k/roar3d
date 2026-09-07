@@ -1,0 +1,49 @@
+keys,en,id
+ROARBALL,Roarball,Roarball
+TAGLINE,Small shots. Big roars.,Tembakan kecil. Suara besar.
+PLAY,Play,Mainkan
+WORLD_MAP,World Map,Peta Dunia
+BALLS,Balls,Bola
+RESUME,Resume,Lanjut
+RESTART_HOLE,Restart Hole,Ulangi Hole
+MAP,Map,Peta
+NEXT_HOLE,Next Hole,Hole Berikutnya
+RETRY,Retry,Coba Lagi
+OVERVIEW,Overview,Tinjauan
+PAUSED,Paused,Jeda
+SHOOT,Shoot,Tembak
+INPUT_SWITCH,Input: %s (tap to switch),Input: %s (ketuk untuk ganti)
+QUALITY_BUTTON,Quality: %s (tap to change),Kualitas: %s (ketuk untuk ubah)
+REDUCED_MOTION_OFF,Reduced Motion: Off,Gerak Minimal: Mati
+REDUCED_MOTION_ON,Reduced Motion: On,Gerak Minimal: Nyala
+RECALIBRATE,Recalibrate Voice,Kalibrasi Ulang Suara
+INPUT_SOUND,Input & Sound,Input & Suara
+CONFIRM_ABANDON,Abandon this attempt? Completed holes stay saved.,Batalkan percobaan ini? Hole yang selesai tetap tersimpan.
+CONFIRM_YES,"Yes","Ya"
+CONFIRM_NO,"No, keep playing","Tidak, lanjut main"
+RETRY_SAVE,Retry Save,Coba Simpan
+SAVE_PROBLEM,Save problem — progress may not be kept. Results kept in memory.,Masalah simpan — hasil mungkin tidak tersimpan. Hasil ada di memori.
+OOB,Out of bounds · +1 stroke,Keluar batas · +1 pukulan
+BALL_MOVING,Ball moving,Bola bergerak
+STARTING_MIC,Starting mic...,Menyiapkan mikrofon...
+LISTENING,"Listening — hold, sound, release","Mendengar — tahan, bersuara, lepas"
+CAL_TITLE,Find your shot power,Tenkan kekuatan tembakanmu
+CAL_PRIVACY,"Sound is processed on this device only. Nothing is saved or uploaded. A comfortable voice is enough — no shouting.","Suara diproses di perangkat ini saja. Tidak ada yang disimpan atau diunggah. Suara biasa cukup — tidak perlu berteriak."
+USE_TOUCH,Use Touch instead,Pakai Sentuh saja
+CALIBRATED,"Calibrated! Hold, make a sound, release to shoot.","Terkalibrasi! Tahan, bersuara, lepaskan untuk menembak."
+HOLE_COMPLETE,Hole Complete!,Hole Selesai!
+NEW_BEST,New Best,Rekor Baru
+STROKES,Strokes %d,Pukulan %d
+PAR,Par %d,Par %d
+CHOOSE_INPUT,Choose your input,Pilih inputmu
+MODE_PRIVACY,"Use your sound to set shot power. Sound is processed on this device and is not saved or uploaded. You can play with touch instead.","Gunakan suaramu untuk kekuatan tembakan. Suara diproses di perangkat ini dan tidak disimpan atau diunggah. Kamu bisa main dengan sentuhan."
+USE_VOICE,Use Voice,Pakai Suara
+USE_TOUCH_MODE,Use Touch,Pakai Sentuhan
+BACK,Back,Kembali
+MIC_NOT_AVAILABLE,Microphone not available — Touch mode is fully playable.,Mikrofon tidak tersedia — mode Sentuh tetap bisa dimainkan penuh.
+HOME,Home,Beranda
+EQUIP,Equip,Pakai
+EQUIPPED,Equipped,Dipakai
+LOCKED,locked,terkunci
+NOT_PLAYED,Not played yet,Belum dimainkan
+BEST,Best: %d strokes · %s,Terbaik: %d pukulan · %s

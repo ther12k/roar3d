@@ -47,3 +47,7 @@ XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --pat
 echo
 echo "== Stability stress tests (30-cycle runs; takes ~2 min; isolated user://) =="
 XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . res://tests/integration/run_stability_tests.tscn 2>&1 | grep -E "FAIL|TESTS:|SCRIPT ERROR" | head -20
+
+echo
+echo "== UI screens tests (~1 min; isolated user://) =="
+XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . res://tests/integration/run_ui_screens_tests.tscn 2>&1 | grep -E "FAIL|TESTS:|SCRIPT ERROR" | head -20

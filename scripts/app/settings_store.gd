@@ -54,6 +54,10 @@ func set_flag(key: String, value: bool) -> void:
 		_update({key: value})
 
 
+func reduced_motion() -> bool:
+	return bool(settings.get("reduced_motion", false))
+
+
 func quality() -> String:
 	return String(settings.get("quality", "medium"))
 
@@ -109,5 +113,7 @@ func _load() -> void:
 		settings = backup["value"]
 		save()  # heal primary from backup
 		return
-	settings = SaveSchema.validate_settings({}).value  # defaults
+# Fresh profile: the schema requires schema_version in the input, so seed it
+# — validating an empty dict fails and would poison every later write.
+	settings = SaveSchema.validate_settings({"schema_version": SaveSchema.SUPPORTED_SETTINGS_VERSION}).value  # defaults
 	save()

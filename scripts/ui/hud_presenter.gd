@@ -49,6 +49,15 @@ var _result_title: Label
 var _result_stars: Label
 var _result_detail: Label
 var _save_banner: PanelContainer
+var _retry_save_button: Button
+var _oob_banner: PanelContainer
+var _pause_confirm_box: VBoxContainer
+var _mode_switch_button: Button
+var _quality_button: Button
+var _motion_button: Button
+var _recal_button: Button
+var _music_slider: HSlider
+var _effects_slider: HSlider
 var _stuck_button: Button
 var _cal_sheet: PanelContainer
 var _cal_step_label: Label
@@ -154,7 +163,7 @@ func _build() -> void:
 	_power_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_power_slider.custom_minimum_size = Vector2(0, 48)
 	_touch_box.add_child(_power_slider)
-	_shoot_button = RoarTheme.make_flat_button("Shoot")
+	_shoot_button = RoarTheme.make_flat_button(tr("SHOOT"))
 	_shoot_button.custom_minimum_size = Vector2(96, 56)
 	_shoot_button.pressed.connect(_on_shoot)
 	_touch_box.add_child(_shoot_button)
@@ -182,7 +191,7 @@ func _build() -> void:
 	_mode_chip.custom_minimum_size = Vector2(96, 48)
 	_mode_chip.pressed.connect(_on_mode_chip)
 	bottom_row.add_child(_mode_chip)
-	_overview_button = RoarTheme.make_flat_button("Overview", true)
+	_overview_button = RoarTheme.make_flat_button(tr("OVERVIEW"), true)
 	_overview_button.custom_minimum_size = Vector2(110, 48)
 	_overview_button.pressed.connect(func() -> void: overview_toggled.emit())
 	bottom_row.add_child(_overview_button)
@@ -192,9 +201,19 @@ func _build() -> void:
 	_stuck_button.pressed.connect(_on_stuck_recovery)
 	bottom_row.add_child(_stuck_button)
 
-	_save_banner = _make_banner("Save problem — progress may not be kept. Results kept in memory.", RoarTheme.DANGER)
+	_save_banner = _make_banner(tr("SAVE_PROBLEM"), RoarTheme.DANGER)
+	var save_row := HBoxContainer.new()
+	save_row.add_theme_constant_override("separation", 8)
+	_retry_save_button = RoarTheme.make_flat_button(tr("RETRY_SAVE"))
+	_retry_save_button.pressed.connect(on_retry_save_pressed)
+	save_row.add_child(_retry_save_button)
+	_save_banner.add_child(save_row)
 	_save_banner.visible = false
 	add_child(_save_banner)
+
+	_oob_banner = _make_banner(tr("OOB"), RoarTheme.WARM_ACCENT)
+	_oob_banner.visible = false
+	add_child(_oob_banner)
 
 	_build_pause_layer()
 	_build_result_layer()
@@ -231,24 +250,103 @@ func _build_pause_layer() -> void:
 	box.add_theme_constant_override("separation", 8)
 	_pause_layer.add_child(box)
 	var title := Label.new()
-	title.text = "Paused"
+	title.text = tr("PAUSED")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	var resume := RoarTheme.make_flat_button("Resume")
+	var resume := RoarTheme.make_flat_button(tr("RESUME"))
 	resume.pressed.connect(func() -> void: resume_requested.emit())
 	box.add_child(resume)
-	var restart := RoarTheme.make_flat_button("Restart Hole", true)
-	restart.pressed.connect(func() -> void:
+	var restart := RoarTheme.make_flat_button(tr("RESTART_HOLE"), true)
+	restart.pressed.connect(_on_restart_pressed)
+	box.add_child(restart)
+	# Restarting mid-attempt asks first; finished progress is never at risk.
+	_pause_confirm_box = VBoxContainer.new()
+	_pause_confirm_box.add_theme_constant_override("separation", 6)
+	_pause_confirm_box.visible = false
+	box.add_child(_pause_confirm_box)
+	var confirm_label := Label.new()
+	confirm_label.text = tr("CONFIRM_ABANDON")
+	confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	confirm_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_pause_confirm_box.add_child(confirm_label)
+	var confirm_yes := RoarTheme.make_flat_button(tr("CONFIRM_YES"), true)
+	confirm_yes.pressed.connect(func() -> void:
+		_pause_confirm_box.visible = false
 		resume_requested.emit()
 		restart_requested.emit()
 	)
-	box.add_child(restart)
-	var to_map := RoarTheme.make_flat_button("Map", true)
+	_pause_confirm_box.add_child(confirm_yes)
+	var confirm_no := RoarTheme.make_flat_button(tr("CONFIRM_NO"), true)
+	confirm_no.pressed.connect(func() -> void: _pause_confirm_box.visible = false)
+	_pause_confirm_box.add_child(confirm_no)
+	var to_map := RoarTheme.make_flat_button(tr("MAP"), true)
 	to_map.pressed.connect(func() -> void:
 		resume_requested.emit()
 		map_requested.emit()
 	)
 	box.add_child(to_map)
+
+	# --- Input & Sound (UI-09) ---
+	var settings_title := Label.new()
+	settings_title.text = tr("INPUT_SOUND")
+	settings_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	settings_title.add_theme_color_override("font_color", RoarTheme.TEXT_SECONDARY)
+	box.add_child(settings_title)
+	_mode_switch_button = RoarTheme.make_flat_button("", true)
+	_mode_switch_button.pressed.connect(func() -> void:
+		SettingsStore.set_input_mode("touch" if SettingsStore.is_voice_mode() else "voice")
+		_refresh_pause_settings())
+	box.add_child(_mode_switch_button)
+	var music_row := HBoxContainer.new()
+	music_row.add_theme_constant_override("separation", 8)
+	box.add_child(music_row)
+	music_row.add_child(Label.new())
+	# (label text set below to keep node refs simple)
+	var music_label := music_row.get_child(0) as Label
+	music_label.text = "Music"
+	music_label.custom_minimum_size = Vector2(64, 24)
+	_music_slider = HSlider.new()
+	_music_slider.min_value = 0.0
+	_music_slider.max_value = 1.0
+	_music_slider.step = 0.05
+	_music_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_music_slider.value = float(SettingsStore.settings.get("music_volume", 0.7))
+	_music_slider.value_changed.connect(func(v: float) -> void:
+		SettingsStore.set_volumes(v, float(SettingsStore.settings.get("effects_volume", 0.8))))
+	music_row.add_child(_music_slider)
+	var effects_row := HBoxContainer.new()
+	effects_row.add_theme_constant_override("separation", 8)
+	box.add_child(effects_row)
+	var effects_label := Label.new()
+	effects_label.text = "Effects"
+	effects_label.custom_minimum_size = Vector2(64, 24)
+	effects_row.add_child(effects_label)
+	_effects_slider = HSlider.new()
+	_effects_slider.min_value = 0.0
+	_effects_slider.max_value = 1.0
+	_effects_slider.step = 0.05
+	_effects_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_effects_slider.value = float(SettingsStore.settings.get("effects_volume", 0.8))
+	_effects_slider.value_changed.connect(func(v: float) -> void:
+		SettingsStore.set_volumes(float(SettingsStore.settings.get("music_volume", 0.7)), v))
+	effects_row.add_child(_effects_slider)
+	_quality_button = RoarTheme.make_flat_button("", true)
+	_quality_button.pressed.connect(func() -> void:
+		var next_quality: String = {"low": "medium", "medium": "high", "high": "low"}.get(SettingsStore.quality(), "medium")
+		SettingsStore.set_quality(next_quality)
+		_refresh_pause_settings())
+	box.add_child(_quality_button)
+	_motion_button = RoarTheme.make_flat_button("", true)
+	_motion_button.pressed.connect(func() -> void:
+		SettingsStore.set_flag("reduced_motion", not SettingsStore.reduced_motion())
+		_refresh_pause_settings())
+	box.add_child(_motion_button)
+	_recal_button = RoarTheme.make_flat_button(tr("RECALIBRATE"), true)
+	_recal_button.pressed.connect(func() -> void:
+		resume_requested.emit()
+		open_calibration_sheet())
+	box.add_child(_recal_button)
+	_refresh_pause_settings()
 	_pause_layer.visible = false
 	add_child(_pause_layer)
 
@@ -271,10 +369,10 @@ func _build_result_layer() -> void:
 	_result_detail = Label.new()
 	_result_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_result_detail)
-	var next := RoarTheme.make_flat_button("Next Hole")
+	var next := RoarTheme.make_flat_button(tr("NEXT_HOLE"))
 	next.pressed.connect(func() -> void: next_hole_requested.emit())
 	box.add_child(next)
-	var retry := RoarTheme.make_flat_button("Retry", true)
+	var retry := RoarTheme.make_flat_button(tr("RETRY"), true)
 	retry.pressed.connect(func() -> void:
 		_result_layer.visible = false
 		restart_requested.emit()
@@ -300,11 +398,11 @@ func _build_calibration_sheet() -> void:
 	box.add_theme_constant_override("separation", 8)
 	_cal_sheet.add_child(box)
 	var title := Label.new()
-	title.text = "Find your shot power"
+	title.text = tr("CAL_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var privacy := Label.new()
-	privacy.text = "Sound is processed on this device only. Nothing is saved or uploaded. A comfortable voice is enough — no shouting."
+	privacy.text = tr("CAL_PRIVACY")
 	privacy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	privacy.add_theme_color_override("font_color", RoarTheme.TEXT_SECONDARY)
 	box.add_child(privacy)
@@ -319,7 +417,7 @@ func _build_calibration_sheet() -> void:
 	_cal_start_button = RoarTheme.make_flat_button("Start")
 	_cal_start_button.pressed.connect(_on_cal_start)
 	box.add_child(_cal_start_button)
-	var use_touch := RoarTheme.make_flat_button("Use Touch instead", true)
+	var use_touch := RoarTheme.make_flat_button(tr("USE_TOUCH"), true)
 	use_touch.pressed.connect(func() -> void:
 		SettingsStore.set_input_mode("touch")
 		_close_calibration_sheet()
@@ -374,7 +472,7 @@ func on_calibration_stage_done(summary: Dictionary) -> void:
 	_cal_stage_index += 1
 	if _cal_stage_index >= CAL_STAGES.size():
 		_close_calibration_sheet()
-		_status_label.text = "Calibrated! Hold, make a sound, release to shoot."
+		_status_label.text = tr("CALIBRATED")
 		return
 	_update_calibration_copy("Got it.")
 
@@ -470,24 +568,24 @@ func _on_state(state_name: String) -> void:
 	_power_slider.editable = not rolling
 	_mic_button.disabled = rolling
 	if rolling:
-		_status_label.text = "Ball moving"
+		_status_label.text = tr("BALL_MOVING")
 
 
 func _on_strokes(count: int) -> void:
-	_strokes_label.text = "Strokes %d" % count
+	_strokes_label.text = tr("STROKES") % count
 
 
 func set_hole_info(title: String, par: int) -> void:
 	_hole_label.text = title
-	_par_label.text = "Par %d" % par
+	_par_label.text = tr("PAR") % par
 
 
 func _on_voice_status(status: Dictionary) -> void:
 	match String(status["phase"]):
 		"STARTING":
-			_status_label.text = "Starting mic..."
+			_status_label.text = tr("STARTING_MIC")
 		"LISTENING":
-			_status_label.text = "Listening — hold, sound, release"
+			_status_label.text = tr("LISTENING")
 		_:
 			_status_label.text = _error_copy(String(status["error_code"]))
 
@@ -557,6 +655,37 @@ func _on_stuck_recovery() -> void:
 		session.request_stuck_recovery()
 
 
+## Reflects persisted settings onto the pause-sheet controls.
+func _refresh_pause_settings() -> void:
+	_mode_switch_button.text = tr("INPUT_SWITCH") % ("Voice" if SettingsStore.is_voice_mode() else "Touch")
+	_quality_button.text = tr("QUALITY_BUTTON") % SettingsStore.quality()
+	_motion_button.text = tr("REDUCED_MOTION_ON") if SettingsStore.reduced_motion() else tr("REDUCED_MOTION_OFF")
+	_recal_button.visible = SettingsStore.is_voice_mode()
+
+
+func _on_restart_pressed() -> void:
+	# Restarting with strokes already spent is a real abandon: confirm first.
+	if session != null and session.strokes > 0:
+		_pause_confirm_box.visible = true
+		return
+	_pause_confirm_box.visible = false
+	resume_requested.emit()
+	restart_requested.emit()
+
+
+## Save-warning recovery (UI-10): results stay in memory until a save lands.
+func on_retry_save_pressed() -> void:
+	if ProgressStore.retry_save():
+		_save_banner.visible = false
+
+
+## Out-of-bounds feedback (UI-08): brief banner, no modal penalty screen.
+func show_out_of_bounds() -> void:
+	_oob_banner.visible = true
+	var timer := get_tree().create_timer(2.5, true)
+	timer.timeout.connect(func() -> void: _oob_banner.visible = false)
+
+
 func show_pause() -> void:
 	_pause_layer.visible = true
 
@@ -574,11 +703,11 @@ func set_overview_indicator(active: bool) -> void:
 
 
 func _on_hole_completed(result: Dictionary) -> void:
-	_result_title.text = "Hole Complete!"
+	_result_title.text = tr("HOLE_COMPLETE")
 	_result_stars.text = "*".repeat(int(result["stars"]))
 	var detail := "%d strokes · par %d" % [int(result["strokes"]), int(result["par"])]
 	if bool(result.get("is_new_best", false)):
-		detail += " · New Best"
+		detail += " · " + tr("NEW_BEST")
 	_result_detail.text = detail
 	_result_layer.visible = true
 

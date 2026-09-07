@@ -22,6 +22,9 @@ SettingsStore="*res://scripts/app/settings_store.gd"
 AudioDirector="*res://scripts/app/audio_director.gd"
 QualityDirector="*res://scripts/app/quality_director.gd"
 
+[internationalization]
+locale/translations=PackedStringArray("res://assets/locale/strings.en.translation", "res://assets/locale/strings.id.translation")
+
 [display]
 
 window/size/viewport_width=390

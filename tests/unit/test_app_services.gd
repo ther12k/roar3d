@@ -59,6 +59,8 @@ func _quality_tests() -> void:
 	QualityDirector.apply("high")
 	harness.check_near(viewport.scaling_3d_scale, 1.0, 0.001, "high tier restores full resolution")
 	harness.check_eq(viewport.msaa_3d, Viewport.MSAA_2X, "high tier enables 2x MSAA")
+	SettingsStore.set_quality("high")
+	harness.check_eq(SettingsStore.quality(), "high", "set_quality persists through the store (first-run bootstrap fixed)")
 	SettingsStore.set_quality("medium")
 	QualityDirector.apply("medium")
 	harness.check_near(viewport.scaling_3d_scale, 1.0, 0.001, "medium tier keeps full resolution")

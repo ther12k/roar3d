@@ -68,13 +68,42 @@ func _ready() -> void:
 	# Nonverbal feedback cues (RB-025): effects bus only, never the mic path.
 	session.shot_committed.connect(func(_shot: ShotCommand) -> void: AudioDirector.play_effect("putt"))
 	session.hole_completed.connect(func(_result: Dictionary) -> void: AudioDirector.play_effect("cup"))
-	ball.fall_detected.connect(func(_reason: String) -> void: AudioDirector.play_effect("fall"))
+	ball.fall_detected.connect(func(_reason: String) -> void: _on_any_fall())
+	level.kill_zone_entered.connect(func() -> void: _on_any_fall())
 
+	_apply_equipped_cosmetic()
 	_build_aim_guide()
 	ball.freeze = true
 	session.start_level()
 	ball.freeze = false
 	_maybe_capture_evidence_screenshot()
+
+
+## Cosmetics are visual-only (docs/07 §5): collider, mass, and physics stay
+## identical; the equipped ball just re-tints the body mesh.
+func _apply_equipped_cosmetic() -> void:
+	var equipped := ProgressStore.equipped_cosmetic()
+	if equipped == ProgressionRules.COSMETIC_LION:
+		return
+	var mesh: MeshInstance3D = ball.find_child("BallMesh", true, false)
+	if mesh == null:
+		return
+	var material := StandardMaterial3D.new()
+	match equipped:
+		ProgressionRules.COSMETIC_PANDA:
+			material.albedo_color = Color(0.92, 0.93, 0.95)
+		ProgressionRules.COSMETIC_ROBOT:
+			material.albedo_color = Color(0.62, 0.68, 0.75)
+		_:
+			return
+	mesh.material_override = material
+
+
+## Fall coalescing for presentation only: either the kill plane or the kill
+## volume may fire; penalties remain the session's once-only decision.
+func _on_any_fall() -> void:
+	AudioDirector.play_effect("fall")
+	hud.show_out_of_bounds()
 
 
 func _build_aim_guide() -> void:
@@ -212,7 +241,7 @@ func _restart_level() -> void:
 
 func _to_map() -> void:
 	_teardown()
-	AppRouter.goto_home()  # map screen lands with RB-031; home is the graybox exit
+	AppRouter.goto_map()
 
 
 func _next_hole() -> void:

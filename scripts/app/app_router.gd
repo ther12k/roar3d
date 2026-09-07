@@ -6,6 +6,8 @@ extends Node
 
 const MAIN_SCENE := "res://scenes/app/main.tscn"
 const HOME_SCENE := "res://scenes/app/home.tscn"
+const MAP_SCENE := "res://scenes/app/world_map.tscn"
+const COLLECTION_SCENE := "res://scenes/app/collection.tscn"
 const GAME_SCENE := "res://scenes/game/game_root.tscn"
 
 var current_level_id := ""
@@ -14,6 +16,16 @@ var current_level_id := ""
 func goto_home() -> void:
 	current_level_id = ""
 	_deferred_change(HOME_SCENE)
+
+
+func goto_map() -> void:
+	current_level_id = ""
+	_deferred_change(MAP_SCENE)
+
+
+func goto_collection() -> void:
+	current_level_id = ""
+	_deferred_change(COLLECTION_SCENE)
 
 
 func goto_game(level_id: String) -> void:
