@@ -19,6 +19,7 @@ const CAL_STAGE_SECONDS := 1.5
 @onready var hud: HUDPresenter = $GameUI/SafeAreaRoot
 
 var _aim_guide: Node3D = null
+var _aim_segments: Array[MeshInstance3D] = []
 var _face_rig: Node3D = null
 var _mouth_smile: MeshInstance3D = null
 var _mouth_o: MeshInstance3D = null
@@ -61,6 +62,7 @@ func _ready() -> void:
 	session.setup(ball, level, level_id, int(meta["par"]), int(meta["max_strokes"]))
 	coordinator.session = session
 	coordinator.voice = voice
+	coordinator.camera_rig = camera_rig
 	camera_rig.session = session
 	camera_rig.level = level
 	# A saved calibration profile is the only way Voice power mapping works;
@@ -187,17 +189,63 @@ func _spawn_scenery(level_id: String) -> void:
 	var seed_value := hash(level_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	for i: int in 3:
+	var half_w := minf(bounds.size.x * 0.5, 3.0)
+	# Floating islands flanking BOTH sides of the course, close enough to the
+	# rails and high enough to read in the narrow portrait camera frame.
+	for i: int in 10:
 		var variant := rng.randi_range(0, 3)
-		var piece := Scenery.build(variant, rng.randf_range(0.8, 1.4))
+		var piece := Scenery.build(variant, rng.randf_range(1.0, 2.2))
 		add_child(piece)
+		_disable_cast_shadow(piece)
 		var side := -1.0 if i % 2 == 0 else 1.0
-		var drop := rng.randf_range(2.0, 4.5)
-		var along := bounds.position.z + bounds.size.z * (0.25 + 0.3 * float(i))
+		var out := rng.randf_range(half_w + 1.2, half_w + 2.8)
 		piece.position = Vector3(
-			bounds.position.x + bounds.size.x + 3.0 + drop * side * 0.5,
-			-drop,
-			along
+			side * out,
+			rng.randf_range(0.4, 3.2),
+			bounds.position.z + bounds.size.z * (0.25 + 0.7 * rng.randf())
+		)
+		piece.rotation_degrees = Vector3(0.0, rng.randf_range(0.0, 360.0), 0.0)
+	_spawn_clouds(bounds, level_id)
+
+
+## Dressing must never shadow the playfield: the sun sits at ~40°, so island
+## and cloud shadows would sweep across the course and darken every hole.
+func _disable_cast_shadow(node: Node) -> void:
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_disable_cast_shadow(child)
+
+
+## Puffs BEYOND the course ends (course kit forward is -Z) so they sit small
+## and bright near the horizon inside the narrow portrait frustum.
+func _spawn_clouds(bounds: AABB, level_id: String) -> void:
+	var cloud_material := StandardMaterial3D.new()
+	cloud_material.albedo_color = Color(1.0, 1.0, 1.0)
+	cloud_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(level_id)
+	for c: int in 7:
+		var cloud := Node3D.new()
+		add_child(cloud)
+		_disable_cast_shadow(cloud)
+		var puff_count := rng.randi_range(2, 3)
+		for p: int in puff_count:
+			var puff := MeshInstance3D.new()
+			var sphere := SphereMesh.new()
+			sphere.radius = rng.randf_range(1.8, 3.4)
+			sphere.height = sphere.radius * 2.0
+			puff.mesh = sphere
+			puff.material_override = cloud_material
+			puff.scale = Vector3(1.4, 0.5, 1.0)
+			puff.position = Vector3(p * sphere.radius * 1.1 - sphere.radius * 0.5, rng.randf_range(-0.3, 0.3), 0.0)
+			cloud.add_child(puff)
+		var ahead := bounds.position.z - rng.randf_range(14.0, 46.0)
+		var behind := bounds.end.z + rng.randf_range(16.0, 40.0)
+		cloud.position = Vector3(
+			rng.randf_range(-14.0, 14.0),
+			rng.randf_range(2.5, 7.0),
+			ahead if c % 3 != 2 else behind
 		)
 
 
@@ -247,7 +295,7 @@ func _build_face_rig() -> void:
 	_face_rig = Node3D.new()
 	_face_rig.name = "FaceRig"
 	ball.add_child(_face_rig)
-	for face_part in ["EyeLeft", "EyeRight", "Muzzle", "Nose"]:
+	for face_part in ["EyeWhiteLeft", "EyeWhiteRight", "EyeLeft", "EyeRight", "Muzzle", "Nose"]:
 		var mesh := ball.get_node_or_null(NodePath(face_part))
 		if mesh is Node3D:
 			(mesh as Node3D).reparent(_face_rig)
@@ -333,8 +381,8 @@ func _apply_world_sky(level_id: String) -> void:
 
 
 func _build_aim_guide() -> void:
-	# Graybox dotted guide: flat segments pointing along the aim direction;
-	# not a trajectory promise.
+	# Dotted guide pointing along the aim direction; length and color grow
+	# with slingshot power while dragging (never a trajectory promise).
 	_aim_guide = Node3D.new()
 	_aim_guide.name = "AimGuide"
 	for i: int in 6:
@@ -349,6 +397,7 @@ func _build_aim_guide() -> void:
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		segment.material_override = material
 		_aim_guide.add_child(segment)
+		_aim_segments.append(segment)
 	camera_rig.add_child(_aim_guide)
 
 
@@ -375,6 +424,19 @@ func _process(delta: float) -> void:
 		var ball_pos := session.ball.global_position
 		_aim_guide.global_position = ball_pos + Vector3(0.0, 0.03, 0.0)
 		_aim_guide.look_at(ball_pos + session.aim_direction, Vector3.UP)
+		# Slingshot feedback: more segments + whisper→roar tint as power grows.
+		var power := 0.0
+		if coordinator != null and coordinator.is_slinging():
+			power = coordinator.slingshot_power()
+		var lit := 6 if power <= 0.0 else 2 + int(round(power * 4.0))
+		var tint := Color(1.0, 1.0, 1.0, 0.55) if power <= 0.0 \
+			else RoarTheme.METER_WHISPER.lerp(RoarTheme.METER_ROAR, power)
+		for i: int in _aim_segments.size():
+			var segment := _aim_segments[i]
+			segment.visible = i < lit
+			var material := segment.material_override as StandardMaterial3D
+			if material != null:
+				material.albedo_color = tint
 
 
 # --- Pause / overview: one authority, one order of operations ---

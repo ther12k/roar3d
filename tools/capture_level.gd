@@ -17,7 +17,7 @@ func _run() -> void:
 	if level_id.is_empty():
 		level_id = "CC01"
 	AppRouter.current_level_id = level_id
-	SettingsStore.set_input_mode(OS.get_environment("INPUT_MODE") if not OS.get_environment("INPUT_MODE").is_empty() else "voice")
+	SettingsStore.set_input_mode(OS.get_environment("INPUT_MODE") if not OS.get_environment("INPUT_MODE").is_empty() else "touch")
 	var packed: PackedScene = load("res://scenes/game/game_root.tscn")
 	if packed == null:
 		printerr("game_root scene failed to load")
@@ -25,6 +25,24 @@ func _run() -> void:
 		return
 	var root: GameRoot = packed.instantiate()
 	add_child(root)
+	if not OS.get_environment("ROAR3D_DEBUG_LIGHT").is_empty():
+		await get_tree().process_frame
+		for light in root.find_children("*", "DirectionalLight3D", true, false):
+			var l := light as DirectionalLight3D
+			print("LIGHT path=%s energy=%.2f visible_in_tree=%s color=%s shadow=%s ambient=%s" % [
+				l.get_path(), l.light_energy, l.is_visible_in_tree(), l.light_color,
+				l.shadow_enabled, l.light_angular_distance])
+		var env_node := root.get_node_or_null("WorldRoot/Lighting/WorldEnvironment")
+		if env_node != null:
+			var env: Environment = (env_node as WorldEnvironment).environment
+			print("ENV bg_mode=%d ambient_source=%d ambient_energy=%.2f tonemap=%d" % [
+				env.background_mode, env.ambient_light_source, env.ambient_light_energy, env.tonemap_mode])
+	if not OS.get_environment("ROAR3D_FORCE_SUN").is_empty():
+		var sun := root.get_node("WorldRoot/Lighting/DirectionalLight3D") as DirectionalLight3D
+		sun.light_energy = 5.0
+		sun.shadow_enabled = false
+		sun.global_transform.basis = Basis(Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0))
+		print("FORCE_SUN applied")
 	var ready := false
 	for i: int in SETTLE_FRAMES_MAX:
 		await get_tree().process_frame

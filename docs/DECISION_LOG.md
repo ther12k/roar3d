@@ -173,3 +173,28 @@ allowance. Kit stopping-distance bands assert against the measured model.
 re-run `tools/roll_decel_probe.gd` after any engine bump, friction, or
 damping change. Do not "fix" by raising authored resistance — that would
 double-count the same losses.
+
+## D-019 · Play camera sun was shining out of the ground; slingshot is the primary touch gesture
+**Decision.** Two user-reported defects from a desktop play session, both fixed:
+(1) The DirectionalLight3D transform in `game_root.tscn` was hand-authored in
+column-major order, but Godot serializes `Transform3D` row-major — the sun
+traveled upward out of the ground at ~40°. Every course, ball, and prop was
+lit only by sky ambient (measured turf ≈ 10% of albedo); scenery read only
+because its materials are unshaded. The sun is now authored via
+`rotation_degrees = (-48, 28, 0)` (no hand-written basis), energy 1.15,
+shadows on, and scenery/cloud dressing casts no shadows. (2) Touch mode's
+slider + Shoot button is demoted to a fallback; the primary gesture is a
+slingshot — press anywhere on the playfield, drag back (screen-down = shoot
+forward relative to the camera's flat basis), release to commit. Drag length
+maps to power (150 px = 100%, 22 px dead zone cancels), the 3D aim guide
+extends and tints whisper→roar live, and the HUD power bar shows the exact
+power release will commit (FR-04). Pause/background interrupts close the
+gesture without a stroke.
+**Why.** A dark, faceless world read as unfinished even where content
+existed; and slider-based touch shooting was undiscoverable and not
+competitive with standard mini-golf drag gestures on a phone.
+**Impact.** Recapture any visual evidence after this commit — all prior
+level captures show the ambient-only world. Input tests assert the
+slingshot mapping, dead zone, and interrupt paths
+(`run_integration_tests.gd`). If the sun transform is ever re-authored by
+hand, set `rotation_degrees`, never a raw basis.

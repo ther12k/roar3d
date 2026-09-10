@@ -57,7 +57,12 @@ func _frame_ready(delta: float) -> void:
 		global_position = target
 	else:
 		global_position = global_position.lerp(target, minf(delta * FOLLOW_LERP, 1.0))
-	_look_between(session.ball.global_position, level.cup_position())
+	# On long holes the fit distance clamps and the ball would sit behind the
+	# bottom console; bias the look target toward the ball as the hole grows.
+	var span := session.ball.global_position.distance_to(level.cup_position())
+	var fit := clampf(span * 0.75 + 3.0, 5.0, 14.0)
+	var bias := remap(fit, 5.0, 14.0, 0.45, 0.26)
+	_look_between(session.ball.global_position, level.cup_position(), bias)
 
 
 func _frame_follow(delta: float) -> void:
@@ -85,8 +90,8 @@ func _frame_overview(_delta: float) -> void:
 	camera.look_at(center, Vector3.UP)
 
 
-func _look_between(a: Vector3, b: Vector3) -> void:
-	camera.look_at(a.lerp(b, 0.45), Vector3.UP)
+func _look_between(a: Vector3, b: Vector3, t: float = 0.45) -> void:
+	camera.look_at(a.lerp(b, t), Vector3.UP)
 
 
 ## Overview framing only; pausing during inspection is owned by GameRoot so

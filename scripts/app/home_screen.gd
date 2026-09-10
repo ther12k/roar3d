@@ -131,8 +131,8 @@ func _ready() -> void:
 	hero_vbox.add_child(hero_pitch)
 
 	var hero_guide := Label.new()
-	hero_guide.text = "Aim your line with touch.
-Make a sound to set your power.
+	hero_guide.text = "Drag back anywhere & release to shoot —
+or hold the mic and make a sound.
 Whisper to putt · Roar to leap!"
 	hero_guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_guide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -200,6 +200,9 @@ Whisper to putt · Roar to leap!"
 	var card_title := Label.new()
 	card_title.text = "Use your voice to power every shot!"
 	card_title.add_theme_font_size_override("font_size", 13)
+	card_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_title.clip_text = true
 	card_info.add_child(card_title)
 
 	var card_sub := Label.new()
@@ -218,8 +221,8 @@ Whisper to putt · Roar to leap!"
 		"Switch to %s" % ("Touch" if SettingsStore.is_voice_mode() else "Voice"),
 		true
 	)
-	mode_switch.custom_minimum_size = Vector2(100, 44)
-	mode_switch.add_theme_font_size_override("font_size", 12)
+	mode_switch.custom_minimum_size = Vector2(84, 44)
+	mode_switch.add_theme_font_size_override("font_size", 11)
 	mode_switch.pressed.connect(func() -> void:
 		if SettingsStore.is_voice_mode():
 			SettingsStore.set_input_mode("touch")

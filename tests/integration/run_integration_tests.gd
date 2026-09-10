@@ -27,6 +27,8 @@ func _run_all() -> void:
 	await _test_voice_clap_cannot_shoot()
 	await _test_voice_cancel_and_interrupt_no_stroke()
 	await _test_voice_double_release_single_shot()
+	await _test_voice_fine_aim_drag_rotates()
+	await _test_slingshot_dead_zone_and_interrupt()
 	await _test_pause_resume_through_ui()
 	await _test_overview_through_ui()
 	await _test_slider_shoot_matches_displayed_power()
@@ -552,26 +554,94 @@ func _test_slider_shoot_matches_displayed_power() -> void:
 
 func _test_aim_drag_falls_through_hud() -> void:
 	harness.suite = "ui.aim_fallthrough"
+	SettingsStore.set_input_mode("touch")
 	var env := await _make_full_game()
 	var session: GameSessionController = env["session"]
 	var hud: HUDPresenter = env["hud"]
-	var initial_aim := session.aim_direction
-	# Drag on empty playfield: HUD root must not swallow the events.
+	var coordinator: InputCoordinator = env["coordinator"]
+	# Empty-playfield drag in touch mode IS the slingshot gesture.
 	_push_mouse_press(Vector2(195, 400))
-	_push_mouse_motion(Vector2(195, 400), Vector2(70, 0))
-	_push_mouse_release(Vector2(265, 400))
+	_push_mouse_motion(Vector2(195, 400), Vector2(0, 80))
 	await get_tree().process_frame
-	var angle_after_drag := initial_aim.angle_to(session.aim_direction)
-	harness.check(angle_after_drag > 0.03, "empty-area drag rotates aim (%.3f rad)" % angle_after_drag)
-	# Drag over the slider: the control consumes it; aim must not change.
+	harness.check(coordinator.is_slinging(), "empty-area drag starts the slingshot")
+	harness.check(coordinator.slingshot_valid(), "80px drag passes the dead zone")
+	_push_mouse_release(Vector2(195, 480))
+	var rolling := await _await_state(session, [GameStateMachine.State.ROLLING], 10)
+	harness.check(rolling, "slingshot release commits the shot")
+	harness.check_eq(session.strokes, 1, "one drag-release spends one stroke")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE], 900)
+	# Drag over the slider: the control consumes it; no slingshot, no stroke.
+	var strokes_before := session.strokes
 	var aim_before_slider := session.aim_direction
 	var slider_center: Vector2 = (hud._power_slider as Control).get_global_rect().get_center()
 	_push_mouse_press(slider_center)
 	_push_mouse_motion(slider_center, Vector2(60, 0))
 	_push_mouse_release(slider_center + Vector2(60, 0))
 	await get_tree().process_frame
+	harness.check(not coordinator.is_slinging(), "slider drag never opens a slingshot")
 	harness.check(aim_before_slider.angle_to(session.aim_direction) < 0.001, "slider interaction never changes aim")
+	harness.check_eq(session.strokes, strokes_before, "slider drag spends no stroke")
 	await _free_full_game(env)
+
+
+func _test_voice_fine_aim_drag_rotates() -> void:
+	harness.suite = "integration.voice_fine_aim"
+	SettingsStore.set_input_mode("voice")
+	var env := await _make_voice_env()
+	var session: GameSessionController = env["session"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	var initial_aim := session.aim_direction
+	coordinator._unhandled_input(_synthetic_button(Vector2(200, 300), true))
+	coordinator._unhandled_input(_synthetic_motion(Vector2(140, 300), Vector2(-60, 0)))
+	harness.check(not coordinator.is_slinging(), "voice mode drag is fine-aim, not slingshot")
+	var angle := initial_aim.angle_to(session.aim_direction)
+	harness.check(absf(angle) > 0.2, "voice-mode horizontal drag rotates aim (%.3f rad)" % angle)
+	harness.check_eq(session.strokes, 0, "fine-aim drag spends no stroke")
+	coordinator._unhandled_input(_synthetic_button(Vector2(140, 300), false))
+	harness.check_eq(session.strokes, 0, "voice-mode release spends no stroke")
+	SettingsStore.set_input_mode("touch")
+	await _free_voice_env(env)
+
+
+func _test_slingshot_dead_zone_and_interrupt() -> void:
+	harness.suite = "integration.slingshot_guard"
+	SettingsStore.set_input_mode("touch")
+	var env := await _make_voice_env()
+	var session: GameSessionController = env["session"]
+	var coordinator: InputCoordinator = env["coordinator"]
+	# Dead-zone tap never spends a stroke.
+	coordinator._unhandled_input(_synthetic_button(Vector2(200, 300), true))
+	coordinator._unhandled_input(_synthetic_motion(Vector2(206, 306), Vector2(6, 6)))
+	coordinator._unhandled_input(_synthetic_button(Vector2(206, 306), false))
+	await get_tree().process_frame
+	harness.check_eq(session.strokes, 0, "dead-zone release spends no stroke")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "dead-zone release stays READY")
+	# Full-stretch mapping: downward pull aims camera-forward at 100%.
+	coordinator._unhandled_input(_synthetic_button(Vector2(200, 300), true))
+	coordinator._unhandled_input(_synthetic_motion(Vector2(200, 600), Vector2(0, 300)))
+	harness.check_between(coordinator.slingshot_power(), 0.99, 1.0, "overshoot clamps to full power")
+	harness.check(session.aim_direction.dot(Vector3.FORWARD) > 0.99, "downward pull aims camera-forward")
+	# Interrupting (pause/background) mid-drag closes the gesture safely.
+	coordinator.interrupt_capture()
+	harness.check(not coordinator.is_slinging(), "interrupt closes the slingshot")
+	coordinator._unhandled_input(_synthetic_button(Vector2(200, 600), false))
+	harness.check_eq(session.strokes, 0, "release after interrupt spends no stroke")
+	await _free_voice_env(env)
+
+
+func _synthetic_button(pos: Vector2, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = pos
+	return event
+
+
+func _synthetic_motion(pos: Vector2, relative: Vector2) -> InputEventMouseMotion:
+	var event := InputEventMouseMotion.new()
+	event.position = pos
+	event.relative = relative
+	return event
 
 
 func _test_uncalibrated_voice_gated_to_calibration() -> void:

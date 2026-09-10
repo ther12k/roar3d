@@ -673,6 +673,7 @@ func bind(p_session: GameSessionController, p_coordinator: InputCoordinator, p_v
 	voice = p_voice
 	camera_rig = p_camera
 	coordinator.hud = self
+	coordinator.aim_gesture_changed.connect(_on_aim_gesture)
 	session.session_state_changed.connect(_on_state)
 	session.strokes_changed.connect(_on_strokes)
 	session.hole_completed.connect(_on_hole_completed)
@@ -724,7 +725,9 @@ func _animate_audio_feedback(delta: float) -> void:
 ## FR-04: power displayed must match what will be committed
 func _update_power_display() -> void:
 	var power := 0.0
-	if voice != null and voice.is_listening():
+	if coordinator != null and coordinator.is_slinging():
+		power = coordinator.slingshot_power()
+	elif voice != null and voice.is_listening():
 		power = float(voice.published_preview()["power"])
 	elif session.fsm.state in [
 		GameStateMachine.State.ROLLING,
@@ -763,6 +766,9 @@ func _refresh_input_mode() -> void:
 
 func _on_state(state_name: String) -> void:
 	_state_label.text = state_name.to_lower()
+	# The tray status line carries all player guidance; the floating state
+	# word only earns screen space during transitions (rolling/settling).
+	_state_label.visible = state_name.to_lower() != "ready"
 	var rolling := session.fsm.state in [
 		GameStateMachine.State.ROLLING,
 		GameStateMachine.State.SETTLING,
@@ -774,10 +780,27 @@ func _on_state(state_name: String) -> void:
 	if rolling:
 		_status_label.text = tr("BALL_MOVING")
 	elif session.fsm.state == GameStateMachine.State.READY:
-		if SettingsStore.is_voice_mode():
-			_status_label.text = "Hold mic & sound to shoot!"
-		else:
-			_status_label.text = "Aim, set power & tap Shoot!"
+		_show_ready_copy()
+
+
+func _show_ready_copy() -> void:
+	if SettingsStore.is_voice_mode():
+		_status_label.text = "Hold mic & sound to shoot!"
+	else:
+		_status_label.text = "Touch & drag anywhere: pull back, release!"
+
+
+## Live slingshot feedback while the player stretches a shot.
+func _on_aim_gesture(active: bool, power: float, valid: bool) -> void:
+	if session.fsm.state != GameStateMachine.State.READY:
+		return
+	if not active:
+		_show_ready_copy()  # drag canceled without a shot
+		return
+	if valid:
+		_status_label.text = "Release to shoot!  %d%%" % roundi(power * 100.0)
+	else:
+		_status_label.text = "Keep dragging to charge..."
 
 
 func _on_strokes(count: int) -> void:
