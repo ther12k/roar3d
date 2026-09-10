@@ -50,3 +50,5 @@ NOT_PLAYED,Not played yet,Belum dimainkan
 BEST,Best: %d strokes · %s,Terbaik: %d pukulan · %s
 WORLD_LOCKED,Clear the previous world to unlock.,Selesaikan dunia sebelumnya untuk membuka.
 BALLS_SUB,Looks never change how the ball rolls.,Tampilan tidak mengubah cara bola bergulir.
+ATTEMPT_DONE,Attempt Finished,Percobaan Selesai
+STROKE_LIMIT,Stroke limit reached.,Batas pukulan tercapai.

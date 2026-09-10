@@ -56,6 +56,9 @@ func _ready() -> void:
 		return
 
 	_apply_world_sky(level_id)
+	# Portal Peaks gets the sunset track; Cloud Cliffs keeps the sunny loop
+	# (same-track requests are no-ops, so menu → CC never restarts the music).
+	AudioDirector.play_music("sunset" if level_id.begins_with("PP") else "sunny")
 	_maybe_build_perf_overlay()
 	_spawn_scenery(level_id)
 	_spawn_hole_sign(level_id, int(meta["par"]))

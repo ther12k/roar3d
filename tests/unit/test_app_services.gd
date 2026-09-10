@@ -48,6 +48,24 @@ func _audio_tests() -> void:
 	var fx_bus := AudioServer.get_bus_index(AudioDirector.EFFECTS_BUS)
 	harness.check_eq(String(AudioServer.get_bus_send(fx_bus)), "Master", "effects bus sends to Master, not the mic path")
 
+	# Music tracks: known loops start and loop; unknown tracks rejected;
+	# requesting the playing track again never restarts it.
+	harness.check(not AudioDirector.play_music("does_not_exist"), "unknown music track rejected")
+	harness.check(AudioDirector.play_music("sunny"), "sunny loop starts")
+	harness.check(AudioDirector.current_music_track() == "sunny", "sunny track registered")
+	var playback := AudioDirector._music_player.get_playback_position()
+	AudioDirector.play_music("sunny")
+	harness.check_near(AudioDirector._music_player.get_playback_position(), playback, 0.05,
+		"same-track request does not restart the music")
+	harness.check(AudioDirector.play_music("sunset"), "sunset loop starts")
+	harness.check(AudioDirector.current_music_track() == "sunset", "track switch registered")
+	var stream: AudioStreamWAV = AudioDirector._music_player.stream
+	harness.check(stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "music stream loops forward")
+	harness.check(stream.loop_end > 0, "loop end covers the rendered frames")
+	AudioDirector.stop_music()
+	harness.check(not AudioDirector._music_player.playing, "stop_music halts playback")
+	harness.check(AudioDirector.current_music_track().is_empty(), "track cleared on stop")
+
 
 func _quality_tests() -> void:
 	var viewport: Viewport = Engine.get_main_loop().root

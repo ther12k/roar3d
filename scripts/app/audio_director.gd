@@ -13,6 +13,10 @@ const DUCK_DB := 18.0
 # instead of living in the script constant table past the exit-time resource
 # check (which flagged them as leaked at shutdown).
 const EFFECT_NAMES := ["putt", "cup", "fall", "click"]
+const MUSIC_TRACKS := {
+	"sunny": "res://assets/audio/music_sunny.wav",
+	"sunset": "res://assets/audio/music_sunset.wav",
+}
 const PLAYERS := 4  # round-robin so overlapping short cues never cut each other
 
 var _streams: Dictionary = {}
@@ -21,6 +25,8 @@ var _effects_volume := 0.8
 var _ducked_for_capture := false
 var _pool: Array[AudioStreamPlayer] = []
 var _next_player := 0
+var _music_player: AudioStreamPlayer
+var _current_track := ""
 
 
 func _ready() -> void:
@@ -43,6 +49,9 @@ func _ready() -> void:
 		player.bus = EFFECTS_BUS
 		add_child(player)
 		_pool.append(player)
+	_music_player = AudioStreamPlayer.new()
+	_music_player.bus = MUSIC_BUS
+	add_child(_music_player)
 
 
 func _ensure_bus(bus_name: String) -> void:
@@ -87,6 +96,39 @@ func _exit_tree() -> void:
 		if is_instance_valid(player):
 			player.stop()
 			player.stream = null
+	if is_instance_valid(_music_player):
+		_music_player.stop()
+		_music_player.stream = null
+
+
+## Start a named looping background track (original, synthesized — see
+## tools/make_music.py). Requesting the track that is already playing is a
+## no-op, so scene changes never restart the music. The Music bus ducking
+## during voice capture applies automatically (docs/02 §7).
+func play_music(track: String) -> bool:
+	if not MUSIC_TRACKS.has(track):
+		return false
+	if _current_track == track and _music_player.playing:
+		return true
+	var stream: AudioStreamWAV = load(String(MUSIC_TRACKS[track]))
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	# 16-bit stereo: 4 bytes per frame.
+	stream.loop_end = stream.data.size() / 4
+	_music_player.stream = stream
+	_music_player.play()
+	_current_track = track
+	return true
+
+
+func stop_music() -> void:
+	_current_track = ""
+	_music_player.stop()
+	_music_player.stream = null
+
+
+func current_music_track() -> String:
+	return _current_track
 
 
 ## Play a named nonverbal feedback cue. Returns false for unknown names.

@@ -941,9 +941,9 @@ func _on_hole_completed(result: Dictionary) -> void:
 
 
 func _on_attempt_finished() -> void:
-	_result_title.text = "Attempt Finished"
+	_result_title.text = tr("ATTEMPT_DONE")
 	_result_stars.text = ""
-	_result_detail.text = "Stroke limit reached."
+	_result_detail.text = tr("STROKE_LIMIT")
 	_result_layer.visible = true
 
 

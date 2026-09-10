@@ -13,6 +13,7 @@ var _wave_tick := 0.0
 
 func _ready() -> void:
 	theme = RoarTheme.build()
+	AudioDirector.play_music("sunny")
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	# Fullscreen background panel
