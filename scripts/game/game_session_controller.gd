@@ -14,10 +14,14 @@ signal attempt_finished()
 signal stuck_recovery_changed(available: bool)
 signal save_warning()
 
-const CUP_HORIZONTAL_MAX := 0.28
+# Forgiveness tuning (D-020, from the first human playtest): finishing putts
+# previously demanded ±0.02 power precision against a 0.28 m / 1.2 m/s capture
+# band and lip-outs dominated. The wider band keeps fast flyovers (≈7 m/s in
+# QA-024) rejected while letting honest approach speeds drop.
+const CUP_HORIZONTAL_MAX := 0.34
 const CUP_HEIGHT_MIN := 0.15
 const CUP_HEIGHT_MAX := 0.40
-const CUP_SPEED_MAX := 1.2
+const CUP_SPEED_MAX := 1.5
 const STUCK_WATCHDOG_SEC := 20.0
 
 @export var ball: BallController

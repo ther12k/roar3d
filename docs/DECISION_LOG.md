@@ -198,3 +198,21 @@ level captures show the ambient-only world. Input tests assert the
 slingshot mapping, dead zone, and interrupt paths
 (`run_integration_tests.gd`). If the sun transform is ever re-authored by
 hand, set `rotation_degrees`, never a raw basis.
+
+## D-020 · First-playtest forgiveness: wider cup capture, eased slingshot power
+**Decision.** The first human playtest reported "gameplay so hard." The
+measured culprit was finishingputt precision, not the shot model: the cup
+captured only inside 0.28 m / 1.2 m/s, and the linear drag->power slingshot
+compressed the usable low end (p < 0.1) into ~15 px of drag. Changes: cup
+band widened to **0.34 m / 1.5 m/s** (QA-024's ≈7 m/s flyover still rejects
+with wide margin), slingshot max drag 150→170 px with an eased curve
+**p = (drag/max)^1.35**, so the CC02 finishing band (0.05–0.08) sits right
+at the 22 px dead-zone edge. The impulse model `1.5 + 8.5·p^1.6` and every
+route-test power are unchanged.
+**Why.** docs/POWER_BANDS.md predicted this exact fix if playtesters
+reported frustration; a lip-out on an honest approach reads as unfair,
+while wide-open capture is invisible to skilled play (fast balls still fly
+over).
+**Impact.** Route suites re-run green without power retunes. Any future
+shot-model change re-opens this: re-run the roll probe and route suites,
+and re-derive the slingshot easing against the finishing bands.

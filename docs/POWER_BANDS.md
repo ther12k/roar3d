@@ -28,9 +28,11 @@ itself (feel, frustration, fun) remains the open part of RB-047.
 ## Observations for the human playtest (RB-047)
 
 - Finishing putts have narrow bands (±0.02 p) because the 1.5 N·s impulse
-  floor dominates short taps; the 1.2 m/s capture limit means feel matters.
-  Consider a lower impulse floor or speed-up capture band if playtesters
-  report frustration.
+  floor dominates short taps. First human playtest confirmed the frustration
+  (D-020): the cup capture band widened to 0.34 m / 1.5 m/s, and the touch
+  slingshot now eases drag->power (p = (drag/170 px)^1.35) so the 0.05–0.08
+  finishing band sits at the dead-zone edge. The impulse model itself is
+  unchanged — all bands above remain authoritative for route tests.
 - Gate holes reward waiting — confirm the wait is communicated (gate
   travel is visible from the staging plateau).
 - Corner/bank holes need the "shallow angle" lesson taught (CC03 is the

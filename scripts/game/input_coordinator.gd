@@ -13,9 +13,10 @@ signal aim_gesture_changed(active: bool, power: float, valid: bool)
 
 const AIM_DRAG_SENSITIVITY := 0.008  # radians per logical px (voice fine-aim)
 const AIM_KEY_STEP := 0.06
-const SLING_MAX_DRAG_PX := 150.0  # drag length that reaches 100% power
+const SLING_MAX_DRAG_PX := 170.0  # drag length that reaches 100% power
 const SLING_DEAD_ZONE_PX := 22.0  # shorter drags cancel (tap = no stroke)
 const SLING_MIN_POWER := 0.06
+const SLING_EASE := 1.35  # drag->power curve: fine control near zero power
 
 var session: GameSessionController
 var voice: VoiceInputService
@@ -50,8 +51,12 @@ func is_slinging() -> bool:
 	return _sling_active
 
 
+## Eased drag->power (D-020): the curve puts the finishing-putt band
+## (p ≈ 0.05–0.08) right at the dead-zone edge, where a short cautious drag
+## lands naturally, while full power stays at the max drag length.
 func slingshot_power() -> float:
-	return clampf(_sling_vector.length() / SLING_MAX_DRAG_PX, SLING_MIN_POWER, 1.0)
+	var linear := clampf(_sling_vector.length() / SLING_MAX_DRAG_PX, SLING_MIN_POWER, 1.0)
+	return pow(linear, SLING_EASE)
 
 
 func slingshot_valid() -> bool:
