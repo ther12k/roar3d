@@ -52,6 +52,8 @@ func _ready() -> void:
 		return
 
 	_apply_world_sky(level_id)
+	_spawn_scenery(level_id)
+	_spawn_hole_sign(level_id, int(meta["par"]))
 	session.setup(ball, level, level_id, int(meta["par"]), int(meta["max_strokes"]))
 	coordinator.session = session
 	coordinator.voice = voice
@@ -101,20 +103,56 @@ func _ready() -> void:
 ## identical; the equipped ball just re-tints the body mesh.
 func _apply_equipped_cosmetic() -> void:
 	var equipped := ProgressStore.equipped_cosmetic()
-	if equipped == ProgressionRules.COSMETIC_LION:
-		return
 	var mesh: MeshInstance3D = ball.find_child("BallMesh", true, false)
+	var mane: MeshInstance3D = ball.find_child("ManeMesh", true, false)
+	var is_mascot := equipped in [
+		ProgressionRules.COSMETIC_LION, ProgressionRules.COSMETIC_PANDA, ProgressionRules.COSMETIC_ROBOT,
+	]
+	# Faceless golf-ball skins hide the mane and the billboard face rig.
+	if mane != null:
+		mane.visible = is_mascot
+	if _face_rig != null:
+		_face_rig.visible = is_mascot
 	if mesh == null:
 		return
 	var material := StandardMaterial3D.new()
 	match equipped:
+		ProgressionRules.COSMETIC_LION:
+			return  # authored lion materials stay
 		ProgressionRules.COSMETIC_PANDA:
 			material.albedo_color = Color(0.92, 0.93, 0.95)
 		ProgressionRules.COSMETIC_ROBOT:
 			material.albedo_color = Color(0.62, 0.68, 0.75)
+		ProgressionRules.SKIN_CLASSIC:
+			material.albedo_color = Color(0.96, 0.96, 0.94)
+			material.roughness = 0.35
+		ProgressionRules.SKIN_GOLD:
+			material.albedo_color = Color(0.95, 0.76, 0.31)
+			material.metallic = 0.6
+			material.roughness = 0.25
+		ProgressionRules.SKIN_TIGER:
+			material.albedo_color = Color(0.91, 0.51, 0.24)
+			material.roughness = 0.45
+		ProgressionRules.SKIN_LEAF:
+			material.albedo_color = Color(0.35, 0.70, 0.29)
+			material.roughness = 0.4
 		_:
 			return
 	mesh.material_override = material
+	# Tiger stripes: two dark rings hugging the sphere.
+	if equipped == ProgressionRules.SKIN_TIGER:
+		for offset in [0.09, -0.09]:
+			var stripe := MeshInstance3D.new()
+			stripe.name = "TigerStripe"
+			var ring := TorusMesh.new()
+			ring.inner_radius = 0.225
+			ring.outer_radius = 0.255
+			stripe.mesh = ring
+			var dark := StandardMaterial3D.new()
+			dark.albedo_color = Color(0.16, 0.12, 0.1)
+			stripe.material_override = dark
+			stripe.position = Vector3(0, offset, 0)
+			ball.add_child(stripe)
 
 
 ## Fall coalescing for presentation only: either the kill plane or the kill
@@ -122,6 +160,67 @@ func _apply_equipped_cosmetic() -> void:
 func _on_any_fall() -> void:
 	AudioDirector.play_effect("fall")
 	hud.show_out_of_bounds()
+
+
+## Asset-pack dressing: a few scenery islands OUTSIDE course bounds and a
+## wooden "HOLE N · Par X" sign at the tee. Deterministic per level id.
+func _spawn_scenery(level_id: String) -> void:
+	var bounds := level.course_bounds()
+	var seed_value := hash(level_id)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	for i: int in 3:
+		var variant := rng.randi_range(0, 3)
+		var piece := Scenery.build(variant, rng.randf_range(0.8, 1.4))
+		add_child(piece)
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var drop := rng.randf_range(2.0, 4.5)
+		var along := bounds.position.z + bounds.size.z * (0.25 + 0.3 * float(i))
+		piece.position = Vector3(
+			bounds.position.x + bounds.size.x + 3.0 + drop * side * 0.5,
+			-drop,
+			along
+		)
+
+
+func _spawn_hole_sign(level_id: String, par: int) -> void:
+	var sign_root := Node3D.new()
+	sign_root.name = "HoleSign"
+	add_child(sign_root)
+	var spawn_pos := level.spawn_transform().origin
+	var to_cup := ShotMath.horizontal_direction(level.cup_position() - spawn_pos)
+	if to_cup == Vector3.ZERO:
+		to_cup = Vector3(0, 0, -1)
+	var side := to_cup.cross(Vector3.UP).normalized()
+	sign_root.global_position = spawn_pos + side * 1.9 + Vector3(0, 0, 0)
+	sign_root.look_at(sign_root.global_position + side, Vector3.UP)
+	var post := MeshInstance3D.new()
+	var post_box := BoxMesh.new()
+	post_box.size = Vector3(0.1, 0.9, 0.1)
+	post.mesh = post_box
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color("7a5230")
+	post.material_override = wood
+	post.position = Vector3(0, 0.45, 0)
+	sign_root.add_child(post)
+	var board := MeshInstance3D.new()
+	var board_box := BoxMesh.new()
+	board_box.size = Vector3(0.95, 0.5, 0.06)
+	board.mesh = board_box
+	var board_mat := StandardMaterial3D.new()
+	board_mat.albedo_color = Color("c9a36a")
+	board.material_override = board_mat
+	board.position = Vector3(0, 1.0, 0)
+	sign_root.add_child(board)
+	var label := Label3D.new()
+	label.text = "%s\nPar %d" % [level_id, par]
+	label.font_size = 40
+	label.modulate = Color("3a2a18")
+	label.outline_size = 8
+	label.outline_modulate = Color("f5e9c8")
+	label.pixel_size = 0.004
+	label.position = Vector3(0, 1.0, 0.04)
+	sign_root.add_child(label)
 
 
 ## Camera-facing face rig (docs/07 §5): the lion face billboards toward the

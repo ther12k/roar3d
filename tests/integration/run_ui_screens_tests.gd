@@ -176,13 +176,15 @@ func _test_collection_and_unlocks() -> void:
 		var button := node as Button
 		if button.text in ["Equip", "Equipped"]:
 			equip_buttons += 1
-	harness.check_eq(equip_buttons, 3, "three cosmetic cards render")
+	harness.check_eq(equip_buttons, 7, "seven cosmetic cards render (3 mascots + 4 skins)")
 	# Locked cosmetics are refused at the store even from the UI.
 	var locked_before := ProgressStore.equipped_cosmetic()
 	var robot_id := ProgressionRules.COSMETIC_ROBOT
 	var denied := not ProgressStore.equip_cosmetic(robot_id)
 	harness.check(denied, "locked Robot equip refused (nothing finished yet)")
 	harness.check_eq(ProgressStore.equipped_cosmetic(), locked_before, "equip state unchanged after refusal")
+	var classic_ok := ProgressStore.equip_cosmetic(ProgressionRules.SKIN_CLASSIC)
+	harness.check(classic_ok, "Classic skin equips freely (always unlocked)")
 	# Completing CC06 unlocks Panda (derived from completions, not stored flags).
 	var recorded: Dictionary = ProgressStore.record_completion("CC06", 2, 3, "ui-test-cc06-%d" % (Time.get_ticks_msec()))
 	harness.check(not recorded.is_empty(), "CC06 completion recorded for unlock test")

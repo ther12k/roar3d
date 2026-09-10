@@ -7,8 +7,15 @@ extends RefCounted
 const COSMETIC_LION := "lion"
 const COSMETIC_PANDA := "panda"
 const COSMETIC_ROBOT := "robot"
+const SKIN_CLASSIC := "classic"
+const SKIN_GOLD := "gold"
+const SKIN_TIGER := "tiger"
+const SKIN_LEAF := "leaf"
 const PANDA_UNLOCK_LEVEL := "CC06"
 const ROBOT_UNLOCK_LEVEL := "PP06"
+const GOLD_UNLOCK_LEVEL := "CC03"
+const TIGER_UNLOCK_LEVEL := "PP03"
+const TOTAL_LEVELS_FOR_LEAF := 12
 
 
 ## A level is unlocked when it is first in order, or when the immediately
@@ -39,12 +46,18 @@ static func next_playable(ordered_ids: Array, completed: Dictionary, last_played
 ## Robot after PP06, Lion always. No currency, no random unlocks.
 static func is_cosmetic_unlocked(cosmetic_id: String, completed: Dictionary) -> bool:
 	match cosmetic_id:
-		COSMETIC_LION:
+		COSMETIC_LION, SKIN_CLASSIC:
 			return true
 		COSMETIC_PANDA:
 			return completed.has(PANDA_UNLOCK_LEVEL)
 		COSMETIC_ROBOT:
 			return completed.has(ROBOT_UNLOCK_LEVEL)
+		SKIN_GOLD:
+			return completed.has(GOLD_UNLOCK_LEVEL)
+		SKIN_TIGER:
+			return completed.has(TIGER_UNLOCK_LEVEL)
+		SKIN_LEAF:
+			return completed.size() >= TOTAL_LEVELS_FOR_LEAF
 		_:
 			return false
 

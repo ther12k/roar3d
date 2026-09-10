@@ -101,6 +101,17 @@ func _progression(h: TestHarness) -> void:
 	h.check(ProgressionRules.is_cosmetic_unlocked("panda", {"CC06": true}), "panda unlocks after CC06")
 	h.check(ProgressionRules.is_cosmetic_unlocked("robot", {"PP06": true}), "robot unlocks after PP06")
 	h.check(not ProgressionRules.is_cosmetic_unlocked("robot", {"CC06": true}), "robot still locked after CC06")
+	h.check(ProgressionRules.is_cosmetic_unlocked("classic", {}), "classic skin always unlocked")
+	h.check(not ProgressionRules.is_cosmetic_unlocked("gold", {"CC01": true}), "gold locked before CC03")
+	h.check(ProgressionRules.is_cosmetic_unlocked("gold", {"CC03": true}), "gold unlocks after CC03")
+	h.check(not ProgressionRules.is_cosmetic_unlocked("tiger", {"CC06": true}), "tiger locked before PP03")
+	h.check(ProgressionRules.is_cosmetic_unlocked("tiger", {"PP03": true}), "tiger unlocks after PP03")
+	var almost_all := {}
+	for lid: String in ["CC01", "CC02", "CC03", "CC04", "CC05", "CC06", "PP01", "PP02", "PP03", "PP04", "PP05"]:
+		almost_all[lid] = true
+	h.check(not ProgressionRules.is_cosmetic_unlocked("leaf", almost_all), "leaf locked at 11 holes")
+	almost_all["PP06"] = true
+	h.check(ProgressionRules.is_cosmetic_unlocked("leaf", almost_all), "leaf unlocks after all 12")
 	h.check_eq(
 		ProgressionRules.world_stars({"CC01": {"best_stars": 3}, "CC02": {"best_stars": 2}}, ["CC01", "CC02", "CC03"]),
 		5,

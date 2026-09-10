@@ -8,7 +8,7 @@ extends RefCounted
 const SUPPORTED_PROGRESS_VERSION := 1
 const SUPPORTED_SETTINGS_VERSION := 1
 const CONTENT_VERSION := "mvp-1"
-const KNOWN_COSMETICS: Array[String] = ["lion", "panda", "robot"]
+const KNOWN_COSMETICS: Array[String] = ["lion", "panda", "robot", "classic", "gold", "tiger", "leaf"]
 const KNOWN_QUALITIES: Array[String] = ["low", "medium", "high"]
 const KNOWN_INPUT_MODES: Array[String] = ["touch", "voice"]
 const KNOWN_ROUTE_CATEGORIES: Array[String] = ["built_in", "wired", "bluetooth", "unknown"]

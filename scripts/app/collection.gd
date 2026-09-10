@@ -4,9 +4,13 @@ extends Control
 ## locked ball never equips it. Equip changes visuals only.
 
 const CARDS := [
-	{"id": "lion", "title": "Lion", "how": "Always yours."},
-	{"id": "panda", "title": "Panda", "how": "Finish Cloud Cliffs (hole 6)."},
-	{"id": "robot", "title": "Robot", "how": "Finish Portal Peaks (hole 6)."},
+	{"id": "lion", "title": "🦁 Lion", "how": "Always yours."},
+	{"id": "classic", "title": "⚪ Classic", "how": "Always yours."},
+	{"id": "gold", "title": "🟡 Gold", "how": "Finish Cloud Cliffs hole 3."},
+	{"id": "tiger", "title": "🐯 Tiger", "how": "Finish Portal Peaks hole 3."},
+	{"id": "leaf", "title": "🍃 Leaf", "how": "Finish all 12 holes."},
+	{"id": "panda", "title": "🐼 Panda", "how": "Finish Cloud Cliffs (hole 6)."},
+	{"id": "robot", "title": "🤖 Robot", "how": "Finish Portal Peaks (hole 6)."},
 ]
 
 var _equip_buttons: Dictionary = {}
