@@ -4,6 +4,15 @@ Last updated: 2026-09-07 (round 5: audio/quality/lifecycle/stability batch) ·
 Engine: Godot **4.7.2.stable.official.ed1daf0bf** (pinned in `ENGINE_VERSION`;
 `tools/run_tests.sh` refuses to run on any other version).
 
+## Round 7 — asset-pack skins, scenery, dressing (user visual pass 2)
+
+- **Ball skins** (asset pack): Classic (always), Gold (after CC03),
+  Tiger (after PP03, stripe rings), Leaf (after all 12) — plus the three
+  mascots; faceless skins hide mane/face-rig, mascots keep it.
+- **Scenery**: deterministic floating scenery islands (pine/leafy/rock/
+  bush) outside course bounds; wooden HOLE sign at every tee.
+- **Flags**: red in Cloud Cliffs, blue in Portal Peaks.
+
 ## Round 6 — all twelve holes + obstacles complete (RB-037/038/039/041/042/043)
 
 - **Obstacles**:

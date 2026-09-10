@@ -68,6 +68,8 @@ the `Connect` pivots rotate with them.
 | Moving Gate | `scenes/obstacles/moving_gate.tscn` | ther12k | Hand-written .tscn | Original | 24 | 2 shared | Wrapper | Sliding obstacle with physics delta sync |
 | Bounce Pad | `scenes/obstacles/bounce_pad.tscn` | ther12k | Hand-written .tscn | Original | 32 | 1 shared | Wrapper | Trigger pad with entry latch |
 | Portal Pair | `scenes/obstacles/portal_pair.tscn` | ther12k | Hand-written .tscn | Original | 48 | 3 shared | Wrapper | Linked entry and exit with velocity mapping |
+| Scenery islands | `scripts/course_kit/scenery.gd` | ther12k | Runtime primitives | Original | ~40/cluster | inline | None (decor) | Pine/leafy/rock/bush variants; placed outside CourseBounds |
+| Hole sign | runtime in `game_root.gd` | ther12k | Runtime primitives | Original | 2 boxes + Label3D | inline | None (decor) | Wooden 'HOLE ID · Par N' board at each tee |
 | Game scene | `scenes/game/game_root.tscn` | ther12k | Hand-written .tscn | Original | ~2k (lion ball) | ~8 inline | Wrapper | Sky, lighting, lion ball (mane/eyes/muzzle), HUD |
 | Ball visuals | `game_root.tscn` sub-resources | ther12k | Godot primitives | Original | ~2k | inline | n/a | Sphere collider 0.25 m owned by `BallController`; cosmetics never change it |
 
