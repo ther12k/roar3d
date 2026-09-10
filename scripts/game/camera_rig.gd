@@ -6,7 +6,7 @@ extends Node3D
 ## Reduced Motion (settings) removes the soft pull entirely.
 
 const FOV := 45.0
-const ELEVATION := 0.87  # ~50 deg
+const ELEVATION := 0.68  # ~38 deg — keeps the ball clear of the bottom tray
 const FOLLOW_LERP := 4.0
 const OVERVIEW_EXTRA_HEIGHT := 7.0
 const OVERVIEW_EXTRA_BACK := 6.0

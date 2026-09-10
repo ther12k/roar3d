@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Material" path="res://scenes/course_kit/materials/kit_turf.tres" id="1_turf"]
 [ext_resource type="Material" path="res://scenes/course_kit/materials/kit_rail_wood.tres" id="2_rail"]
+[ext_resource type="Script" path="res://scripts/course_kit/island_look.gd" id="90_island"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_turf"]
 size = Vector3(10, 0.5, 5)
@@ -83,3 +84,7 @@ material_override = ExtResource("2_rail")
 
 [node name="In" type="Marker3D" parent="Connect"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.5)
+
+[node name="IslandLook" type="Node3D" parent="."]
+script = ExtResource("90_island")
+turf_size = Vector3(10, 0.5, 5)

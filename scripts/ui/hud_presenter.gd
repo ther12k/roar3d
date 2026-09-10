@@ -142,7 +142,7 @@ func _build() -> void:
 	_tray_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_tray_panel.offset_left = safe.left + 4
 	_tray_panel.offset_right = -safe.right - 4
-	_tray_panel.offset_top = -safe.bottom - 210
+	_tray_panel.offset_top = -safe.bottom - 184
 	_tray_panel.offset_bottom = -safe.bottom
 	var tray_style := StyleBoxFlat.new()
 	tray_style.bg_color = RoarTheme.NAVY_PANEL
@@ -153,13 +153,13 @@ func _build() -> void:
 	tray_style.shadow_size = 10
 	tray_style.content_margin_left = 12
 	tray_style.content_margin_right = 12
-	tray_style.content_margin_top = 10
-	tray_style.content_margin_bottom = 8
+	tray_style.content_margin_top = 8
+	tray_style.content_margin_bottom = 6
 	_tray_panel.add_theme_stylebox_override("panel", tray_style)
 	add_child(_tray_panel)
 
 	_tray = VBoxContainer.new()
-	_tray.add_theme_constant_override("separation", 6)
+	_tray.add_theme_constant_override("separation", 4)
 	_tray_panel.add_child(_tray)
 
 	# 1. Status Bar with Soundwave Graphic
@@ -711,17 +711,14 @@ func _animate_audio_feedback(delta: float) -> void:
 			_wave_label.add_theme_color_override("font_color", RoarTheme.VOICE_CYAN)
 		if _cal_wave_label != null:
 			_cal_wave_label.text = waves[idx]
-		# Pulse the mic button visually
-		_mic_pulse_tick += delta * 6.0
-		var glow := sin(_mic_pulse_tick) * 0.5 + 0.5
 		if _mic_button != null:
-			_mic_button.text = "🎙\nROAR!"
+			_mic_button.text = "🎙 LISTENING!"
 	else:
 		if _wave_label != null:
 			_wave_label.text = " — — — "
 			_wave_label.add_theme_color_override("font_color", RoarTheme.TEXT_SECONDARY)
 		if _mic_button != null:
-			_mic_button.text = "🎙\nHOLD"
+			_mic_button.text = "🎙 ROAR!"
 
 
 ## FR-04: power displayed must match what will be committed

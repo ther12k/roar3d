@@ -42,6 +42,14 @@ func _run() -> void:
 	var out_path := OS.get_environment("LEVEL_CAPTURE_OUT")
 	if out_path.is_empty():
 		out_path = "/tmp/roar3d_%s_ready.png" % level_id.to_lower()
+	# Ground-truth: pixels at the ball's projected screen position.
+	var cam := root.camera_rig.camera
+	var screen_pos := cam.unproject_position(root.ball.global_position)
+	var img_size := image.get_size()
+	if screen_pos.x >= 0 and screen_pos.y >= 0 and screen_pos.x < img_size.x and screen_pos.y < img_size.y:
+		var px := int(screen_pos.x)
+		var c := image.get_pixel(int(screen_pos.x), clampi(int(screen_pos.y), 0, img_size.y - 1))
+		print("ball_screen=%s px_color=%s console_top_expected=%d" % [screen_pos, c.to_html(false), img_size.y - 190])
 	var err := image.save_png(out_path)
 	if err != OK:
 		printerr("PNG save failed: %s" % error_string(err))

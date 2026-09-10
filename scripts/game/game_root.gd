@@ -19,6 +19,10 @@ const CAL_STAGE_SECONDS := 1.5
 @onready var hud: HUDPresenter = $GameUI/SafeAreaRoot
 
 var _aim_guide: Node3D = null
+var _face_rig: Node3D = null
+var _mouth_smile: MeshInstance3D = null
+var _mouth_o: MeshInstance3D = null
+var _expression_timer: SceneTreeTimer = null
 var _cal_stage: String = ""
 var _cal_room: Dictionary = {}
 var _cal_soft: Dictionary = {}
@@ -47,6 +51,7 @@ func _ready() -> void:
 		AppRouter.goto_home()
 		return
 
+	_apply_world_sky(level_id)
 	session.setup(ball, level, level_id, int(meta["par"]), int(meta["max_strokes"]))
 	coordinator.session = session
 	coordinator.voice = voice
@@ -66,12 +71,25 @@ func _ready() -> void:
 	hud.map_requested.connect(_to_map)
 	hud.next_hole_requested.connect(_next_hole)
 	# Nonverbal feedback cues (RB-025): effects bus only, never the mic path.
-	session.shot_committed.connect(func(_shot: ShotCommand) -> void: AudioDirector.play_effect("putt"))
-	session.hole_completed.connect(func(_result: Dictionary) -> void: AudioDirector.play_effect("cup"))
+	session.shot_committed.connect(func(_shot: ShotCommand) -> void:
+		AudioDirector.play_effect("putt")
+		_spawn_burst(ball.global_position, Color("6fce4e"), 10, 2.0)
+		_set_expression("surprised")
+	)
+	session.hole_completed.connect(func(_result: Dictionary) -> void:
+		AudioDirector.play_effect("cup")
+		_spawn_burst(level.cup_position() + Vector3(0, 0.4, 0), RoarTheme.WARM_ACCENT, 26, 5.0)
+		_spawn_burst(level.cup_position() + Vector3(0, 0.5, 0), RoarTheme.VOICE_CYAN, 18, 4.5)
+		_spawn_burst(level.cup_position() + Vector3(0, 0.6, 0), RoarTheme.PRIMARY_GREEN, 18, 4.5)
+		_set_expression("happy")
+	)
 	ball.fall_detected.connect(func(_reason: String) -> void: _on_any_fall())
 	level.kill_zone_entered.connect(func() -> void: _on_any_fall())
+	ball.settled.connect(func(_t: Transform3D, _ok: bool) -> void:
+		_spawn_burst(ball.global_position, Color(0.75, 0.72, 0.66), 8, 1.2))  # landing dust
 
 	_apply_equipped_cosmetic()
+	_build_face_rig()
 	_build_aim_guide()
 	ball.freeze = true
 	session.start_level()
@@ -106,6 +124,97 @@ func _on_any_fall() -> void:
 	hud.show_out_of_bounds()
 
 
+## Camera-facing face rig (docs/07 §5): the lion face billboards toward the
+## camera independently of the rolling sphere so the mascot stays readable.
+func _build_face_rig() -> void:
+	_face_rig = Node3D.new()
+	_face_rig.name = "FaceRig"
+	ball.add_child(_face_rig)
+	for face_part in ["EyeLeft", "EyeRight", "Muzzle", "Nose"]:
+		var mesh := ball.get_node_or_null(NodePath(face_part))
+		if mesh is Node3D:
+			(mesh as Node3D).reparent(_face_rig)
+	# Expressions: smile (default) and O-mouth (surprised)
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color("2a1f1a")
+	_mouth_smile = MeshInstance3D.new()
+	var smile_mesh := BoxMesh.new()
+	smile_mesh.size = Vector3(0.13, 0.035, 0.02)
+	_mouth_smile.mesh = smile_mesh
+	_mouth_smile.material_override = dark
+	_mouth_smile.position = Vector3(0, -0.095, 0.245)
+	_mouth_smile.rotation_degrees = Vector3(0, 0, 8)
+	_face_rig.add_child(_mouth_smile)
+	_mouth_o = MeshInstance3D.new()
+	var o_mesh := SphereMesh.new()
+	o_mesh.radius = 0.035
+	o_mesh.height = 0.03
+	_mouth_o.mesh = o_mesh
+	_mouth_o.material_override = dark
+	_mouth_o.position = Vector3(0, -0.10, 0.245)
+	_mouth_o.visible = false
+	_face_rig.add_child(_mouth_o)
+
+
+func _set_expression(kind: String) -> void:
+	if _mouth_smile == null or _mouth_o == null:
+		return
+	match kind:
+		"surprised":
+			_mouth_smile.visible = false
+			_mouth_o.visible = true
+			_expression_timer = get_tree().create_timer(0.9, true)
+			_expression_timer.timeout.connect(func() -> void: _set_expression("idle"))
+		"happy":
+			_mouth_smile.visible = true
+			_mouth_o.visible = false
+		_:
+			_mouth_smile.visible = true
+			_mouth_o.visible = false
+
+
+## Asset-pack VFX: short one-shot particle bursts (confetti, grass, dust).
+func _spawn_burst(pos: Vector3, color: Color, count: int, speed: float) -> void:
+	var particles := CPUParticles3D.new()
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.amount = count
+	particles.lifetime = 1.1
+	particles.direction = Vector3.UP
+	particles.spread = 75.0
+	particles.initial_velocity_min = speed * 0.5
+	particles.initial_velocity_max = speed
+	particles.gravity = Vector3(0, -9.8, 0)
+	particles.scale_amount_min = 0.6
+	particles.scale_amount_max = 1.2
+	var chunk := BoxMesh.new()
+	chunk.size = Vector3(0.055, 0.055, 0.055)
+	particles.mesh = chunk
+	particles.color = color
+	add_child(particles)
+	particles.global_position = pos
+	particles.emitting = true
+	particles.finished.connect(particles.queue_free)
+
+
+## Portal Peaks gets the asset-pack sunset sky; Cloud Cliffs keeps sunny day.
+func _apply_world_sky(level_id: String) -> void:
+	if not level_id.begins_with("PP"):
+		return
+	var env := ($WorldRoot/Lighting/WorldEnvironment.environment as Environment)
+	if env == null or env.sky == null:
+		return
+	var sky_mat := env.sky.sky_material as ProceduralSkyMaterial
+	if sky_mat != null:
+		sky_mat.sky_top_color = Color("4a2d6e")
+		sky_mat.sky_horizon_color = Color("ff9a5c")
+		sky_mat.ground_horizon_color = Color("e8875a")
+		sky_mat.ground_bottom_color = Color("3a2b4f")
+	var sun := $WorldRoot/Lighting/DirectionalLight3D as DirectionalLight3D
+	if sun != null:
+		sun.light_color = Color("ffd2a0")
+
+
 func _build_aim_guide() -> void:
 	# Graybox dotted guide: flat segments pointing along the aim direction;
 	# not a trajectory promise.
@@ -126,7 +235,13 @@ func _build_aim_guide() -> void:
 	camera_rig.add_child(_aim_guide)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _face_rig != null and is_instance_valid(ball) and camera_rig != null:
+		_face_rig.global_position = ball.global_position
+		var cam := camera_rig.camera
+		if cam != null:
+			_face_rig.look_at(cam.global_position, Vector3.UP)
+			_face_rig.rotate_y(PI)  # face meshes live on the rig's +Z side
 	if _aim_guide == null or session == null:
 		return
 	var show_guide := session.can_aim() and not camera_rig.is_overview()

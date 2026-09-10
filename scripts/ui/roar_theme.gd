@@ -135,8 +135,39 @@ static func make_hero_play_button(text := "▶  PLAY") -> Button:
 	return button
 
 
-## Circular glowing microphone button (matching 01_original_gameplay.png)
+## Gold "ROAR!" mic pill button matching the asset-pack UI panel
 static func make_circular_mic_button(diameter := 84) -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(diameter + 40, diameter - 20)
+	button.focus_mode = Control.FOCUS_NONE
+	button.text = "🎙 ROAR!"
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = WARM_ACCENT
+	normal.set_corner_radius_all((diameter - 20) / 2)
+	normal.border_color = Color("FFE090")
+	normal.set_border_width_all(3)
+	normal.shadow_color = Color(WARM_ACCENT.r, WARM_ACCENT.g, WARM_ACCENT.b, 0.4)
+	normal.shadow_size = 8
+	var pressed: StyleBoxFlat = normal.duplicate()
+	pressed.bg_color = Color("FFD036")
+	pressed.border_color = Color.WHITE
+	pressed.shadow_size = 14
+	var disabled: StyleBoxFlat = normal.duplicate()
+	disabled.bg_color = NAVY_CARD
+	disabled.border_color = NAVY_BORDER
+	disabled.shadow_size = 0
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", normal)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_color_override("font_color", NAVY)
+	button.add_theme_color_override("font_pressed_color", NAVY)
+	button.add_theme_font_size_override("font_size", 16)
+	return button
+
+
+## Legacy circular style kept for reference
+static func make_circular_mic_button_cyan(diameter := 84) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(diameter, diameter)
 	button.focus_mode = Control.FOCUS_NONE
