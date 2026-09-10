@@ -23,6 +23,9 @@ var _face_rig: Node3D = null
 var _mouth_smile: MeshInstance3D = null
 var _mouth_o: MeshInstance3D = null
 var _expression_timer: SceneTreeTimer = null
+var _perf_label: Label = null
+var _perf_accum := 0.0
+var _perf_frames := 0
 var _cal_stage: String = ""
 var _cal_room: Dictionary = {}
 var _cal_soft: Dictionary = {}
@@ -52,6 +55,7 @@ func _ready() -> void:
 		return
 
 	_apply_world_sky(level_id)
+	_maybe_build_perf_overlay()
 	_spawn_scenery(level_id)
 	_spawn_hole_sign(level_id, int(meta["par"]))
 	session.setup(ball, level, level_id, int(meta["par"]), int(meta["max_strokes"]))
@@ -164,6 +168,20 @@ func _on_any_fall() -> void:
 
 ## Asset-pack dressing: a few scenery islands OUTSIDE course bounds and a
 ## wooden "HOLE N · Par X" sign at the tee. Deterministic per level id.
+## Dev-only on-device perf overlay (RB-052 preparation): ROAR3D_PERF=1
+## shows fps + frame-time ms so a phone soak session can be filmed and read.
+func _maybe_build_perf_overlay() -> void:
+	if OS.get_environment("ROAR3D_PERF").is_empty():
+		return
+	_perf_label = Label.new()
+	_perf_label.name = "PerfOverlay"
+	_perf_label.position = Vector2(8, 64)
+	_perf_label.add_theme_font_size_override("font_size", 14)
+	_perf_label.add_theme_color_override("font_color", RoarTheme.PRIMARY_GREEN)
+	_perf_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	($GameUI/SafeAreaRoot as Control).add_child(_perf_label)
+
+
 func _spawn_scenery(level_id: String) -> void:
 	var bounds := level.course_bounds()
 	var seed_value := hash(level_id)
@@ -341,6 +359,14 @@ func _process(delta: float) -> void:
 		if cam != null:
 			_face_rig.look_at(cam.global_position, Vector3.UP)
 			_face_rig.rotate_y(PI)  # face meshes live on the rig's +Z side
+	if _perf_label != null:
+		_perf_frames += 1
+		_perf_accum += delta
+		if _perf_accum >= 0.5:
+			var fps := _perf_frames / _perf_accum
+			_perf_label.text = "%d fps · %.1f ms" % [roundi(fps), _perf_accum / _perf_frames * 1000.0]
+			_perf_accum = 0.0
+			_perf_frames = 0
 	if _aim_guide == null or session == null:
 		return
 	var show_guide := session.can_aim() and not camera_rig.is_overview()
