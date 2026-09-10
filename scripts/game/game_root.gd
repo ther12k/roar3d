@@ -262,7 +262,7 @@ func _teardown() -> void:
 
 func _notification(what: int) -> void:
 	match what:
-		NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED:
 			# Background/focus loss: close capture, cancel un-committed shot,
 			# pause the session; resume never restarts the mic (FR-15).
 			if is_instance_valid(hud) and not hud.is_paused_sheet_visible():

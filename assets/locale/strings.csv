@@ -33,7 +33,8 @@ USE_TOUCH,Use Touch instead,Pakai Sentuh saja
 CALIBRATED,"Calibrated! Hold, make a sound, release to shoot.","Terkalibrasi! Tahan, bersuara, lepaskan untuk menembak."
 HOLE_COMPLETE,Hole Complete!,Hole Selesai!
 NEW_BEST,New Best,Rekor Baru
-STROKES,Strokes %d,Pukulan %d
+STROKES_HEADER,Strokes,Pukulan
+STROKES_COUNT,Strokes: %d,Pukulan: %d
 PAR,Par %d,Par %d
 CHOOSE_INPUT,Choose your input,Pilih inputmu
 MODE_PRIVACY,"Use your sound to set shot power. Sound is processed on this device and is not saved or uploaded. You can play with touch instead.","Gunakan suaramu untuk kekuatan tembakan. Suara diproses di perangkat ini dan tidak disimpan atau diunggah. Kamu bisa main dengan sentuhan."

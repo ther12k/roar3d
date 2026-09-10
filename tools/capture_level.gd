@@ -17,6 +17,7 @@ func _run() -> void:
 	if level_id.is_empty():
 		level_id = "CC01"
 	AppRouter.current_level_id = level_id
+	SettingsStore.set_input_mode(OS.get_environment("INPUT_MODE") if not OS.get_environment("INPUT_MODE").is_empty() else "voice")
 	var packed: PackedScene = load("res://scenes/game/game_root.tscn")
 	if packed == null:
 		printerr("game_root scene failed to load")
