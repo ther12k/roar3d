@@ -20,3 +20,6 @@ Thumbs.db
 
 # Local visual evidence (published as release assets instead)
 docs/evidence/*.png
+build/
+keystore/*.keystore
+keystore/*.jks
