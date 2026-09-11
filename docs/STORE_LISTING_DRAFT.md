@@ -69,15 +69,20 @@ Source of truth: `docs/04_VOICE_INPUT_SPEC.md`, `docs/08_CONTENT_AND_SAVE_DATA.m
   assets only — every runtime asset is original to this repo or CC0 (see
   `docs/ASSET_INVENTORY.md`, `assets/models/lion_ball_provenance.md`).
 
-## Policy findings (before submission — blockers recorded)
+## Policy findings (before submission — verified against artifacts)
 
-1. **Target API gap [BLOCKER for Play submission]:** the Android export
-   preset has `gradle_build/target_sdk=""` (unset — defers to the Godot
-   Gradle template default, not verified in a built artifact). Google Play
-   requires **target API 36 (Android 16) for all new apps and updates since
-   2026-08-31**. Before any submission: set/verify target SDK 36 in the build,
-   produce a signed build, and record `aapt dump badging` output showing
-   `targetSdkVersion: 36` as evidence.
+1. **Target API: COMPLIANT (verified, artifact-level).** The export preset
+   uses `gradle_build/use_gradle_build=false` with `target_sdk=""`, which in
+   Godot 4.7.2 means "no override" — the prebuilt template's default applies
+   (and Godot rejects a manual Target SDK override when Gradle Build is
+   disabled, so the empty value is the correct configuration, not a gap).
+   Artifact proof: `aapt dump badging` on both built APKs reports
+   `targetSdkVersion:'36'` (`sdkVersion:'24'`), and `export_presets.cfg` is
+   byte-identical from those builds through v0.1.0-rc1. That satisfies the
+   Play rule requiring target API 36 for all new apps and updates since
+   2026-08-31. Re-run the badging check on whichever APK is actually
+   submitted; do **not** set an explicit `target_sdk` override with the
+   current non-Gradle export path.
 2. **Name clearance [UNRESOLVED]:** "Roarball" has had no trademark/usage
    search. PRD risk, still open.
 3. **Device validation [UNRESOLVED]:** mic lifecycle, renderer benchmark,
