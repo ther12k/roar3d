@@ -297,3 +297,26 @@ decal into a deep physical cup, and gave the lion character dynamic airborne
 jumping capability aligned with voice sound and slingshot power.
 **Impact.** All 8 automated test suites pass (914 checks green, 0 failures).
 Flat shot requirements in automated route tests continue to pass untouched.
+
+## D-024 · Calibration bootstrap fix, one-jump-per-landing, session-owned jumps
+**Decision.** External review found two P0 gameplay bugs in D-023; fixed both
+and closed the authority gap that let them in:
+1. **Fresh-user calibration deadlock (RB-034)**: `begin_calibration_stage()`
+   called `begin_capture()`, which refuses to start without an existing
+   calibration profile — a fresh user could open the calibration sheet but
+   never record Room/Soft/Strong. Capture start is now split into
+   `_start_capture(require_calibration)`; calibration stages record with
+   `require_calibration=false` while gameplay capture still demands a profile.
+2. **Infinite air-jump exploit**: `jump()` only rejected a re-jump while still
+   rising (`vy > 0.5`), so tapping at the apex granted unlimited mid-air hops
+   that could skip ramps, gaps, and authored routes. `jump()` now requires
+   `_supported` AND a `_jump_available` token; the token resets on landing
+   (support-ray transition) and on teleport — one Roar Jump per ground contact.
+3. **Session-owned jumps**: jumps are a gameplay decision, so input now calls
+   `GameSessionController.request_jump()` (validates FSM state + ball support)
+   instead of writing ball velocity directly from the input layer.
+**Why.** Tightening rules before adding mechanics: exploitable or inconsistent
+core behavior undermines every level design built on top of it.
+**Impact.** All 8 test suites pass (936 checks green, 0 failures), including 3
+new regression tests: calibration bootstrap from an empty profile, air-jump
+blocked, and jump-token restore on landing.
