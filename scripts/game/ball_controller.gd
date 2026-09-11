@@ -11,6 +11,7 @@ signal settled(ball_transform: Transform3D, support_slope_ok: bool)
 signal unsettled()
 signal fall_detected(reason: String)
 signal bounced(strength: float)  ## impact speed at contact start (presentation only)
+signal jumped(strength: float)  ## active jump launched (presentation only)
 
 const REST_LINEAR_SPEED := 0.06
 const REST_ANGULAR_SPEED := 0.3
@@ -125,6 +126,7 @@ func jump(strength: float = 3.8) -> bool:
 	_resting = false
 	_settle_timer = 0.0
 	unsettled.emit()
+	jumped.emit(strength)
 	bounced.emit(strength * 2.0)
 	return true
 

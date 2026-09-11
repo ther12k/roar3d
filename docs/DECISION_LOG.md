@@ -370,3 +370,35 @@ invariant); the mascot GLB closes the largest production-art gap (review round
 8 suites passing on isolated profiles: 985 checks, 0 failures. GitHub Actions
 workflow (`.github/workflows/tests.yml`) runs the same gate on every
 push/PR with the pinned engine.
+
+## D-028 · Vertical-slice production pass: art, feel, audio, evidence harness
+**Decision.** Feature-complete prototype → vertical-slice production (M5).
+Four bounded passes, all on the shared kit or runtime dressing so every hole
+benefits:
+1. **Art**: CC/PP world atmospheres (saturated daylight + warm depth fog for
+   Cloud Cliffs, dusk retained for Portal Peaks) with ambient pinned neutral
+   so sky can be rich without tinting gameplay. Kit materials refreshed;
+   island undersides rebuilt as elliptical floating-island silhouettes that
+   hug each module rectangle — the first circular-cut version bulged 40%
+   past the rails and read as a band across far holes (caught by phone-size
+   captures, fixed by ellipse fitting). CC04 leap gains deterministic rock
+   shards in the chasm; clouds moved off the course column above the horizon.
+2. **Feel**: trauma-based camera shake (bounce/cup/landing), slingshot charge
+   anticipation dolly, jump takeoff squash + dust + launch cue, roar-tier
+   ignition burst, flag flutter that breathes with ball proximity and wobbles
+   on completion, two-beat cup drop (rim hesitation then rattle). All gated
+   by Reduced Motion.
+3. **Audio**: launch whoosh, celebration arpeggio, and a speed-driven rolling
+   loop joined to the effect library (all synthesized originals via
+   make_sfx.py). The roll loop ducks with the Effects bus during voice
+   capture, keeping feedback from masking mic input.
+4. **Evidence**: `tools/replay_hole.tscn` replays a fixed shot script on any
+   hole, saving capture-beat PNGs and printing avg/p95/max frame ms — the
+   deterministic baseline `docs/HARDWARE_ACCEPTANCE.md` builds the device
+   acceptance package on.
+**Why.** The remaining risk is whether the game feels like a real game; these
+passes spend effort on presentation and measurability without touching
+physics, scoring, or input authority.
+**Impact.** All 8 suites stay green (985 checks). Phone-size captures verify
+CC01/CC04/PP01 framing; the replay harness produces a reproducible 5-beat
+CC04 evidence strip plus frame stats on every run.

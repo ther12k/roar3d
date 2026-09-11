@@ -59,7 +59,56 @@ def make_stretch() -> np.ndarray:
     return body * env
 
 
-MAKERS = {"bounce": make_bounce, "stretch": make_stretch}
+def make_launch() -> np.ndarray:
+    """Airborne launch whoosh for roar-loft shots and jumps: filtered noise
+    swell with a rising sine shimmer, gone in half a second."""
+    dur = 0.5
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    env = envelope(n, attack=0.06, decay_tau=0.16)
+    rng = np.random.default_rng(7)
+    noise = rng.standard_normal(n)
+    # Cheap low-pass: moving average softens the hiss into a whoosh.
+    kernel = np.ones(24) / 24.0
+    whoosh = np.convolve(noise, kernel, mode="same") * 1.6
+    shimmer = np.sin(2 * np.pi * (300 + 500 * t / dur) * t) * 0.22
+    return (whoosh + shimmer) * env
+
+
+def make_cheer() -> np.ndarray:
+    """Celebration sting for sinking the cup: quick major arpeggio blip."""
+    dur = 0.7
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    # C5-E5-G5-C6 sparkle, one note per 90 ms.
+    for i, freq in enumerate([523.25, 659.25, 783.99, 1046.5]):
+        start = int(SR * 0.09 * i)
+        seg = t[: n - start]
+        note_env = envelope(n - start, attack=0.004, decay_tau=0.14)
+        note = (np.sin(2 * np.pi * freq * seg) * 0.6
+                + np.sin(2 * np.pi * freq * 2 * seg) * 0.18)
+        out[start:] += note * note_env
+    return out
+
+
+def make_roll() -> np.ndarray:
+    """Loopable rolling texture: low-passed rumble with a soft surface throb.
+    The tail cross-feeds into the head so the loop point is click-free."""
+    dur = 0.6
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    rng = np.random.default_rng(3)
+    rumble = np.convolve(rng.standard_normal(n), np.ones(48) / 48.0, mode="same") * 2.2
+    fade = int(SR * 0.05)
+    rumble[:fade] = (rumble[:fade] * np.linspace(0.0, 1.0, fade)
+                     + rumble[n - fade:] * np.linspace(1.0, 0.0, fade))
+    grain = np.sin(2 * np.pi * 9 * t) * 0.15
+    return rumble + grain
+
+
+MAKERS = {"bounce": make_bounce, "stretch": make_stretch,
+          "launch": make_launch, "cheer": make_cheer, "roll": make_roll}
 
 
 def main() -> None:

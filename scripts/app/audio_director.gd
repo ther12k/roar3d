@@ -12,12 +12,13 @@ const DUCK_DB := 18.0
 # Loaded at boot (not `const preload`) so the streams release with this node
 # instead of living in the script constant table past the exit-time resource
 # check (which flagged them as leaked at shutdown).
-const EFFECT_NAMES := ["putt", "cup", "fall", "click", "bounce", "stretch"]
+const EFFECT_NAMES := ["putt", "cup", "fall", "click", "bounce", "stretch", "launch", "cheer", "roll"]
 const MUSIC_TRACKS := {
 	"sunny": "res://assets/audio/music_sunny.wav",
 	"sunset": "res://assets/audio/music_sunset.wav",
 }
 const PLAYERS := 4  # round-robin so overlapping short cues never cut each other
+const ROLL_SPEED_MAX := 8.0  # m/s at full rolling-loop volume
 
 var _streams: Dictionary = {}
 var _music_volume := 0.7
@@ -26,6 +27,7 @@ var _ducked_for_capture := false
 var _pool: Array[AudioStreamPlayer] = []
 var _next_player := 0
 var _music_player: AudioStreamPlayer
+var _roll_player: AudioStreamPlayer
 var _current_track := ""
 
 
@@ -52,6 +54,18 @@ func _ready() -> void:
 	_music_player = AudioStreamPlayer.new()
 	_music_player.bus = MUSIC_BUS
 	add_child(_music_player)
+	# Rolling loop: its own player so its volume follows ball speed without
+	# touching the cue pool. Loop metadata is set at load (the WAV has none).
+	var roll_stream: AudioStreamWAV = load("res://assets/audio/roll.wav")
+	roll_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	roll_stream.loop_begin = 0
+	roll_stream.loop_end = roll_stream.data.size() / 4  # 16-bit stereo frames
+	_roll_player = AudioStreamPlayer.new()
+	_roll_player.bus = EFFECTS_BUS
+	_roll_player.stream = roll_stream
+	_roll_player.volume_db = -80.0
+	add_child(_roll_player)
+	_roll_player.play()
 
 
 func _ensure_bus(bus_name: String) -> void:
@@ -99,6 +113,26 @@ func _exit_tree() -> void:
 	if is_instance_valid(_music_player):
 		_music_player.stop()
 		_music_player.stream = null
+	if is_instance_valid(_roll_player):
+		_roll_player.stop()
+		_roll_player.stream = null
+
+
+## Rolling texture follows the ball: intensity 0..1 (linear ball speed up to
+## ROLL_SPEED_MAX). Zero stops the loop; restarting it is seamless because
+## the source loops cleanly. The Effects-bus duck during voice capture also
+## ducks the roll, so capture feedback never masks the microphone input.
+func set_roll_intensity(intensity: float) -> void:
+	if _roll_player == null:
+		return
+	var linear := clampf(intensity, 0.0, 1.0)
+	if linear <= 0.01:
+		if _roll_player.playing:
+			_roll_player.stop()
+		return
+	if not _roll_player.playing:
+		_roll_player.play()
+	_roll_player.volume_db = linear_to_db(maxf(linear * _effects_volume, 0.02))
 
 
 ## Start a named looping background track (original, synthesized — see

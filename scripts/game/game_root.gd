@@ -124,6 +124,9 @@ func _ready() -> void:
 	)
 	session.hole_completed.connect(func(_result: Dictionary) -> void:
 		AudioDirector.play_effect("cup")
+		# Celebration sting rides just after the drop rattle finishes.
+		get_tree().create_timer(0.45).timeout.connect(func() -> void:
+			AudioDirector.play_effect("cheer", 0.8))
 		_spawn_burst(level.cup_position() + Vector3(0, 0.4, 0), RoarTheme.WARM_ACCENT, 26, 5.0)
 		_spawn_burst(level.cup_position() + Vector3(0, 0.5, 0), RoarTheme.VOICE_CYAN, 18, 4.5)
 		_spawn_burst(level.cup_position() + Vector3(0, 0.6, 0), RoarTheme.PRIMARY_GREEN, 18, 4.5)
@@ -137,6 +140,7 @@ func _ready() -> void:
 		_spawn_burst(ball.global_position, Color(0.75, 0.72, 0.66), 8, 1.2)  # landing dust
 		_kick_squash(3.5))
 	ball.bounced.connect(_on_ball_bounced)
+	ball.jumped.connect(_on_ball_jumped)
 	# READY-state hop is presentation-only: the mascot bounces on its visual
 	# node, the RigidBody never moves (D-026 — no ball movement without stroke).
 	session.decorative_hop_requested.connect(_play_decorative_hop)
@@ -238,6 +242,17 @@ func _on_ball_bounced(strength: float) -> void:
 	_last_bounce_ms = now
 	AudioDirector.play_effect("bounce", clampf(strength / 10.0, 0.3, 1.0))
 	_kick_squash(clampf(strength * 0.06, 0.0, 0.6))
+	camera_rig.add_trauma(clampf(strength * 0.025, 0.05, 0.3))
+
+
+## Jump anticipation (M5 feel pass): a beat of stretch + dust at takeoff, and
+## the follow-through lands via the existing settle dust.
+func _on_ball_jumped(strength: float) -> void:
+	_kick_squash(-clampf(strength * 1.2, 3.0, 6.0))
+	camera_rig.add_trauma(0.12)
+	AudioDirector.play_effect("launch", 0.7)
+	if not SettingsStore.reduced_motion():
+		_spawn_burst(ball.global_position + Vector3(0, -0.18, 0), Color(0.75, 0.72, 0.62), 8, 1.6)
 
 
 ## Presentation-only juice (D-021): the spring animates a child VisualRoot,
@@ -273,14 +288,22 @@ func _play_cup_sink() -> void:
 		return
 	_sinking = true
 	_visual_root.scale = Vector3.ONE
-	var sink := create_tween().set_parallel(true)
+	camera_rig.add_trauma(0.4)
+	var sink := create_tween()
+	# Two-beat cup drop (M5 feel pass): a short rim hesitation, then the
+	# rattle down to the cavity floor — reads as weight, not a teleport.
+	sink.tween_interval(0.12)
+	sink.tween_property(ball, "global_position",
+		Vector3(level.cup_position().x, level.cup_plane_y() - 0.08, level.cup_position().z), 0.10
+		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	# Target sits on the physical cavity floor (ball center = plane - depth + radius);
 	# note cup_position().y is the marker anchor, the plane is cup_plane_y().
 	var rest_y := level.cup_plane_y() - GameSessionController.CUP_CAVITY_DEPTH + 0.25
+	sink.parallel().tween_property(_visual_root, "scale", Vector3(0.62, 0.62, 0.62), 0.16
+		).set_delay(0.12)
 	sink.tween_property(ball, "global_position",
-		Vector3(level.cup_position().x, rest_y, level.cup_position().z), 0.38
+		Vector3(level.cup_position().x, rest_y, level.cup_position().z), 0.26
 		).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	sink.tween_property(_visual_root, "scale", Vector3(0.55, 0.55, 0.55), 0.38)
 
 
 ## Upgrades the authored flat cup sticker into a real recessed hole: the turf
@@ -575,6 +598,38 @@ func _spawn_scenery(level_id: String) -> void:
 		)
 		piece.rotation_degrees = Vector3(0.0, rng.randf_range(0.0, 360.0), 0.0)
 	_spawn_clouds(bounds, level_id)
+	_spawn_gap_dressing(level_id, bounds)
+
+
+## Hole-specific flourish (M5 art pass): CC04's leap gets drifting rock shards
+## below the gap so the signature jump reads as a chasm crossing. Deterministic
+## per level id; decorative only (no collision, never above kill plane logic).
+func _spawn_gap_dressing(level_id: String, bounds: AABB) -> void:
+	if not level_id.begins_with("CC04"):
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(level_id + ":gap")
+	var shard_material := StandardMaterial3D.new()
+	shard_material.albedo_color = Color("6b6157")
+	shard_material.roughness = 1.0
+	for i: int in 7:
+		var shard := MeshInstance3D.new()
+		var rock := SphereMesh.new()
+		var r := rng.randf_range(0.25, 0.7)
+		rock.radius = r
+		rock.height = r * rng.randf_range(1.2, 1.9)
+		rock.radial_segments = 6
+		rock.rings = 4
+		shard.mesh = rock
+		shard.material_override = shard_material
+		add_child(shard)
+		_disable_cast_shadow(shard)
+		shard.position = Vector3(
+			rng.randf_range(-2.2, 2.2),
+			rng.randf_range(-4.5, -1.5),
+			bounds.position.z + bounds.size.z * rng.randf_range(0.35, 0.55)
+		)
+		shard.rotation_degrees = Vector3(rng.randf_range(0, 40), rng.randf_range(0, 360), rng.randf_range(0, 40))
 
 
 ## Dressing must never shadow the playfield: the sun sits at ~40°, so island
@@ -610,13 +665,15 @@ func _spawn_clouds(bounds: AABB, level_id: String) -> void:
 			puff.scale = Vector3(1.4, 0.5, 1.0)
 			puff.position = Vector3(p * sphere.radius * 1.1 - sphere.radius * 0.5, rng.randf_range(-0.3, 0.3), 0.0)
 			cloud.add_child(puff)
-		var ahead := bounds.position.z - rng.randf_range(8.0, 26.0)
+		var ahead := bounds.position.z - rng.randf_range(12.0, 30.0)
 		var behind := bounds.end.z + rng.randf_range(16.0, 40.0)
 		cloud.position = Vector3(
-			rng.randf_range(-10.0, 10.0),
-			# The play camera pitches down ~38°, so the frame top ends near the
-			# horizontal — clouds must sit BELOW camera height to be seen.
-			rng.randf_range(2.0, 5.5),
+			# Keep puffs OFF the course column (|x| > 3): a white puff crossing
+			# the vanishing point reads as a gray band across the far holes.
+			(3.0 + rng.randf_range(0.0, 8.0)) * (1.0 if c % 2 == 0 else -1.0),
+			# High enough to sit above the play camera's horizon line — clouds
+			# belong to the sky band of the frame, never over the course.
+			rng.randf_range(6.0, 10.0),
 			ahead if c % 3 != 2 else behind
 		)
 
@@ -957,23 +1014,52 @@ func _spawn_burst(pos: Vector3, color: Color, count: int, speed: float) -> void:
 
 ## Portal Peaks gets the asset-pack sunset sky; Cloud Cliffs keeps sunny day.
 func _apply_world_sky(level_id: String) -> void:
-	if not level_id.begins_with("PP"):
-		return
 	var env := ($WorldRoot/Lighting/WorldEnvironment.environment as Environment)
 	if env == null or env.sky == null:
 		return
+	# Ambient is pinned to a near-white color instead of the sky's: the scene
+	# has no ambient override, so a saturated zenith would tint every surface
+	# teal/blue. Sky stays decorative; sun + neutral ambient light the course.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(1.0, 0.98, 0.94)
+	env.ambient_light_energy = 1.0
 	var sky_mat := env.sky.sky_material as ProceduralSkyMaterial
-	if sky_mat != null:
-		sky_mat.sky_top_color = Color("4a2d6e")
-		sky_mat.sky_horizon_color = Color("ff9a5c")
-		sky_mat.ground_horizon_color = Color("e8875a")
-		sky_mat.ground_bottom_color = Color("3a2b4f")
 	var sun := $WorldRoot/Lighting/DirectionalLight3D as DirectionalLight3D
-	if sun != null:
-		sun.light_color = Color("ffd2a0")
-		# The purple dusk sky tints every sky-ambient surface; extra direct sun
-		# keeps the turf reading green under the sunset mood.
-		sun.light_energy = 1.4
+	if level_id.begins_with("PP"):
+		if sky_mat != null:
+			sky_mat.sky_top_color = Color("4a2d6e")
+			sky_mat.sky_horizon_color = Color("ff9a5c")
+			sky_mat.ground_horizon_color = Color("e8875a")
+			sky_mat.ground_bottom_color = Color("3a2b4f")
+		if sun != null:
+			sun.light_color = Color("ffd2a0")
+			# The purple dusk sky tints every sky-ambient surface; extra direct sun
+			# keeps the turf reading green under the sunset mood.
+			sun.light_energy = 1.4
+		_apply_fog(env, Color("e8a06a"), 0.010)
+	else:
+		# CC worlds (M5 art pass): crisp high-altitude daylight — deeper cyan
+		# zenith so the green course pops, warm horizon, light depth fog so
+		# distant islands read as atmosphere instead of floating cutouts.
+		if sky_mat != null:
+			sky_mat.sky_top_color = Color("3a86dd")
+			sky_mat.sky_horizon_color = Color("cfe9ff")
+			sky_mat.ground_horizon_color = Color("aedcf5")
+			sky_mat.ground_bottom_color = Color("6f95a8")
+		if sun != null:
+			sun.light_color = Color("fff4dd")
+			sun.light_energy = 1.15
+		_apply_fog(env, Color("e6dfc8"), 0.004)
+
+
+## Light aerial perspective: starts past the playfield so gameplay contrast is
+## untouched, and melts distant scenery into the sky.
+func _apply_fog(env: Environment, color: Color, density: float) -> void:
+	env.fog_enabled = true and OS.get_environment("ROAR3D_NO_FOG").is_empty()
+	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	env.fog_light_color = color
+	env.fog_density = density
+	env.fog_sky_affect = 0.0  # sky already carries its own gradient
 
 
 func _build_aim_guide() -> void:
@@ -1034,8 +1120,16 @@ func _process(delta: float) -> void:
 		_animate_character(delta)
 	if _flag_mesh != null and not SettingsStore.reduced_motion():
 		_flag_time += delta
-		_flag_mesh.rotation.z = sin(_flag_time * 3.1) * 0.13
-		_flag_mesh.rotation.x = sin(_flag_time * 2.3) * 0.06
+		# Flutter intensity breathes with the ball's proximity: a rolling
+		# ball "stirs the air" so the flag reacts to the play, not just time.
+		var flutter := 1.0
+		if _sinking:
+			flutter = 3.2  # celebration wobble on the finished hole
+		elif is_instance_valid(ball) and session != null and session.level != null:
+			var d := ball.global_position.distance_to(level.cup_position())
+			flutter = 1.0 + clampf(2.2 - d * 0.28, 0.0, 1.6)
+		_flag_mesh.rotation.z = sin(_flag_time * 3.1) * 0.13 * flutter
+		_flag_mesh.rotation.x = sin(_flag_time * 2.3) * 0.06 * flutter
 	if _perf_label != null:
 		_perf_frames += 1
 		_perf_accum += delta
@@ -1044,6 +1138,12 @@ func _process(delta: float) -> void:
 			_perf_label.text = "%d fps · %.1f ms" % [roundi(fps), _perf_accum / _perf_frames * 1000.0]
 			_perf_accum = 0.0
 			_perf_frames = 0
+	# Camera anticipation feed: slingshot stretch (or roar-band voice preview)
+	# pulls the camera back slightly; release snaps forward via follow lerp.
+	if coordinator != null and coordinator.is_slinging():
+		camera_rig.set_charge(coordinator.slingshot_power())
+	else:
+		camera_rig.set_charge(0.0)
 
 	# Rolling particle trail: kicks up subtle turf speckles while moving
 	if ball != null and ball.linear_speed() > 1.4 and ball.is_supported():
@@ -1051,6 +1151,10 @@ func _process(delta: float) -> void:
 		if _roll_particle_timer <= 0.0:
 			_roll_particle_timer = 0.12
 			_spawn_burst(ball.global_position + Vector3(0, -0.15, 0), Color(0.48, 0.78, 0.42), 3, 0.8)
+	# Rolling texture follows ball speed; airborne or resting = silent.
+	if ball != null and not _sinking:
+		var roll := ball.linear_speed() / 8.0 if ball.is_supported() else 0.0
+		AudioDirector.set_roll_intensity(roll)
 
 	if _aim_guide == null or session == null:
 		return
@@ -1071,6 +1175,11 @@ func _process(delta: float) -> void:
 			var band := 0 if power < 0.35 else (1 if power < 0.70 else 2)
 			if _last_sling_band != -1 and band > _last_sling_band:
 				AudioDirector.play_effect("stretch", 0.45 + band * 0.15)
+				if band == 2:
+					# Roar ignition (M5 feel pass): one restrained ember burst
+					# when the pull crosses into the loft tier.
+					_spawn_burst(ball.global_position + Vector3(0, 0.15, 0), RoarTheme.METER_ROAR, 10, 2.2)
+					_set_expression("surprised")
 			_last_sling_band = band
 		elif voice != null and voice.is_listening():
 			power = float(voice.published_preview()["power"])
