@@ -345,3 +345,28 @@ wall contact, and below-rim completion physically legitimate.
 **Impact.** All 8 suites pass from isolated saved state: **950 checks, 0
 failures**, including physical assertions for the split turf, cavity walls and
 floor, below-rim completion, and no high-speed flyover regression.
+
+## D-027 · Production lion mascot asset (RB-027) + READY-hop de-physicalized
+**Decision.** Two reviewer-flagged cleanups landed together:
+1. **READY-state hop is no longer physics**: `request_jump()` in READY emits
+   `decorative_hop_requested`; GameRoot animates only the mascot's VisualRoot
+   (tween + squash + expression). The rigid body can never move without a
+   stroke — the "ball movement without stroke" invariant is now enforced and
+   regression-tested. ROLLING/SETTLING jumps remain physical (session-owned,
+   one per landing, D-024 rules unchanged).
+2. **RB-027 lion production asset**: `assets/models/lion_ball.glb` (glTF 2.0,
+   authored by the deterministic stdlib generator `tools/generate_lion_asset.py`)
+   replaces the primitive body/mane/ears/face. 45 instances, ≈2.1k tris, 8
+   materials, ~55 KB. Expression subtrees (Mane, ears, FaceRoot) reparent onto
+   the camera-billboarding FaceRig so all D-021/D-022 animations drive the
+   asset. Legacy primitives remain as an automatic fallback. Cosmetics retint
+   the asset body. Collider radius/mass untouched — asserted by the new
+   `asset.mascot_contract` integration test. Provenance + triangle counts:
+   `assets/models/lion_ball_provenance.md` (CC0-1.0, no third-party assets).
+**Why.** The READY-hop leak permitted stroke-free ball movement (dangerous
+invariant); the mascot GLB closes the largest production-art gap (review round
+2, area score 5/10) while keeping physics byte-identical.
+**Impact.** `tools/run_tests.sh` (now exit-code-strict, CI-ready) reports all
+8 suites passing on isolated profiles: 985 checks, 0 failures. GitHub Actions
+workflow (`.github/workflows/tests.yml`) runs the same gate on every
+push/PR with the pinned engine.

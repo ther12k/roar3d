@@ -37,6 +37,7 @@ func _run_all() -> void:
 	await _test_overrun_recovery_next_hold_works()
 	await _test_chunk_size_independent_qualification()
 	await _test_game_root_scene_smoke()
+	await _test_mascot_asset_contract()
 	await _test_calibration_stage_works_without_prior_calibration()
 	await _test_jump_blocked_in_air()
 	await _test_jump_resets_on_landing()
@@ -778,6 +779,76 @@ func _test_game_root_scene_smoke() -> void:
 	# Exit path must have torn the level instance down (FR-19): the ref may
 	# itself be freed by then, which also proves cleanup ran.
 	harness.check(not is_instance_valid(level_ref) or level_ref.instance == null, "level unloaded on exit (FR-19)")
+
+
+## RB-027 mascot asset contract: the production GLB loads, the expression rig
+## wires onto its nodes, cosmetics retint the asset body, and physics tuning
+## is untouched (collider radius, mass).
+func _test_mascot_asset_contract() -> void:
+	harness.suite = "asset.mascot_contract"
+	harness.check(ResourceLoader.exists("res://assets/models/lion_ball.glb"), "lion_ball.glb ships with the project")
+	var packed: PackedScene = load("res://assets/models/lion_ball.glb") as PackedScene
+	harness.check(packed != null, "lion_ball.glb imports as a PackedScene")
+	if packed == null:
+		return
+	var mascot := packed.instantiate()
+	harness.check(mascot != null, "mascot scene instantiates")
+	if mascot == null:
+		return
+	# Godot's glTF importer wraps the authored root (lion_ball/LionBall/...),
+	# so contract nodes are resolved by recursive lookup, not absolute paths.
+	var lion_root := mascot.find_child("LionBall", true, false)
+	harness.check(lion_root != null, "authored LionBall root present under the import wrapper")
+	if lion_root == null:
+		mascot.queue_free()
+		return
+	# Node contract game_root.gd wires expressions onto. Imported glTF scenes
+	# reparent some authored grandchildren, so resolve recursively.
+	for node_name in ["BallBody", "Mane", "EarOuterL", "EarOuterR", "EarInnerL", "EarInnerR", "FaceRoot", "PupilL", "PupilR", "Muzzle", "Nose"]:
+		var node := mascot.find_child(node_name, true, false)
+		harness.check(node != null, "mascot node '%s' present" % node_name)
+	# Instance count: body + 34 tufts + 4 ears + 6 face parts.
+	harness.check_eq(mascot.find_children("*", "MeshInstance3D", true, false).size(), 34 + 11, "mascot renders 45 mesh instances (body + 34 tufts + 4 ears + 6 face)")
+	var triangle_total := 0
+	for mesh_node: MeshInstance3D in mascot.find_children("*", "MeshInstance3D", true, false):
+		var arrays := mesh_node.mesh.surface_get_arrays(0)
+		triangle_total += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+	harness.check(triangle_total < 4000, "mascot triangle budget holds (%d tris, target < 4000)" % triangle_total)
+	mascot.queue_free()
+	# Full-stack wiring: expressions land on asset nodes, cosmetics retint them.
+	var env := await _make_full_game()
+	var root: GameRoot = env["root"]
+	var ball: BallController = root.ball
+	harness.check(root._using_mascot_asset, "game root reports the mascot asset is active")
+	var visual_root: Node3D = ball.find_child("VisualRoot", true, false) as Node3D
+	var face_rig: Node3D = visual_root.find_child("FaceRig", true, false) as Node3D if visual_root != null else null
+	harness.check(face_rig != null, "face rig exists under VisualRoot")
+	if face_rig != null:
+		# Imported glTF scenes reparent authored nodes, so search by name.
+		harness.check(face_rig.find_child("FaceRoot", true, false) != null, "asset FaceRoot billboards on the face rig")
+		harness.check(face_rig.find_child("Mane", true, false) != null, "asset Mane rides the face rig")
+	# Cosmetics: panda tint must land on the asset body (BallBody), and the
+	# legacy BallMesh must be hidden while the asset drives the look.
+	# Panda is unlock-gated on CC06; record a completion so the equip succeeds
+	# on a clean profile too (isolated user:// in CI).
+	ProgressStore.record_completion("CC06", 2, 3, "asset-contract-%d" % Time.get_ticks_msec())
+	ProgressStore.equip_cosmetic(ProgressionRules.COSMETIC_PANDA)
+	root._apply_equipped_cosmetic()
+	var asset_body: MeshInstance3D = ball.find_child("BallBody", true, false) as MeshInstance3D
+	var legacy_body: MeshInstance3D = ball.find_child("BallMesh", true, false) as MeshInstance3D
+	harness.check(asset_body != null, "asset body (BallBody) exists in the live scene")
+	harness.check(legacy_body == null or not legacy_body.visible, "legacy BallMesh hidden while asset is active")
+	if asset_body != null:
+		var mat := asset_body.material_override as StandardMaterial3D
+		harness.check(mat != null and mat.albedo_color.r > 0.9 and mat.albedo_color.b > 0.9, "panda tint applied to the asset body")
+	ProgressStore.equip_cosmetic("lion")
+	root._apply_equipped_cosmetic()
+	# Physics untouched by the art swap.
+	var shape := ball.find_child("CollisionShape3D*", true, false) as CollisionShape3D
+	if shape != null and shape.shape is SphereShape3D:
+		harness.check_near((shape.shape as SphereShape3D).radius, 0.25, 0.001, "collider radius unchanged by the mascot asset")
+	harness.check_near(ball.mass, 1.0, 0.001, "ball mass unchanged by the mascot asset")
+	await _free_full_game(env)
 
 
 ## Calibration recording succeeds with an empty calibration dictionary (RB-034).

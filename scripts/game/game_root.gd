@@ -9,6 +9,7 @@ extends Node
 
 const AIM_GUIDE_LENGTH := 2.4
 const CAL_STAGE_SECONDS := 1.5
+const MASCOT_ASSET := "res://assets/models/lion_ball.glb"  # RB-027 production asset
 # Squash & stretch spring (D-021): positive = squashed wide, negative =
 # stretched tall. Under-damped on purpose so the ball visibly springs back.
 const SQUASH_SPRING_K := 180.0
@@ -36,9 +37,10 @@ var _mouth_o: MeshInstance3D = null
 var _mouth_smile_base := Vector3.ONE
 var _expression_timer: SceneTreeTimer = null
 var _sad_active := false
-var _mane: MeshInstance3D = null
+var _mane: Node3D = null
 var _mane_base := Vector3.ONE
 var _mane_puff := 0.0
+var _using_mascot_asset := false  # true when the RB-027 GLB drives the look
 var _brows: Array[MeshInstance3D] = []
 var _brow_base_pos: Array[Vector3] = []
 var _brow_base_rot: Array[Vector3] = []
@@ -142,6 +144,9 @@ func _ready() -> void:
 	_apply_equipped_cosmetic()
 	_build_visual_root()
 	_build_face_rig()
+	# Re-apply after the mascot asset loads: the equipped tint must land on
+	# the GLB body (BallBody) when it is the visible mesh.
+	_apply_equipped_cosmetic()
 	_build_real_cup()
 	# The authored cup flag exists in every level scene; only its flutter is
 	# driven here (presentation-only, no collider involved).
@@ -157,8 +162,13 @@ func _ready() -> void:
 ## identical; the equipped ball just re-tints the body mesh.
 func _apply_equipped_cosmetic() -> void:
 	var equipped := ProgressStore.equipped_cosmetic()
-	var mesh: MeshInstance3D = ball.find_child("BallMesh", true, false)
-	var mane: MeshInstance3D = ball.find_child("ManeMesh", true, false)
+	# Prefer the RB-027 asset body; fall back to the legacy scene primitive.
+	var mesh := ball.find_child("BallBody", true, false) as MeshInstance3D
+	if mesh == null:
+		mesh = ball.find_child("BallMesh", true, false) as MeshInstance3D
+	var mane := ball.find_child("Mane", true, false) as MeshInstance3D
+	if mane == null:
+		mane = ball.find_child("ManeMesh", true, false) as MeshInstance3D
 	var is_mascot := equipped in [
 		ProgressionRules.COSMETIC_LION, ProgressionRules.COSMETIC_PANDA, ProgressionRules.COSMETIC_ROBOT,
 	]
@@ -664,15 +674,80 @@ func _build_visual_root() -> void:
 		var mesh := ball.get_node_or_null(NodePath(body_part))
 		if mesh is Node3D:
 			(mesh as Node3D).reparent(_visual_root)
-	_mane = _visual_root.get_node_or_null(NodePath("ManeMesh")) as MeshInstance3D
+	_mane = _visual_root.get_node_or_null(NodePath("ManeMesh")) as Node3D
 	if _mane != null:
 		_mane_base = _mane.scale
+	_load_mascot_asset()
+
+
+## RB-027: the production lion GLB replaces the primitive body/mane/ears/face.
+## Loaded under VisualRoot; _wire_mascot_face() moves its expression subtrees
+## onto the face rig. Legacy primitives stay as a fallback when the asset is
+## missing. The collider, mass, and shot tuning are untouched by construction.
+func _load_mascot_asset() -> void:
+	if not ResourceLoader.exists(MASCOT_ASSET):
+		return
+	var packed := load(MASCOT_ASSET) as PackedScene
+	if packed == null:
+		return
+	var mascot := packed.instantiate()
+	mascot.name = "MascotAsset"
+	_visual_root.add_child(mascot)
+	_using_mascot_asset = true
+	for legacy in ["BallMesh", "ManeMesh"]:
+		var node := _visual_root.get_node_or_null(NodePath(legacy)) as Node3D
+		if node != null:
+			node.visible = false
 
 
 func _build_face_rig() -> void:
 	_face_rig = Node3D.new()
 	_face_rig.name = "FaceRig"
 	_visual_root.add_child(_face_rig)
+	if _using_mascot_asset:
+		_wire_mascot_face()
+	else:
+		_wire_legacy_face()
+	_build_expression_layer()
+
+
+## Asset path (RB-027): expression subtrees (mane, ears, face) move onto the
+## face rig so they billboard; the body stays under VisualRoot. Legacy face
+## primitives still parented to the ball are hidden, not freed.
+func _wire_mascot_face() -> void:
+	var mascot := _visual_root.get_node_or_null(NodePath("MascotAsset")) as Node3D
+	if mascot == null:
+		_wire_legacy_face()
+		return
+	for legacy in ["EyeWhiteLeft", "EyeWhiteRight", "EyeLeft", "EyeRight", "Muzzle", "Nose"]:
+		var node := ball.get_node_or_null(NodePath(legacy)) as Node3D
+		if node != null:
+			node.visible = false
+	# Recursive lookups: the importer wraps authored nodes an extra level
+	# (MascotAsset/LionBall/...), so direct child paths do not resolve.
+	for part in ["Mane", "EarOuterL", "EarOuterR", "EarInnerL", "EarInnerR", "FaceRoot"]:
+		var subtree := mascot.find_child(part, true, false) as Node3D
+		if subtree != null:
+			subtree.reparent(_face_rig)
+	_mane = _face_rig.get_node_or_null(NodePath("Mane")) as Node3D
+	if _mane != null:
+		_mane_base = _mane.scale
+	for ear_name in ["EarOuterL", "EarOuterR", "EarInnerL", "EarInnerR"]:
+		var ear := _face_rig.find_child(ear_name, true, false) as MeshInstance3D
+		if ear != null:
+			_ears.append(ear)
+	# Imported glTF scenes may re-parent authored grandchildren, so pupils are
+	# resolved by name search, not by authored path.
+	for pupil_name in ["PupilL", "PupilR"]:
+		var pupil := _face_rig.find_child(pupil_name, true, false) as MeshInstance3D
+		if pupil != null:
+			_blink_meshes.append(pupil)
+			_blink_base.append(pupil.scale.y)
+			_add_catchlight(pupil)
+
+
+## Fallback path: the pre-asset primitives from the ball scene, re-rigged.
+func _wire_legacy_face() -> void:
 	for face_part in ["EyeWhiteLeft", "EyeWhiteRight", "EyeLeft", "EyeRight", "Muzzle", "Nose"]:
 		var mesh := ball.get_node_or_null(NodePath(face_part))
 		if mesh is Node3D:
@@ -681,21 +756,10 @@ func _build_face_rig() -> void:
 				_blink_meshes.append(mesh as MeshInstance3D)
 				_blink_base.append((mesh as Node3D).scale.y)
 
-	# Cartoon specular eye catchlights: makes the character look lively and conscious.
-	var shine_mat := StandardMaterial3D.new()
-	shine_mat.albedo_color = Color(1.0, 1.0, 1.0)
-	shine_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	for eye_name in ["EyeLeft", "EyeRight"]:
 		var eye := _face_rig.get_node_or_null(NodePath(eye_name)) as Node3D
 		if eye != null:
-			var shine := MeshInstance3D.new()
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.018
-			sphere.height = 0.036
-			shine.mesh = sphere
-			shine.material_override = shine_mat
-			shine.position = Vector3(0.016, 0.018, 0.038)
-			eye.add_child(shine)
+			_add_catchlight(eye)
 
 		# Cute lion ears (asset pack lion reference): outer round ear + soft cream inner ear.
 		var ear_outer_mat := StandardMaterial3D.new()
@@ -730,7 +794,7 @@ func _build_face_rig() -> void:
 	# The mane becomes a halo behind the face (asset-pack lion look): the
 	# authored torus rings the ball's equator like Saturn, which reads as a
 	# headband once the face billboards. Re-ring it around the face axis.
-	var mane := _visual_root.get_node_or_null(NodePath("ManeMesh")) as MeshInstance3D
+	var mane := _visual_root.get_node_or_null(NodePath("ManeMesh")) as Node3D
 	if mane != null:
 		mane.reparent(_face_rig)
 		mane.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0.0, 0.02, 0.10))
@@ -738,6 +802,25 @@ func _build_face_rig() -> void:
 		_mane = mane
 		_mane_base = mane.scale
 
+
+## Cartoon specular eye catchlight: makes the character look lively and awake.
+func _add_catchlight(eye: Node3D) -> void:
+	var shine_mat := StandardMaterial3D.new()
+	shine_mat.albedo_color = Color(1.0, 1.0, 1.0)
+	shine_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var shine := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.018
+	sphere.height = 0.036
+	shine.mesh = sphere
+	shine.material_override = shine_mat
+	shine.position = Vector3(0.016, 0.018, 0.038)
+	eye.add_child(shine)
+
+
+## Mode-independent expression layer: brows, smile + tongue, O-mouth, blink
+## timer targets — driven by _set_expression/_animate_character.
+func _build_expression_layer() -> void:
 	# Eyebrows: expressive dark arches that react to aim, charge, and outcomes.
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color("2a1f1a")

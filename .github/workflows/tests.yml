@@ -1,0 +1,47 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  godot-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Godot import cache
+        uses: actions/cache@v4
+        with:
+          path: .godot
+          key: godot-import-${{ runner.os }}-${{ hashFiles('ENGINE_VERSION') }}-${{ hashFiles('project.godot') }}
+          restore-keys: |
+            godot-import-${{ runner.os }}-
+
+      # Pinned engine version comes from ENGINE_VERSION (tools/run_tests.sh
+      # hard-fails on any mismatch, so CI can never silently drift).
+      - name: Install Godot (pinned)
+        run: |
+          PINNED="$(tr -d ' \t\n\r' < ENGINE_VERSION)"          # e.g. 4.7.2-stable
+          VERSION="${PINNED%-stable}"                            # 4.7.2
+          TAG="${VERSION}-stable"
+          URL="https://github.com/godotengine/godot/releases/download/${TAG}/Godot_v${TAG}_linux.x86_64.zip"
+          echo "Downloading $URL"
+          curl -L -o godot.zip "$URL"
+          unzip godot.zip
+          sudo mv "Godot_v${TAG}_linux.x86_64" /usr/local/bin/godot
+          godot --version
+
+      - name: Run all test suites
+        id: tests
+        run: tools/run_tests.sh godot
+
+      - name: Annotate results
+        if: always()
+        run: |
+          cat <<'BANNER'
+          Suite results are in the step above; a red build means at least one
+          suite failed. Reproduce locally with: tools/run_tests.sh <godot-binary>
+          BANNER
