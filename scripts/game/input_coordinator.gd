@@ -133,18 +133,15 @@ func _sling_release() -> void:
 	session.request_touch_shot(power, loft)
 
 
-## Active jump action: mid-roll jump hop or playful in-place hop at rest
+## Active jump action: delegates to the session (gameplay authority).
+## Plays audio based on whether the ball was rolling or resting.
 func trigger_jump() -> bool:
-	if session == null or session.ball == null:
+	if session == null:
 		return false
-	if session.fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
-		if session.ball.jump(3.8):
-			AudioDirector.play_effect("bounce", 0.9)
-			return true
-	elif session.can_aim():
-		if session.ball.jump(2.4):
-			AudioDirector.play_effect("bounce", 0.6)
-			return true
+	var was_rolling := session.fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]
+	if session.request_jump():
+		AudioDirector.play_effect("bounce", 0.9 if was_rolling else 0.6)
+		return true
 	return false
 
 

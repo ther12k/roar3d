@@ -147,6 +147,22 @@ func in_capture() -> bool:
 	return fsm.is_capture_state()
 
 
+## Mid-roll jump request. The session is the authority: it validates FSM state
+## and ball support so no other layer needs to touch ball directly for jumps.
+## ROLLING or SETTLING + ball grounded + jump token available → true.
+## READY + ball resting → decorative hop only (no stroke, no state change).
+## Returns true when the ball physically launched.
+func request_jump() -> bool:
+	if ball == null or not is_instance_valid(ball):
+		return false
+	if fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
+		return ball.jump(3.8)
+	# Allow a playful grounded hop at rest (visual only, session stays READY).
+	if fsm.state == GameStateMachine.State.READY and ball.is_resting():
+		return ball.jump(2.4)
+	return false
+
+
 func set_aim(direction: Vector3) -> void:
 	if not can_aim():
 		return

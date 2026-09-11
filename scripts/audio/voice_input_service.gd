@@ -84,9 +84,16 @@ func published_preview() -> Dictionary:
 ## missing (QA-001/QA-003), calibration is absent (power mapping is unusable
 ## without one), or the source cannot start.
 func begin_capture() -> bool:
+	return _start_capture(true)
+
+
+## Internal capture engine. When require_calibration is false the gate and
+## mapping are skipped — used during calibration recording where no prior
+## profile exists yet (calibration deadlock fix: RB-034).
+func _start_capture(require_calibration: bool) -> bool:
 	if _phase != Phase.IDLE:
 		return false
-	if calibration.is_empty():
+	if require_calibration and calibration.is_empty():
 		_publish_status("needs_calibration")
 		return false
 	if _is_real_mic and not PlatformAdapter.has_microphone_permission():
@@ -288,7 +295,9 @@ func begin_calibration_stage(stage_name: String) -> bool:
 		return false
 	if _phase != Phase.IDLE:
 		end_capture()
-	if not begin_capture():
+	# Calibration recording must not require a prior calibration dictionary;
+	# that's the exact circular deadlock this call exists to resolve (RB-034).
+	if not _start_capture(false):
 		return false
 	_cal_stage = stage_name
 	_cal_windows_db.clear()

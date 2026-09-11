@@ -30,6 +30,7 @@ var _resting := false
 var _stable := false
 var _settle_timer := 0.0
 var _supported := false
+var _jump_available := true  ## reset to true on landing; prevents air-hopping
 var _support_normal := UP
 var _support_is_static := false
 var _teleport_pending := false
@@ -112,10 +113,13 @@ func apply_shot(command: ShotCommand) -> bool:
 	return true
 
 
-## Active jump/hop: gives the ball upward impulse while rolling or at rest.
+## Active jump/hop: gives the ball upward impulse while on the ground.
+## One jump per landing — _jump_available resets when the ball touches down.
+## Air-jumping is blocked unconditionally (_supported must be true).
 func jump(strength: float = 3.8) -> bool:
-	if not _supported and linear_velocity.y > 0.5:
+	if not _supported or not _jump_available:
 		return false
+	_jump_available = false
 	linear_velocity.y = strength
 	_supported = false
 	_resting = false
@@ -123,6 +127,11 @@ func jump(strength: float = 3.8) -> bool:
 	unsettled.emit()
 	bounced.emit(strength * 2.0)
 	return true
+
+
+## Expose jump availability so the HUD and session can gate the prompt.
+func can_jump() -> bool:
+	return _supported and _jump_available
 
 
 ## Engine-safe teleport: applied inside _integrate_forces, clearing all
@@ -140,6 +149,7 @@ func teleport_with_velocity(target: Transform3D, exit_velocity: Vector3) -> void
 	_fall_emitted = false
 	_resting = false
 	_settle_timer = 0.0
+	_jump_available = true  # fresh ground contact after the teleport restores jump
 	linear_velocity = exit_velocity
 	angular_velocity = Vector3.ZERO
 
@@ -187,9 +197,14 @@ func _update_support(state: PhysicsDirectBodyState3D) -> void:
 	var collider: Object = hit.get("collider")
 	if collider is AnimatableBody3D:
 		is_static = false
+	var was_supported := _supported
 	_support_normal = normal
 	_supported = normal.dot(UP) >= SUPPORT_DOT
 	_support_is_static = is_static
+	# Restore jump token on landing so players get exactly one jump per ground
+	# contact, preventing Flappy-Bird-style infinite air-hopping.
+	if _supported and not was_supported:
+		_jump_available = true
 
 
 ## Authored rolling resistance: reduce only the tangential component of
