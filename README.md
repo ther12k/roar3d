@@ -11,11 +11,19 @@ deliberately and record it in `docs/DECISION_LOG.md`.
 
 ## Current state
 
-M0/M1 (foundation + Touch graybox loop). See
-[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for what is
-implemented, verified, and explicitly **not yet tested** (physical-device
-microphone lifecycle, renderer performance, on-device physics). No Android
-build has been produced yet.
+Feature-complete prototype: 12 authored holes (CC01–CC06, PP01–PP06) with
+obstacles (banks, cliffs, ramps, bounce pads, moving gates, portals), Touch
+slingshot + Voice input, roar-loft shots, mid-roll jump, physically recessed
+cup, progression/unlocks, and a production GLB lion mascot. All 8 headless
+test suites pass on every push (see `.github/workflows/tests.yml`); run them
+locally with `tools/run_tests.sh`.
+
+Still **device-unverified** (tracked in GitHub issues): physical-Android
+microphone lifecycle, renderer benchmark on the device matrix, sustained
+mobile performance/thermal, and all-hole human playtesting. Android build
+tooling exists (`tools/build_android.sh`) but devices have not validated it.
+See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for the
+detailed verified/unverified split.
 
 ## Requirements
 
@@ -50,8 +58,10 @@ godot --path .
 Follows `handoff/docs/03_TECHNICAL_ARCHITECTURE.md` §2:
 
 - `scenes/app/` boot + home; `scenes/game/` gameplay root, ball, HUD;
-  `scenes/levels/` authored holes (`CC01.tscn` graybox); `scenes/obstacles/`
-  (empty until M3).
+  `scenes/levels/` authored holes; `scenes/course_kit/` shared course modules;
+  `scenes/obstacles/` gates, pads, portals.
+- `assets/models/` production mascot GLB + provenance; `assets/audio/`,
+  `assets/locale/` packaged audio and translations.
 - `scripts/domain/` pure, engine-independent logic (shot math, scoring,
   progression, calibration math, save schema, catalog validation).
 - `scripts/game/` session controller, state machine, ball, level, input,
@@ -60,6 +70,8 @@ Follows `handoff/docs/03_TECHNICAL_ARCHITECTURE.md` §2:
 - `resources/catalog/level_catalog.json` packaged copy of the level metadata
   (game copy; the handoff original stays untouched).
 - `tests/unit/`, `tests/integration/` headless suites; no editor addons.
+- `tools/` asset generators (mascot GLB, music, SFX), capture harnesses,
+  Android build script, and the CI test runner.
 
 ## Non-negotiables (from the handoff)
 
