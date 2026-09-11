@@ -48,9 +48,45 @@ func _ready() -> void:
 
 
 func _island(size_factor := 1.0) -> void:
-	_box(Vector3(2.2 * size_factor, 0.35, 2.2 * size_factor), Vector3(0, 0, 0), GRASS)
-	_box(Vector3(1.6 * size_factor, 0.6, 1.6 * size_factor), Vector3(0, -0.45, 0), DIRT)
-	_box(Vector3(1.0 * size_factor, 0.5, 1.0 * size_factor), Vector3(0, -0.95, 0), ROCK)
+	# Floating-island silhouette (asset-pack look): a squashed grass dome on
+	# top and a tapered rock cone underneath. Stacked boxes readed as plain
+	# cubes from the play camera; this silhouette reads as an island from any
+	# angle.
+	var dome := MeshInstance3D.new()
+	var dome_mesh := SphereMesh.new()
+	dome_mesh.radius = 1.1 * size_factor
+	dome_mesh.height = 2.2 * size_factor
+	dome.mesh = dome_mesh
+	dome.scale = Vector3(1.0, 0.4, 1.0)
+	var grass := StandardMaterial3D.new()
+	grass.albedo_color = GRASS
+	grass.roughness = 1.0
+	dome.material_override = grass
+	dome.position = Vector3(0, 0, 0)
+	add_child(dome)
+	var cone := MeshInstance3D.new()
+	var cone_mesh := CylinderMesh.new()
+	cone_mesh.top_radius = 1.02 * size_factor
+	cone_mesh.bottom_radius = 0.08 * size_factor
+	cone_mesh.height = 1.3 * size_factor
+	cone.mesh = cone_mesh
+	var dirt := StandardMaterial3D.new()
+	dirt.albedo_color = DIRT
+	dirt.roughness = 1.0
+	cone.material_override = dirt
+	cone.position = Vector3(0, -0.62 * size_factor, 0)
+	add_child(cone)
+	var tip := MeshInstance3D.new()
+	var tip_mesh := SphereMesh.new()
+	tip_mesh.radius = 0.16 * size_factor
+	tip_mesh.height = 0.32 * size_factor
+	tip.mesh = tip_mesh
+	var rock := StandardMaterial3D.new()
+	rock.albedo_color = ROCK
+	rock.roughness = 1.0
+	tip.material_override = rock
+	tip.position = Vector3(0, -1.28 * size_factor, 0)
+	add_child(tip)
 
 
 func _pine(pos: Vector3, size_factor: float) -> void:

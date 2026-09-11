@@ -57,6 +57,13 @@ func _run() -> void:
 		get_tree().quit(1)
 		return
 	var image: Image = get_viewport().get_texture().get_image()
+	if not OS.get_environment("ROAR3D_DEBUG_FACE").is_empty():
+		var rig := root.find_child("FaceRig", true, false) as Node3D
+		var cam3 := root.camera_rig.camera
+		print("FACE ball=%s cam=%s rig_pos=%s rig_+Z=%s z_dot=%s" % [
+			root.ball.global_position, cam3.global_position, rig.global_position,
+			rig.global_basis.z, rig.global_basis.z.normalized().dot(
+				(cam3.global_position - root.ball.global_position).normalized())])
 	var out_path := OS.get_environment("LEVEL_CAPTURE_OUT")
 	if out_path.is_empty():
 		out_path = "/tmp/roar3d_%s_ready.png" % level_id.to_lower()
@@ -74,4 +81,24 @@ func _run() -> void:
 		get_tree().quit(1)
 		return
 	print("LEVEL_CAPTURE_SAVED %s (%dx%d)" % [out_path, image.get_width(), image.get_height()])
+	# Optional extra sheet captures (dev evidence): pause sheet and the
+	# restyled result sheet with its star pop settled. Display-only; the
+	# fake result payload never touches progress storage.
+	var pause_path := OS.get_environment("ROAR3D_SCREENSHOT_PAUSE")
+	if not pause_path.is_empty():
+		root.set_gameplay_paused(true)
+		for j: int in 25:
+			await get_tree().process_frame
+		var pause_image := get_viewport().get_texture().get_image()
+		pause_image.save_png(pause_path)
+		print("screenshot saved: " + pause_path)
+		root.set_gameplay_paused(false)
+	var result_path := OS.get_environment("ROAR3D_SCREENSHOT_RESULT")
+	if not result_path.is_empty():
+		root.hud._on_hole_completed({"stars": 3, "strokes": 2, "par": 3, "is_new_best": true})
+		for j: int in 110:
+			await get_tree().process_frame
+		var result_image := get_viewport().get_texture().get_image()
+		result_image.save_png(result_path)
+		print("screenshot saved: " + result_path)
 	get_tree().quit(0)

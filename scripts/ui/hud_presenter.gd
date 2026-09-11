@@ -42,10 +42,11 @@ var _wave_tick := 0.0
 var _overview_button: Button
 var _balls_button: Button
 var _status_label: Label
+var _sheet_blocker: ColorRect
 var _pause_layer: PanelContainer
 var _result_layer: PanelContainer
 var _result_title: Label
-var _result_stars: Label
+var _star_labels: Array[Label] = []
 var _result_detail: Label
 var _save_banner: PanelContainer
 var _retry_save_button: Button
@@ -84,6 +85,16 @@ func _ready() -> void:
 
 func _build() -> void:
 	var safe := _safe_area_margins()
+
+	# Dim focus blocker behind pause/result/calibration sheets (first child,
+	# so every later sibling draws above it). STOP filter keeps stray taps
+	# from reaching the playfield while a sheet is open.
+	_sheet_blocker = ColorRect.new()
+	_sheet_blocker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_sheet_blocker.color = Color(0.01, 0.04, 0.08, 0.5)
+	_sheet_blocker.mouse_filter = Control.MOUSE_FILTER_STOP
+	_sheet_blocker.visible = false
+	add_child(_sheet_blocker)
 
 	# --- Top Header: Compact glass pill, pause slot, no clipping ---
 	_top_box = VBoxContainer.new()
@@ -337,6 +348,27 @@ func _build() -> void:
 	_build_calibration_sheet()
 
 
+## Shared navy card look for the pause / result / calibration sheets.
+func _card_style(panel: PanelContainer) -> void:
+	var box := StyleBoxFlat.new()
+	box.bg_color = RoarTheme.NAVY_PANEL
+	box.border_color = RoarTheme.NAVY_BORDER
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(24)
+	box.shadow_color = Color(0, 0, 0, 0.45)
+	box.shadow_size = 12
+	box.content_margin_left = 18
+	box.content_margin_right = 18
+	box.content_margin_top = 16
+	box.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", box)
+
+
+## Sheets are modal-feeling: the dim blocker shows whenever any of them does.
+func _update_sheet_blocker() -> void:
+	_sheet_blocker.visible = _pause_layer.visible or _result_layer.visible or _cal_sheet.visible
+
+
 func _make_banner(text: String, color: Color) -> PanelContainer:
 	var banner := PanelContainer.new()
 	banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -366,15 +398,24 @@ func _build_pause_layer() -> void:
 	_pause_layer.set_anchors_preset(Control.PRESET_CENTER)
 	_pause_layer.anchor_left = 0.08
 	_pause_layer.anchor_right = 0.92
+	# Span most of the screen: the settings stack is taller than the old
+	# auto-sized card, which pushed Quality/Reduced Motion off-screen.
+	_pause_layer.anchor_top = 0.05
+	_pause_layer.anchor_bottom = 0.95
 	_pause_layer.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_card_style(_pause_layer)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_pause_layer.add_child(scroll)
 	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 8)
-	_pause_layer.add_child(box)
+	scroll.add_child(box)
 
 	var title := Label.new()
-	title.text = tr("PAUSED")
+	title.text = "🦁  " + tr("PAUSED")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
 	box.add_child(title)
 
@@ -487,44 +528,63 @@ func _build_pause_layer() -> void:
 func _build_result_layer() -> void:
 	_result_layer = PanelContainer.new()
 	_result_layer.set_anchors_preset(Control.PRESET_CENTER)
-	_result_layer.anchor_left = 0.08
-	_result_layer.anchor_right = 0.92
+	_result_layer.anchor_left = 0.1
+	_result_layer.anchor_right = 0.9
 	_result_layer.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_card_style(_result_layer)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	_result_layer.add_child(box)
 
 	_result_title = Label.new()
 	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_result_title.add_theme_font_size_override("font_size", 24)
+	_result_title.add_theme_font_size_override("font_size", 26)
 	_result_title.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
 	box.add_child(_result_title)
 
-	_result_stars = Label.new()
-	_result_stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_result_stars.add_theme_font_size_override("font_size", 32)
-	_result_stars.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
-	box.add_child(_result_stars)
+	# Fixed-size star cells so the pop animation never reflows the sheet.
+	var star_row := HBoxContainer.new()
+	star_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	star_row.add_theme_constant_override("separation", 10)
+	box.add_child(star_row)
+	for i: int in 3:
+		var star := Label.new()
+		star.text = "★"
+		star.custom_minimum_size = Vector2(52, 56)
+		star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		star.pivot_offset = Vector2(26, 28)
+		star.add_theme_font_size_override("font_size", 40)
+		star.add_theme_color_override("font_color", RoarTheme.NAVY_BORDER)
+		star_row.add_child(star)
+		_star_labels.append(star)
 
 	_result_detail = Label.new()
 	_result_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_result_detail.add_theme_color_override("font_color", RoarTheme.TEXT_SECONDARY)
 	box.add_child(_result_detail)
 
-	var next := RoarTheme.make_flat_button(tr("NEXT_HOLE"))
+	var next := RoarTheme.make_hero_play_button("▶  " + tr("NEXT_HOLE"))
 	next.pressed.connect(func() -> void: next_hole_requested.emit())
 	box.add_child(next)
 
+	var buttons_row := HBoxContainer.new()
+	buttons_row.add_theme_constant_override("separation", 8)
+	box.add_child(buttons_row)
+
 	var retry := RoarTheme.make_flat_button(tr("RETRY"), true)
+	retry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry.pressed.connect(func() -> void:
 		_result_layer.visible = false
+		_update_sheet_blocker()
 		restart_requested.emit()
 	)
-	box.add_child(retry)
+	buttons_row.add_child(retry)
 
 	var result_map := RoarTheme.make_flat_button(tr("MAP"), true)
+	result_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result_map.pressed.connect(func() -> void: map_requested.emit())
-	box.add_child(result_map)
+	buttons_row.add_child(result_map)
 
 	_result_layer.visible = false
 	add_child(_result_layer)
@@ -541,6 +601,7 @@ func _build_calibration_sheet() -> void:
 	_cal_sheet.anchor_left = 0.06
 	_cal_sheet.anchor_right = 0.94
 	_cal_sheet.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_card_style(_cal_sheet)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	_cal_sheet.add_child(box)
@@ -606,11 +667,13 @@ func open_calibration_sheet() -> void:
 	_cal_stage_index = 0
 	_update_calibration_copy("")
 	_cal_sheet.visible = true
+	_update_sheet_blocker()
 
 
 func _close_calibration_sheet() -> void:
 	_cal_stage_index = -1
 	_cal_sheet.visible = false
+	_update_sheet_blocker()
 	if gameplay != null and gameplay.has_method("cancel_calibration_stage"):
 		gameplay.call("cancel_calibration_stage")
 
@@ -916,10 +979,12 @@ func show_out_of_bounds() -> void:
 
 func show_pause() -> void:
 	_pause_layer.visible = true
+	_update_sheet_blocker()
 
 
 func hide_pause() -> void:
 	_pause_layer.visible = false
+	_update_sheet_blocker()
 
 
 func is_paused_sheet_visible() -> bool:
@@ -932,19 +997,50 @@ func set_overview_indicator(active: bool) -> void:
 
 func _on_hole_completed(result: Dictionary) -> void:
 	_result_title.text = tr("HOLE_COMPLETE")
-	_result_stars.text = "⭐".repeat(int(result["stars"]))
+	var stars := int(result["stars"])
 	var detail := "%d strokes · par %d" % [int(result["strokes"]), int(result["par"])]
 	if bool(result.get("is_new_best", false)):
-		detail += " · " + tr("NEW_BEST")
+		detail = "🏆 " + detail + " · " + tr("NEW_BEST")
 	_result_detail.text = detail
+	for i: int in _star_labels.size():
+		var star := _star_labels[i]
+		star.scale = Vector2.ONE
+		star.modulate = Color(1, 1, 1, 1)
+		star.add_theme_color_override("font_color",
+			RoarTheme.WARM_ACCENT if i < stars else RoarTheme.NAVY_BORDER)
 	_result_layer.visible = true
+	_update_sheet_blocker()
+	_animate_stars(stars)
 
 
 func _on_attempt_finished() -> void:
 	_result_title.text = tr("ATTEMPT_DONE")
-	_result_stars.text = ""
 	_result_detail.text = tr("STROKE_LIMIT")
+	for star: Label in _star_labels:
+		star.scale = Vector2.ONE
+		star.modulate = Color(1, 1, 1, 1)
+		star.add_theme_color_override("font_color", RoarTheme.NAVY_BORDER)
 	_result_layer.visible = true
+	_update_sheet_blocker()
+
+
+## Stars pop in one by one (gold), each with a little chime; unearned cells
+## stay dim. Skipped entirely under reduced motion.
+func _animate_stars(stars: int) -> void:
+	if SettingsStore.reduced_motion() or stars <= 0:
+		return
+	for i: int in stars:
+		var star := _star_labels[i]
+		star.modulate = Color(1, 1, 1, 0)
+		star.scale = Vector2(0.2, 0.2)
+	for i: int in stars:
+		var star := _star_labels[i]
+		var tw := create_tween()
+		tw.tween_interval(0.25 + i * 0.24)
+		tw.tween_callback(func() -> void: AudioDirector.play_effect("click", 0.5 + 0.12 * i))
+		tw.parallel().tween_property(star, "modulate:a", 1.0, 0.15)
+		tw.parallel().tween_property(star, "scale", Vector2(1.28, 1.28), 0.15)
+		tw.chain().tween_property(star, "scale", Vector2.ONE, 0.12)
 
 
 func _unhandled_input(event: InputEvent) -> void:

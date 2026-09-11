@@ -10,6 +10,7 @@ signal settle_started()
 signal settled(ball_transform: Transform3D, support_slope_ok: bool)
 signal unsettled()
 signal fall_detected(reason: String)
+signal bounced(strength: float)  ## impact speed at contact start (presentation only)
 
 const REST_LINEAR_SPEED := 0.06
 const REST_ANGULAR_SPEED := 0.3
@@ -44,7 +45,12 @@ func _ready() -> void:
 	# ball on layer 1; collides with Course(2) and MovingObstacle(4).
 	collision_layer = 1
 	collision_mask = 6
-	contact_monitor = false
+	# Contact reporting feeds only the bounce cue (GameRoot → Effects bus);
+	# no gameplay branch reads contacts. Small cap: the ball is the only
+	# dynamic body on the course.
+	contact_monitor = true
+	max_contacts_reported = 4
+	body_entered.connect(_on_body_entered)
 	mass = 1.0
 	# Engine friction is NOT the rolling-resistance spec (docs/05 §2): Jolt's
 	# default contact friction decelerates ~11 m/s² and drowns the authored
@@ -74,6 +80,15 @@ func support_slope_ok() -> bool:
 
 func linear_speed() -> float:
 	return linear_velocity.length()
+
+
+## Cue strength = speed when the contact began (pre-resolution), so hard
+## rail hits read louder than gentle nudges. Sub-threshold contacts stay
+## silent — resting re-contacts must never tick.
+func _on_body_entered(_body: Node) -> void:
+	var strength := linear_velocity.length()
+	if strength >= 0.8:
+		bounced.emit(strength)
 
 
 ## Apply one accepted shot. Returns false (and does nothing) when the command

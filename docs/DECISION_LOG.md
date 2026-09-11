@@ -216,3 +216,27 @@ over).
 **Impact.** Route suites re-run green without power retunes. Any future
 shot-model change re-opens this: re-run the roll probe and route suites,
 and re-derive the slingshot easing against the finishing bands.
+
+## D-021 · Character-life & juice pass: presentation effects never touch physics
+**Decision.** Playable-and-tuned (D-020) still felt static, so the character
+and moment-to-moment feedback got a juice layer, all of it confined to a
+`VisualRoot` child of the ball: under-damped squash & stretch spring
+(k=180, d=16, clamp ±0.35) kicked on putt/landing/hard bounce; blink cycle
+(2.2–4.6 s random); mane puffs up to +16% while a slingshot shot charges;
+expressions extended (surprised on putt, wide-grin on cup, droopy-lid sad
+on falls); the frozen ball funnels into the cup with a 0.38 s sink tween on
+completion; the authored cup flag flutters. Sound: ball contact monitoring
+feeds an impact-strength `bounced` cue (≥0.8 m/s emits, ≥1.2 m/s audible,
+140 ms throttle, volume scales with speed) on the Effects bus only, and
+`play_effect` gained a per-play volume parameter. HUD: results sheet
+rebuilt (fixed star cells, sequential star-pop tween with chime, hero NEXT
+button) and pause/calibration sheets share a card style behind a dim modal
+blocker.
+**Why.** Every checkpoint a player passes should answer back — the physics
+model stays exactly as tuned in D-020 while perceived feedback carries the
+feel.
+**Impact.** No gameplay branch may read contact events or visual scales;
+any future rule that depends on collisions must not use the `bounced`
+signal. All motion effects gate on `SettingsStore.reduced_motion()` (blink
+stays — it is sub-perceptual effort). Star-pop tweens run on the
+PROCESS_MODE_ALWAYS HUD, so they animate while the tree is paused.

@@ -41,7 +41,10 @@ func _audio_tests() -> void:
 	harness.check(AudioDirector.play_effect("cup"), "cup cue plays")
 	harness.check(AudioDirector.play_effect("fall"), "fall cue plays")
 	harness.check(AudioDirector.play_effect("click"), "click cue plays")
+	harness.check(AudioDirector.play_effect("bounce"), "bounce cue plays")
+	harness.check(AudioDirector.play_effect("putt", 0.4), "cue accepts scaled volume")
 	harness.check(not AudioDirector.play_effect("does_not_exist"), "unknown effect rejected")
+	harness.check(not AudioDirector.play_effect("does_not_exist", 0.4), "unknown effect rejected with volume")
 	harness.check(AudioServer.get_bus_index(AudioDirector.EFFECTS_BUS) >= 0, "effects bus exists")
 
 	# Effects bus never feeds the microphone capture path.

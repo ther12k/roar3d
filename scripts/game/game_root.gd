@@ -9,6 +9,11 @@ extends Node
 
 const AIM_GUIDE_LENGTH := 2.4
 const CAL_STAGE_SECONDS := 1.5
+# Squash & stretch spring (D-021): positive = squashed wide, negative =
+# stretched tall. Under-damped on purpose so the ball visibly springs back.
+const SQUASH_SPRING_K := 180.0
+const SQUASH_SPRING_D := 16.0
+const SQUASH_CLAMP := 0.35
 
 @onready var session: GameSessionController = $GameSessionController
 @onready var coordinator: InputCoordinator = $InputCoordinator
@@ -20,10 +25,26 @@ const CAL_STAGE_SECONDS := 1.5
 
 var _aim_guide: Node3D = null
 var _aim_segments: Array[MeshInstance3D] = []
+var _visual_root: Node3D = null
 var _face_rig: Node3D = null
 var _mouth_smile: MeshInstance3D = null
 var _mouth_o: MeshInstance3D = null
+var _mouth_smile_base := Vector3.ONE
 var _expression_timer: SceneTreeTimer = null
+var _sad_active := false
+var _mane: MeshInstance3D = null
+var _mane_base := Vector3.ONE
+var _mane_puff := 0.0
+var _blink_meshes: Array[MeshInstance3D] = []
+var _blink_base: Array[float] = []
+var _blink_timer := 2.0
+var _blink_phase := -1.0
+var _squash := 0.0
+var _squash_vel := 0.0
+var _sinking := false
+var _flag_mesh: MeshInstance3D = null
+var _flag_time := 0.0
+var _last_bounce_ms := 0
 var _perf_label: Label = null
 var _perf_accum := 0.0
 var _perf_frames := 0
@@ -85,6 +106,7 @@ func _ready() -> void:
 	session.shot_committed.connect(func(_shot: ShotCommand) -> void:
 		AudioDirector.play_effect("putt")
 		_spawn_burst(ball.global_position, Color("6fce4e"), 10, 2.0)
+		_kick_squash(-5.0)
 		_set_expression("surprised")
 	)
 	session.hole_completed.connect(func(_result: Dictionary) -> void:
@@ -92,15 +114,23 @@ func _ready() -> void:
 		_spawn_burst(level.cup_position() + Vector3(0, 0.4, 0), RoarTheme.WARM_ACCENT, 26, 5.0)
 		_spawn_burst(level.cup_position() + Vector3(0, 0.5, 0), RoarTheme.VOICE_CYAN, 18, 4.5)
 		_spawn_burst(level.cup_position() + Vector3(0, 0.6, 0), RoarTheme.PRIMARY_GREEN, 18, 4.5)
+		_kick_squash(4.0)
 		_set_expression("happy")
+		_play_cup_sink()
 	)
 	ball.fall_detected.connect(func(_reason: String) -> void: _on_any_fall())
 	level.kill_zone_entered.connect(func() -> void: _on_any_fall())
 	ball.settled.connect(func(_t: Transform3D, _ok: bool) -> void:
-		_spawn_burst(ball.global_position, Color(0.75, 0.72, 0.66), 8, 1.2))  # landing dust
+		_spawn_burst(ball.global_position, Color(0.75, 0.72, 0.66), 8, 1.2)  # landing dust
+		_kick_squash(3.5))
+	ball.bounced.connect(_on_ball_bounced)
 
 	_apply_equipped_cosmetic()
+	_build_visual_root()
 	_build_face_rig()
+	# The authored cup flag exists in every level scene; only its flutter is
+	# driven here (presentation-only, no collider involved).
+	_flag_mesh = level.find_child("FlagMesh", true, false) as MeshInstance3D
 	_build_aim_guide()
 	ball.freeze = true
 	session.start_level()
@@ -168,7 +198,42 @@ func _apply_equipped_cosmetic() -> void:
 ## volume may fire; penalties remain the session's once-only decision.
 func _on_any_fall() -> void:
 	AudioDirector.play_effect("fall")
+	_set_expression("sad")
 	hud.show_out_of_bounds()
+
+
+## Impact-strength bounce cue with a 140 ms throttle (rail rattles fire one
+## contact event per frame otherwise) and a small squash nudge on hard hits.
+func _on_ball_bounced(strength: float) -> void:
+	if strength < 1.2:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_bounce_ms < 140:
+		return
+	_last_bounce_ms = now
+	AudioDirector.play_effect("bounce", clampf(strength / 10.0, 0.3, 1.0))
+	_kick_squash(clampf(strength * 0.06, 0.0, 0.6))
+
+
+## Presentation-only juice (D-021): the spring animates a child VisualRoot,
+## never the RigidBody3D transform, so physics and scoring stay untouched.
+func _kick_squash(velocity: float) -> void:
+	if SettingsStore.reduced_motion() or _sinking:
+		return
+	_squash_vel += velocity
+
+
+## Finish moment: the frozen ball funnels into the cup while shrinking.
+func _play_cup_sink() -> void:
+	if SettingsStore.reduced_motion() or _visual_root == null:
+		return
+	_sinking = true
+	_visual_root.scale = Vector3.ONE
+	var sink := create_tween().set_parallel(true)
+	sink.tween_property(ball, "global_position",
+		level.cup_position() + Vector3(0.0, -0.14, 0.0), 0.38
+		).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	sink.tween_property(_visual_root, "scale", Vector3(0.55, 0.55, 0.55), 0.38)
 
 
 ## Asset-pack dressing: a few scenery islands OUTSIDE course bounds and a
@@ -192,19 +257,21 @@ func _spawn_scenery(level_id: String) -> void:
 	var seed_value := hash(level_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var half_w := minf(bounds.size.x * 0.5, 3.0)
+	var half_w := bounds.size.x * 0.5  # real half-width: on wide courses a 3 m
+	# cap would drop islands INTO the course's screen band, crowding the rails.
 	# Floating islands flanking BOTH sides of the course, close enough to the
-	# rails and high enough to read in the narrow portrait camera frame.
+	# rails and high enough to read in the narrow portrait frustum (the 19°
+	# half-FOV only spans ~±3.5 m at 10 m out, so islands hug the course).
 	for i: int in 10:
 		var variant := rng.randi_range(0, 3)
-		var piece := Scenery.build(variant, rng.randf_range(1.0, 2.2))
+		var piece := Scenery.build(variant, rng.randf_range(1.0, 1.8))
 		add_child(piece)
 		_disable_cast_shadow(piece)
 		var side := -1.0 if i % 2 == 0 else 1.0
-		var out := rng.randf_range(half_w + 1.2, half_w + 2.8)
+		var out := rng.randf_range(half_w + 1.0, half_w + 2.4)
 		piece.position = Vector3(
 			side * out,
-			rng.randf_range(0.4, 3.2),
+			rng.randf_range(1.2, 4.0),
 			bounds.position.z + bounds.size.z * (0.25 + 0.7 * rng.randf())
 		)
 		piece.rotation_degrees = Vector3(0.0, rng.randf_range(0.0, 360.0), 0.0)
@@ -220,8 +287,9 @@ func _disable_cast_shadow(node: Node) -> void:
 		_disable_cast_shadow(child)
 
 
-## Puffs BEYOND the course ends (course kit forward is -Z) so they sit small
-## and bright near the horizon inside the narrow portrait frustum.
+## Clouds in the band the portrait camera actually shows: near the vanishing
+## point ahead and high over the course (unshaded white puffs, read against
+## the bright sky). A couple trail behind for the overview camera.
 func _spawn_clouds(bounds: AABB, level_id: String) -> void:
 	var cloud_material := StandardMaterial3D.new()
 	cloud_material.albedo_color = Color(1.0, 1.0, 1.0)
@@ -236,18 +304,20 @@ func _spawn_clouds(bounds: AABB, level_id: String) -> void:
 		for p: int in puff_count:
 			var puff := MeshInstance3D.new()
 			var sphere := SphereMesh.new()
-			sphere.radius = rng.randf_range(1.8, 3.4)
+			sphere.radius = rng.randf_range(2.2, 4.2)
 			sphere.height = sphere.radius * 2.0
 			puff.mesh = sphere
 			puff.material_override = cloud_material
 			puff.scale = Vector3(1.4, 0.5, 1.0)
 			puff.position = Vector3(p * sphere.radius * 1.1 - sphere.radius * 0.5, rng.randf_range(-0.3, 0.3), 0.0)
 			cloud.add_child(puff)
-		var ahead := bounds.position.z - rng.randf_range(14.0, 46.0)
+		var ahead := bounds.position.z - rng.randf_range(8.0, 26.0)
 		var behind := bounds.end.z + rng.randf_range(16.0, 40.0)
 		cloud.position = Vector3(
-			rng.randf_range(-14.0, 14.0),
-			rng.randf_range(2.5, 7.0),
+			rng.randf_range(-10.0, 10.0),
+			# The play camera pitches down ~38°, so the frame top ends near the
+			# horizontal — clouds must sit BELOW camera height to be seen.
+			rng.randf_range(2.0, 5.5),
 			ahead if c % 3 != 2 else behind
 		)
 
@@ -294,15 +364,44 @@ func _spawn_hole_sign(level_id: String, par: int) -> void:
 
 ## Camera-facing face rig (docs/07 §5): the lion face billboards toward the
 ## camera independently of the rolling sphere so the mascot stays readable.
+## Body, mane, and face all live under a scaled VisualRoot so squash &
+## stretch (D-021) deforms the character while the RigidBody transform and
+## its CollisionShape3D stay untouched.
+func _build_visual_root() -> void:
+	_visual_root = Node3D.new()
+	_visual_root.name = "VisualRoot"
+	ball.add_child(_visual_root)
+	for body_part in ["BallMesh", "ManeMesh"]:
+		var mesh := ball.get_node_or_null(NodePath(body_part))
+		if mesh is Node3D:
+			(mesh as Node3D).reparent(_visual_root)
+	_mane = _visual_root.get_node_or_null(NodePath("ManeMesh")) as MeshInstance3D
+	if _mane != null:
+		_mane_base = _mane.scale
+
+
 func _build_face_rig() -> void:
 	_face_rig = Node3D.new()
 	_face_rig.name = "FaceRig"
-	ball.add_child(_face_rig)
+	_visual_root.add_child(_face_rig)
 	for face_part in ["EyeWhiteLeft", "EyeWhiteRight", "EyeLeft", "EyeRight", "Muzzle", "Nose"]:
 		var mesh := ball.get_node_or_null(NodePath(face_part))
 		if mesh is Node3D:
 			(mesh as Node3D).reparent(_face_rig)
-	# Expressions: smile (default) and O-mouth (surprised)
+			if face_part.begins_with("Eye"):
+				_blink_meshes.append(mesh as MeshInstance3D)
+				_blink_base.append((mesh as Node3D).scale.y)
+	# The mane becomes a halo behind the face (asset-pack lion look): the
+	# authored torus rings the ball's equator like Saturn, which reads as a
+	# headband once the face billboards. Re-ring it around the face axis.
+	var mane := _visual_root.get_node_or_null(NodePath("ManeMesh")) as MeshInstance3D
+	if mane != null:
+		mane.reparent(_face_rig)
+		mane.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0.0, 0.02, 0.10))
+		mane.scale = Vector3(1.5, 1.5, 1.5)
+		_mane = mane
+		_mane_base = mane.scale
+	# Expressions: smile (default) and O-mouth (surprised/sad)
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color("2a1f1a")
 	_mouth_smile = MeshInstance3D.new()
@@ -310,16 +409,17 @@ func _build_face_rig() -> void:
 	smile_mesh.size = Vector3(0.13, 0.035, 0.02)
 	_mouth_smile.mesh = smile_mesh
 	_mouth_smile.material_override = dark
-	_mouth_smile.position = Vector3(0, -0.095, 0.245)
+	_mouth_smile.position = Vector3(0, -0.125, 0.265)
 	_mouth_smile.rotation_degrees = Vector3(0, 0, 8)
 	_face_rig.add_child(_mouth_smile)
+	_mouth_smile_base = _mouth_smile.scale
 	_mouth_o = MeshInstance3D.new()
 	var o_mesh := SphereMesh.new()
 	o_mesh.radius = 0.035
 	o_mesh.height = 0.03
 	_mouth_o.mesh = o_mesh
 	_mouth_o.material_override = dark
-	_mouth_o.position = Vector3(0, -0.10, 0.245)
+	_mouth_o.position = Vector3(0, -0.125, 0.265)
 	_mouth_o.visible = false
 	_face_rig.add_child(_mouth_o)
 
@@ -331,14 +431,28 @@ func _set_expression(kind: String) -> void:
 		"surprised":
 			_mouth_smile.visible = false
 			_mouth_o.visible = true
-			_expression_timer = get_tree().create_timer(0.9, true)
-			_expression_timer.timeout.connect(func() -> void: _set_expression("idle"))
+			_start_expression_timeout(0.9)
 		"happy":
+			# Big grin for the finish moment, back to idle after the burst.
 			_mouth_smile.visible = true
 			_mouth_o.visible = false
+			_mouth_smile.scale = Vector3(_mouth_smile_base.x * 1.7, _mouth_smile_base.y, _mouth_smile_base.z)
+			_start_expression_timeout(1.4)
+		"sad":
+			_mouth_smile.visible = false
+			_mouth_o.visible = true
+			_sad_active = true
+			_start_expression_timeout(1.2)
 		_:
+			_sad_active = false
 			_mouth_smile.visible = true
 			_mouth_o.visible = false
+			_mouth_smile.scale = _mouth_smile_base
+
+
+func _start_expression_timeout(seconds: float) -> void:
+	_expression_timer = get_tree().create_timer(seconds, true)
+	_expression_timer.timeout.connect(func() -> void: _set_expression("idle"))
 
 
 ## Asset-pack VFX: short one-shot particle bursts (confetti, grass, dust).
@@ -381,6 +495,9 @@ func _apply_world_sky(level_id: String) -> void:
 	var sun := $WorldRoot/Lighting/DirectionalLight3D as DirectionalLight3D
 	if sun != null:
 		sun.light_color = Color("ffd2a0")
+		# The purple dusk sky tints every sky-ambient surface; extra direct sun
+		# keeps the turf reading green under the sunset mood.
+		sun.light_energy = 1.4
 
 
 func _build_aim_guide() -> void:
@@ -409,8 +526,20 @@ func _process(delta: float) -> void:
 		_face_rig.global_position = ball.global_position
 		var cam := camera_rig.camera
 		if cam != null:
-			_face_rig.look_at(cam.global_position, Vector3.UP)
-			_face_rig.rotate_y(PI)  # face meshes live on the rig's +Z side
+			# Full billboard (D-021): look_at aims -Z at the camera, so the
+			# old rotate_y(PI) flip mirrored the elevation — the face pointed
+			# 40° down at a camera sitting 40° up and bunched at the bottom of
+			# the ball's silhouette. Build the basis directly so +Z (the face
+			# side) tracks the camera's true direction, elevation included.
+			var z := (cam.global_position - _face_rig.global_position).normalized()
+			var x := Vector3.UP.cross(z)
+			x = x.normalized() if x.length_squared() > 0.0001 else Vector3.RIGHT
+			_face_rig.basis = Basis(x, z.cross(x), z)
+		_animate_character(delta)
+	if _flag_mesh != null and not SettingsStore.reduced_motion():
+		_flag_time += delta
+		_flag_mesh.rotation.z = sin(_flag_time * 3.1) * 0.13
+		_flag_mesh.rotation.x = sin(_flag_time * 2.3) * 0.06
 	if _perf_label != null:
 		_perf_frames += 1
 		_perf_accum += delta
@@ -443,6 +572,43 @@ func _process(delta: float) -> void:
 
 
 # --- Pause / overview: one authority, one order of operations ---
+
+
+## Character life (D-021): blink cycle, squash & stretch spring, and the
+## mane puffing up while a slingshot shot charges. All writes target the
+## VisualRoot subtree — physics state is never touched.
+func _animate_character(delta: float) -> void:
+	# Blink: fast close-open every few seconds; the sad face droops the lids.
+	_blink_timer -= delta
+	if _blink_phase >= 0.0:
+		_blink_phase += delta
+		if _blink_phase >= 0.12:
+			_blink_phase = -1.0
+			_blink_timer = randf_range(2.2, 4.6)
+	var openness := 1.0
+	if _blink_phase >= 0.0:
+		var k := _blink_phase / 0.06
+		openness = 1.0 - 0.92 * (k if _blink_phase < 0.06 else 2.0 - k)
+	if _sad_active:
+		openness = minf(openness, 0.45)
+	for i: int in _blink_meshes.size():
+		_blink_meshes[i].scale.y = _blink_base[i] * openness
+	if _sinking:
+		return  # the sink tween owns the visual scale from here
+	# Squash & stretch spring toward rest.
+	if not SettingsStore.reduced_motion():
+		_squash_vel += (-SQUASH_SPRING_K * _squash - SQUASH_SPRING_D * _squash_vel) * delta
+		_squash = clampf(_squash + _squash_vel * delta, -SQUASH_CLAMP, SQUASH_CLAMP)
+	if _visual_root != null:
+		var s := _squash
+		_visual_root.scale = Vector3(1.0 + s * 0.55, 1.0 - s * 0.9, 1.0 + s * 0.55)
+	# Mane puffs up with slingshot charge: the lion visibly "powers up".
+	if _mane != null:
+		var target := 0.0
+		if coordinator != null and coordinator.is_slinging() and session.can_aim():
+			target = coordinator.slingshot_power()
+		_mane_puff = lerpf(_mane_puff, target, minf(delta * 9.0, 1.0))
+		_mane.scale = _mane_base * (1.0 + 0.16 * _mane_puff)
 
 
 ## Pause cancels capture first (never a hidden hold), then cancels any
@@ -618,4 +784,14 @@ func _maybe_capture_evidence_screenshot() -> void:
 		paused_image.save_png(pause_path)
 		print("screenshot saved: " + pause_path)
 		set_gameplay_paused(false)
+	# Optional third capture: ROAR3D_SCREENSHOT_RESULT — restyled result
+	# sheet after the star pop settles. Display-only fake payload; nothing
+	# is recorded to progress storage.
+	var result_path := OS.get_environment("ROAR3D_SCREENSHOT_RESULT")
+	if not result_path.is_empty():
+		hud._on_hole_completed({"stars": 3, "strokes": 2, "par": 3, "is_new_best": true})
+		await get_tree().create_timer(1.8).timeout
+		var result_image := get_viewport().get_texture().get_image()
+		result_image.save_png(result_path)
+		print("screenshot saved: " + result_path)
 	get_tree().quit(0)

@@ -12,7 +12,7 @@ const DUCK_DB := 18.0
 # Loaded at boot (not `const preload`) so the streams release with this node
 # instead of living in the script constant table past the exit-time resource
 # check (which flagged them as leaked at shutdown).
-const EFFECT_NAMES := ["putt", "cup", "fall", "click"]
+const EFFECT_NAMES := ["putt", "cup", "fall", "click", "bounce"]
 const MUSIC_TRACKS := {
 	"sunny": "res://assets/audio/music_sunny.wav",
 	"sunset": "res://assets/audio/music_sunset.wav",
@@ -131,14 +131,17 @@ func current_music_track() -> String:
 	return _current_track
 
 
-## Play a named nonverbal feedback cue. Returns false for unknown names.
-## Never plays through the microphone capture path (effects live on the
-## Effects bus, which sends to Master, not to MicCapture).
-func play_effect(effect_name: String) -> bool:
+## Play a named nonverbal feedback cue. `volume` (0..1) maps to the pool
+## player's gain so impact-strength cues (bounce) can scale down softly.
+## Returns false for unknown names. Never plays through the microphone
+## capture path (effects live on the Effects bus, which sends to Master, not
+## to MicCapture).
+func play_effect(effect_name: String, volume := 1.0) -> bool:
 	if not _streams.has(effect_name):
 		return false
 	var player := _pool[_next_player]
 	_next_player = (_next_player + 1) % PLAYERS
+	player.volume_db = linear_to_db(clampf(volume, 0.05, 1.0))
 	player.stream = _streams[effect_name]
 	player.play()
 	return true
