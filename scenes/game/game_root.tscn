@@ -17,8 +17,8 @@ radius = 0.25
 height = 0.5
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ball"]
-albedo_color = Color(0.95, 0.71, 0.28, 1)
-roughness = 0.65
+albedo_color = Color(0.98, 0.74, 0.26, 1)
+roughness = 0.55
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.18, 0.55, 0.92, 1)
@@ -41,8 +41,8 @@ inner_radius = 0.17
 outer_radius = 0.27
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mane"]
-albedo_color = Color(0.63, 0.39, 0.15, 1)
-roughness = 0.8
+albedo_color = Color(0.86, 0.40, 0.14, 1)
+roughness = 0.7
 
 [sub_resource type="SphereMesh" id="SphereMesh_eye"]
 radius = 0.052

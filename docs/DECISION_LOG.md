@@ -240,3 +240,29 @@ any future rule that depends on collisions must not use the `bounced`
 signal. All motion effects gate on `SettingsStore.reduced_motion()` (blink
 stays — it is sub-perceptual effort). Star-pop tweens run on the
 PROCESS_MODE_ALWAYS HUD, so they animate while the tree is paused.
+
+## D-022 · Lion mascot identity, tactile slingshot arrow & header polish
+**Decision.** Following user feedback on feel and visuals ("ui ux still far away",
+"enhance ui ux, character and gameplay"), polished the presentation layer
+matching the reference concept (01_original_gameplay.png):
+1. **Lion Mascot Identity**: Added rounded cartoon ears (outer golden fur + inner
+   cream patch) on top of the head, bright glossy specular catchlights on the
+   pupils, expressive arched eyebrows reacting to state (idle, concentrating,
+   surprised, happy, sad), and a cheerful smile with a pink tongue.
+2. **Tactile Slingshot Aim Guide**: Rebuilt the aim guide as a series of 10
+   circular dotted nodes trailing ahead and culminating in a 3D forward-pointing
+   chevron arrowhead along -Z. While stretching slingshot power, the guide
+   dynamically extends in range and smoothly shifts color from whisper-green
+   to speak-yellow to roar-coral-red with animated wave pulsing.
+3. **Audio & Rolling Juice**: Added `stretch.wav` tension cue clicking when
+   slingshot charge passes power thresholds (35%, 70%), ears pin back with
+   determined expression while charging, and rolling above 1.4 m/s kicks up subtle
+   turf particle flecks.
+4. **Header UX**: Rebuilt top bar with a stylized Roarball game logo card
+   ("👑 Roarball · SMALL SHOTS · BIG ROARS") and a sleek navy pause button.
+**Why.** Replicates the key visual charms of the reference art (expressive face,
+clear aiming trajectory, branded polish) without touching the underlying
+physics or collision model.
+**Impact.** All 8 test suites pass (914 automated tests, 0 failures). All
+presentation modifications remain isolated to `FaceRig`/`VisualRoot`. Reduced
+motion and audio volume controls fully apply.

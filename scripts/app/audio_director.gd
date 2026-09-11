@@ -12,7 +12,7 @@ const DUCK_DB := 18.0
 # Loaded at boot (not `const preload`) so the streams release with this node
 # instead of living in the script constant table past the exit-time resource
 # check (which flagged them as leaked at shutdown).
-const EFFECT_NAMES := ["putt", "cup", "fall", "click", "bounce"]
+const EFFECT_NAMES := ["putt", "cup", "fall", "click", "bounce", "stretch"]
 const MUSIC_TRACKS := {
 	"sunny": "res://assets/audio/music_sunny.wav",
 	"sunset": "res://assets/audio/music_sunset.wav",

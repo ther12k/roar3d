@@ -106,40 +106,100 @@ func _build() -> void:
 	add_child(_top_box)
 
 	var header_row := HBoxContainer.new()
-	header_row.add_theme_constant_override("separation", 8)
+	header_row.add_theme_constant_override("separation", 6)
 	_top_box.add_child(header_row)
 
+	# 1. Left: Hole & Par pill card
 	var header_pill := RoarTheme.make_pill_panel(RoarTheme.NAVY_PANEL, RoarTheme.NAVY_BORDER)
 	header_pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_row.add_child(header_pill)
 
 	var info_row := HBoxContainer.new()
-	info_row.add_theme_constant_override("separation", 10)
+	info_row.add_theme_constant_override("separation", 8)
 	header_pill.add_child(info_row)
 
 	var flag_icon := Label.new()
 	flag_icon.text = "🚩"
+	flag_icon.add_theme_font_size_override("font_size", 13)
 	info_row.add_child(flag_icon)
 
+	var hole_col := VBoxContainer.new()
+	hole_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hole_col.add_theme_constant_override("separation", 0)
+	info_row.add_child(hole_col)
+
 	_hole_label = Label.new()
-	_hole_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_hole_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_hole_label.custom_minimum_size = Vector2(80, 24)
-	_hole_label.add_theme_font_size_override("font_size", 14)
-	info_row.add_child(_hole_label)
+	_hole_label.add_theme_font_size_override("font_size", 12)
+	hole_col.add_child(_hole_label)
+
+	var sub_info := HBoxContainer.new()
+	sub_info.add_theme_constant_override("separation", 6)
+	hole_col.add_child(sub_info)
 
 	_par_label = Label.new()
 	_par_label.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
-	_par_label.add_theme_font_size_override("font_size", 13)
-	info_row.add_child(_par_label)
+	_par_label.add_theme_font_size_override("font_size", 11)
+	sub_info.add_child(_par_label)
 
 	_strokes_label = Label.new()
-	_strokes_label.add_theme_font_size_override("font_size", 13)
-	info_row.add_child(_strokes_label)
+	_strokes_label.add_theme_color_override("font_color", RoarTheme.VOICE_CYAN)
+	_strokes_label.add_theme_font_size_override("font_size", 11)
+	sub_info.add_child(_strokes_label)
 
-	var pause_button := RoarTheme.make_flat_button("II")
-	pause_button.custom_minimum_size = Vector2(46, 46)
-	pause_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	# 2. Center: Stylized Roarball game logo badge (01_original_gameplay.png)
+	var logo_pill := PanelContainer.new()
+	var logo_style := StyleBoxFlat.new()
+	logo_style.bg_color = Color(0.06, 0.14, 0.20, 0.85)
+	logo_style.set_corner_radius_all(16)
+	logo_style.border_color = RoarTheme.NAVY_BORDER
+	logo_style.set_border_width_all(1)
+	logo_style.shadow_color = Color(0, 0, 0, 0.3)
+	logo_style.shadow_size = 6
+	logo_style.content_margin_left = 10
+	logo_style.content_margin_right = 10
+	logo_style.content_margin_top = 3
+	logo_style.content_margin_bottom = 3
+	logo_pill.add_theme_stylebox_override("panel", logo_style)
+	var logo_col := VBoxContainer.new()
+	logo_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	logo_col.add_theme_constant_override("separation", -3)
+	logo_pill.add_child(logo_col)
+
+	var logo_title := Label.new()
+	logo_title.text = "👑 Roarball"
+	logo_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	logo_title.add_theme_color_override("font_color", RoarTheme.WARM_ACCENT)
+	logo_title.add_theme_font_size_override("font_size", 14)
+	logo_col.add_child(logo_title)
+
+	var logo_sub := Label.new()
+	logo_sub.text = "SMALL SHOTS · BIG ROARS"
+	logo_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	logo_sub.add_theme_color_override("font_color", RoarTheme.TEXT_SECONDARY)
+	logo_sub.add_theme_font_size_override("font_size", 7)
+	logo_col.add_child(logo_sub)
+	header_row.add_child(logo_pill)
+
+	# 3. Right: Sleek Navy Pause button
+	var pause_button := Button.new()
+	pause_button.text = "❚❚"
+	pause_button.custom_minimum_size = Vector2(44, 44)
+	pause_button.focus_mode = Control.FOCUS_NONE
+	var pause_box := StyleBoxFlat.new()
+	pause_box.bg_color = RoarTheme.NAVY_PANEL
+	pause_box.border_color = RoarTheme.NAVY_BORDER
+	pause_box.set_border_width_all(2)
+	pause_box.set_corner_radius_all(14)
+	pause_box.shadow_color = Color(0, 0, 0, 0.35)
+	pause_box.shadow_size = 6
+	pause_button.add_theme_stylebox_override("normal", pause_box)
+	pause_button.add_theme_stylebox_override("hover", pause_box)
+	var pause_press := pause_box.duplicate() as StyleBoxFlat
+	pause_press.bg_color = RoarTheme.NAVY_CARD
+	pause_button.add_theme_stylebox_override("pressed", pause_press)
+	pause_button.add_theme_color_override("font_color", RoarTheme.VOICE_CYAN)
+	pause_button.add_theme_font_size_override("font_size", 15)
 	pause_button.pressed.connect(func() -> void: pause_requested.emit())
 	header_row.add_child(pause_button)
 

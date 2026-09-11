@@ -25,6 +25,10 @@ const SQUASH_CLAMP := 0.35
 
 var _aim_guide: Node3D = null
 var _aim_segments: Array[MeshInstance3D] = []
+var _aim_arrow: MeshInstance3D = null
+var _aim_pulse_time := 0.0
+var _roll_particle_timer := 0.0
+var _last_sling_band := -1
 var _visual_root: Node3D = null
 var _face_rig: Node3D = null
 var _mouth_smile: MeshInstance3D = null
@@ -35,6 +39,11 @@ var _sad_active := false
 var _mane: MeshInstance3D = null
 var _mane_base := Vector3.ONE
 var _mane_puff := 0.0
+var _brows: Array[MeshInstance3D] = []
+var _brow_base_pos: Array[Vector3] = []
+var _brow_base_rot: Array[Vector3] = []
+var _ears: Array[MeshInstance3D] = []
+var _mouth_tongue: MeshInstance3D = null
 var _blink_meshes: Array[MeshInstance3D] = []
 var _blink_base: Array[float] = []
 var _blink_timer := 2.0
@@ -391,6 +400,53 @@ func _build_face_rig() -> void:
 			if face_part.begins_with("Eye"):
 				_blink_meshes.append(mesh as MeshInstance3D)
 				_blink_base.append((mesh as Node3D).scale.y)
+
+	# Cartoon specular eye catchlights: makes the character look lively and conscious.
+	var shine_mat := StandardMaterial3D.new()
+	shine_mat.albedo_color = Color(1.0, 1.0, 1.0)
+	shine_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	for eye_name in ["EyeLeft", "EyeRight"]:
+		var eye := _face_rig.get_node_or_null(NodePath(eye_name)) as Node3D
+		if eye != null:
+			var shine := MeshInstance3D.new()
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.018
+			sphere.height = 0.036
+			shine.mesh = sphere
+			shine.material_override = shine_mat
+			shine.position = Vector3(0.016, 0.018, 0.038)
+			eye.add_child(shine)
+
+		# Cute lion ears (asset pack lion reference): outer round ear + soft cream inner ear.
+		var ear_outer_mat := StandardMaterial3D.new()
+		ear_outer_mat.albedo_color = Color(0.98, 0.74, 0.26)
+		ear_outer_mat.roughness = 0.6
+		var ear_inner_mat := StandardMaterial3D.new()
+		ear_inner_mat.albedo_color = Color(0.98, 0.82, 0.70)
+		ear_inner_mat.roughness = 0.7
+		for side in [-1.0, 1.0]:
+			var ear_outer := MeshInstance3D.new()
+			var outer_mesh := SphereMesh.new()
+			outer_mesh.radius = 0.068
+			outer_mesh.height = 0.12
+			ear_outer.mesh = outer_mesh
+			ear_outer.material_override = ear_outer_mat
+			ear_outer.position = Vector3(side * 0.175, 0.20, 0.04)
+			ear_outer.scale = Vector3(1.0, 1.15, 0.6)
+			_face_rig.add_child(ear_outer)
+			_ears.append(ear_outer)
+
+			var ear_inner := MeshInstance3D.new()
+			var inner_mesh := SphereMesh.new()
+			inner_mesh.radius = 0.042
+			inner_mesh.height = 0.075
+			ear_inner.mesh = inner_mesh
+			ear_inner.material_override = ear_inner_mat
+			ear_inner.position = Vector3(side * 0.175, 0.20, 0.072)
+			ear_inner.scale = Vector3(1.0, 1.0, 0.5)
+			_face_rig.add_child(ear_inner)
+			_ears.append(ear_inner)
+
 	# The mane becomes a halo behind the face (asset-pack lion look): the
 	# authored torus rings the ball's equator like Saturn, which reads as a
 	# headband once the face billboards. Re-ring it around the face axis.
@@ -401,27 +457,68 @@ func _build_face_rig() -> void:
 		mane.scale = Vector3(1.5, 1.5, 1.5)
 		_mane = mane
 		_mane_base = mane.scale
-	# Expressions: smile (default) and O-mouth (surprised/sad)
+
+	# Eyebrows: expressive dark arches that react to aim, charge, and outcomes.
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color("2a1f1a")
+	var brow_box := BoxMesh.new()
+	brow_box.size = Vector3(0.048, 0.013, 0.015)
+	for side in [-1.0, 1.0]:
+		var brow := MeshInstance3D.new()
+		brow.mesh = brow_box
+		brow.material_override = dark
+		var base_pos := Vector3(side * 0.075, 0.142, 0.22)
+		var base_rot := Vector3(0, 0, side * -8.0)
+		brow.position = base_pos
+		brow.rotation_degrees = base_rot
+		_face_rig.add_child(brow)
+		_brows.append(brow)
+		_brow_base_pos.append(base_pos)
+		_brow_base_rot.append(base_rot)
+
+	# Expressions: smile (with cute pink tongue) and O-mouth (surprised/roar/sad)
+	var tongue_mat := StandardMaterial3D.new()
+	tongue_mat.albedo_color = Color("f06292")
+	tongue_mat.roughness = 0.5
+
 	_mouth_smile = MeshInstance3D.new()
 	var smile_mesh := BoxMesh.new()
-	smile_mesh.size = Vector3(0.13, 0.035, 0.02)
+	smile_mesh.size = Vector3(0.13, 0.038, 0.02)
 	_mouth_smile.mesh = smile_mesh
 	_mouth_smile.material_override = dark
 	_mouth_smile.position = Vector3(0, -0.125, 0.265)
-	_mouth_smile.rotation_degrees = Vector3(0, 0, 8)
+	_mouth_smile.rotation_degrees = Vector3(0, 0, 4)
 	_face_rig.add_child(_mouth_smile)
 	_mouth_smile_base = _mouth_smile.scale
+
+	_mouth_tongue = MeshInstance3D.new()
+	var tongue_mesh := SphereMesh.new()
+	tongue_mesh.radius = 0.026
+	tongue_mesh.height = 0.035
+	_mouth_tongue.mesh = tongue_mesh
+	_mouth_tongue.material_override = tongue_mat
+	_mouth_tongue.position = Vector3(0.0, -0.012, 0.008)
+	_mouth_tongue.scale = Vector3(1.2, 0.8, 0.6)
+	_mouth_smile.add_child(_mouth_tongue)
+
 	_mouth_o = MeshInstance3D.new()
 	var o_mesh := SphereMesh.new()
-	o_mesh.radius = 0.035
-	o_mesh.height = 0.03
+	o_mesh.radius = 0.042
+	o_mesh.height = 0.04
 	_mouth_o.mesh = o_mesh
 	_mouth_o.material_override = dark
 	_mouth_o.position = Vector3(0, -0.125, 0.265)
 	_mouth_o.visible = false
 	_face_rig.add_child(_mouth_o)
+
+	var o_tongue := MeshInstance3D.new()
+	var o_tongue_mesh := SphereMesh.new()
+	o_tongue_mesh.radius = 0.022
+	o_tongue_mesh.height = 0.025
+	o_tongue.mesh = o_tongue_mesh
+	o_tongue.material_override = tongue_mat
+	o_tongue.position = Vector3(0.0, -0.016, 0.008)
+	_mouth_o.add_child(o_tongue)
 
 
 func _set_expression(kind: String) -> void:
@@ -432,22 +529,38 @@ func _set_expression(kind: String) -> void:
 			_mouth_smile.visible = false
 			_mouth_o.visible = true
 			_start_expression_timeout(0.9)
+			_apply_brow_offsets(Vector3(0, 0.025, 0), Vector3(0, 0, 14.0))
 		"happy":
 			# Big grin for the finish moment, back to idle after the burst.
 			_mouth_smile.visible = true
 			_mouth_o.visible = false
-			_mouth_smile.scale = Vector3(_mouth_smile_base.x * 1.7, _mouth_smile_base.y, _mouth_smile_base.z)
+			_mouth_smile.scale = Vector3(_mouth_smile_base.x * 1.7, _mouth_smile_base.y * 1.3, _mouth_smile_base.z)
 			_start_expression_timeout(1.4)
+			_apply_brow_offsets(Vector3(0, 0.015, 0), Vector3(0, 0, 6.0))
 		"sad":
 			_mouth_smile.visible = false
 			_mouth_o.visible = true
 			_sad_active = true
 			_start_expression_timeout(1.2)
+			_apply_brow_offsets(Vector3(0, -0.015, 0), Vector3(0, 0, -20.0))
+		"concentrating":
+			_mouth_smile.visible = true
+			_mouth_o.visible = false
+			_mouth_smile.scale = _mouth_smile_base
+			_apply_brow_offsets(Vector3(0, -0.012, 0), Vector3(0, 0, 18.0))
 		_:
 			_sad_active = false
 			_mouth_smile.visible = true
 			_mouth_o.visible = false
 			_mouth_smile.scale = _mouth_smile_base
+			_apply_brow_offsets(Vector3.ZERO, Vector3.ZERO)
+
+
+func _apply_brow_offsets(pos_offset: Vector3, rot_offset: Vector3) -> void:
+	for i: int in _brows.size():
+		var side := -1.0 if i == 0 else 1.0
+		_brows[i].position = _brow_base_pos[i] + pos_offset
+		_brows[i].rotation_degrees = _brow_base_rot[i] + Vector3(rot_offset.x, rot_offset.y, rot_offset.z * side)
 
 
 func _start_expression_timeout(seconds: float) -> void:
@@ -501,23 +614,43 @@ func _apply_world_sky(level_id: String) -> void:
 
 
 func _build_aim_guide() -> void:
-	# Dotted guide pointing along the aim direction; length and color grow
-	# with slingshot power while dragging (never a trajectory promise).
+	# Stylized trajectory guide matching 01_original_gameplay.png:
+	# circular glowing dotted nodes and a prominent 3D chevron arrowhead pointing along -Z.
 	_aim_guide = Node3D.new()
 	_aim_guide.name = "AimGuide"
-	for i: int in 6:
+	for i: int in 10:
 		var segment := MeshInstance3D.new()
-		var quad := BoxMesh.new()
-		quad.size = Vector3(0.08, 0.02, 0.22)
-		segment.mesh = quad
-		segment.position = Vector3(0.0, 0.0, -0.45 - float(i) * 0.38)
+		var disk := CylinderMesh.new()
+		var r := 0.06 + float(i) * 0.006
+		disk.top_radius = r
+		disk.bottom_radius = r
+		disk.height = 0.015
+		segment.mesh = disk
+		segment.position = Vector3(0.0, 0.0, -0.42 - float(i) * 0.36)
 		var material := StandardMaterial3D.new()
-		material.albedo_color = Color(1.0, 1.0, 1.0, 0.55)
+		material.albedo_color = Color(1.0, 1.0, 1.0, 0.70)
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		segment.material_override = material
 		_aim_guide.add_child(segment)
 		_aim_segments.append(segment)
+
+	# Forward Arrowhead at the guide tip pointing along -Z (local +Y rotated to -Z)
+	_aim_arrow = MeshInstance3D.new()
+	_aim_arrow.name = "AimArrow"
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = 0.16
+	cone.height = 0.28
+	_aim_arrow.mesh = cone
+	_aim_arrow.rotation_degrees = Vector3(90, 0, 0)
+	var arrow_mat := StandardMaterial3D.new()
+	arrow_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.90)
+	arrow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	arrow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_aim_arrow.material_override = arrow_mat
+	_aim_arrow.position = Vector3(0.0, 0.0, -2.5)
+	_aim_guide.add_child(_aim_arrow)
 	camera_rig.add_child(_aim_guide)
 
 
@@ -548,27 +681,55 @@ func _process(delta: float) -> void:
 			_perf_label.text = "%d fps · %.1f ms" % [roundi(fps), _perf_accum / _perf_frames * 1000.0]
 			_perf_accum = 0.0
 			_perf_frames = 0
+
+	# Rolling particle trail: kicks up subtle turf speckles while moving
+	if ball != null and ball.linear_speed() > 1.4 and ball.is_supported():
+		_roll_particle_timer -= delta
+		if _roll_particle_timer <= 0.0:
+			_roll_particle_timer = 0.12
+			_spawn_burst(ball.global_position + Vector3(0, -0.15, 0), Color(0.48, 0.78, 0.42), 3, 0.8)
+
 	if _aim_guide == null or session == null:
 		return
 	var show_guide := session.can_aim() and not camera_rig.is_overview()
 	_aim_guide.visible = show_guide
 	if show_guide:
+		_aim_pulse_time += delta * 4.0
 		var ball_pos := session.ball.global_position
 		_aim_guide.global_position = ball_pos + Vector3(0.0, 0.03, 0.0)
 		_aim_guide.look_at(ball_pos + session.aim_direction, Vector3.UP)
-		# Slingshot feedback: more segments + whisper→roar tint as power grows.
+
+		# Slingshot feedback: length scales dynamically with pull, color shifts whisper→speak→roar
 		var power := 0.0
-		if coordinator != null and coordinator.is_slinging():
+		var is_sling := coordinator != null and coordinator.is_slinging()
+		if is_sling:
 			power = coordinator.slingshot_power()
-		var lit := 6 if power <= 0.0 else 2 + int(round(power * 4.0))
-		var tint := Color(1.0, 1.0, 1.0, 0.55) if power <= 0.0 \
+			# Tension audio clicks at power tier crossings (35% speak, 70% roar)
+			var band := 0 if power < 0.35 else (1 if power < 0.70 else 2)
+			if _last_sling_band != -1 and band > _last_sling_band:
+				AudioDirector.play_effect("stretch", 0.45 + band * 0.15)
+			_last_sling_band = band
+		else:
+			_last_sling_band = -1
+
+		var active_count := 6 if not is_sling else clampi(3 + int(round(power * 7.0)), 3, 10)
+		var tint := Color(1.0, 1.0, 1.0, 0.65) if not is_sling \
 			else RoarTheme.METER_WHISPER.lerp(RoarTheme.METER_ROAR, power)
+
 		for i: int in _aim_segments.size():
 			var segment := _aim_segments[i]
-			segment.visible = i < lit
+			segment.visible = i < active_count
 			var material := segment.material_override as StandardMaterial3D
 			if material != null:
-				material.albedo_color = tint
+				var wave := sin(_aim_pulse_time - float(i) * 0.4) * 0.18 + 0.82
+				material.albedo_color = Color(tint.r, tint.g, tint.b, clampf(tint.a * wave, 0.25, 0.95))
+
+		if _aim_arrow != null:
+			_aim_arrow.visible = true
+			_aim_arrow.position = Vector3(0.0, 0.0, -0.42 - float(active_count) * 0.36)
+			var arrow_mat := _aim_arrow.material_override as StandardMaterial3D
+			if arrow_mat != null:
+				arrow_mat.albedo_color = tint
 
 
 # --- Pause / overview: one authority, one order of operations ---
@@ -602,13 +763,17 @@ func _animate_character(delta: float) -> void:
 	if _visual_root != null:
 		var s := _squash
 		_visual_root.scale = Vector3(1.0 + s * 0.55, 1.0 - s * 0.9, 1.0 + s * 0.55)
-	# Mane puffs up with slingshot charge: the lion visibly "powers up".
-	if _mane != null:
-		var target := 0.0
-		if coordinator != null and coordinator.is_slinging() and session.can_aim():
-			target = coordinator.slingshot_power()
-		_mane_puff = lerpf(_mane_puff, target, minf(delta * 9.0, 1.0))
-		_mane.scale = _mane_base * (1.0 + 0.16 * _mane_puff)
+		# Mane puffs up and ears pin back with slingshot charge: the lion visibly powers up!
+		if _mane != null:
+			var target := 0.0
+			if coordinator != null and coordinator.is_slinging() and session.can_aim():
+				target = coordinator.slingshot_power()
+				if not _sad_active:
+					_set_expression("concentrating")
+			_mane_puff = lerpf(_mane_puff, target, minf(delta * 9.0, 1.0))
+			_mane.scale = _mane_base * (1.0 + 0.16 * _mane_puff)
+			for ear: MeshInstance3D in _ears:
+				ear.rotation.x = -0.32 * _mane_puff
 
 
 ## Pause cancels capture first (never a hidden hold), then cancels any

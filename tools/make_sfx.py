@@ -48,7 +48,18 @@ def make_bounce() -> np.ndarray:
     return (body + click) * env
 
 
-MAKERS = {"bounce": make_bounce}
+def make_stretch() -> np.ndarray:
+    """Subtle rubber-band stretch / tension tick for slingshot charging."""
+    dur = 0.08
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    env = envelope(n, attack=0.003, decay_tau=0.025)
+    f = 240 + 180 * (t / dur)
+    body = np.sin(2 * np.pi * f * t) * 0.7
+    return body * env
+
+
+MAKERS = {"bounce": make_bounce, "stretch": make_stretch}
 
 
 def main() -> None:
