@@ -320,3 +320,28 @@ core behavior undermines every level design built on top of it.
 **Impact.** All 8 test suites pass (940 checks green, 0 failures), including
 4 new regression tests: calibration bootstrap from an empty profile, air-jump
 blocked, jump-token restore on landing, and roar-loft upward launch.
+
+## D-025 · Physically recessed cup: carved turf collider and cavity walls
+**Decision.** The prior D-023 cup was visually recessed but still sat on a
+continuous turf box. Replaced that fake depth with a runtime-carved physical
+cup:
+1. **Turf opening**: after the level enters the physics world, the original
+   solid turf collider is removed under the cup and replaced with four turf
+   slabs plus corner-fill blocks around a circular 0.30 m opening. Matching
+   turf meshes keep the rendered surface aligned with the new collision.
+2. **Cavity**: a 0.30 m deep `ConcavePolygonShape3D` wall ring and a cylinder
+   floor are added on the Course layer beneath the opening. The ball can now
+   lip out, drop below the rim, contact the cup wall, and settle on the floor.
+3. **Capture rules**: the old low-speed rim-band remains for forgiving putts;
+   a second branch completes only when the ball center is below the cup plane,
+   inside the hole footprint, and moving below the in-cavity speed cap. The
+   approach assist was reduced from 5/4 N to 2.5/2 N so the collider, not a
+   magnetic snap, owns most of the result.
+4. **Presentation**: the procedural rim, open cavity walls, liner, sink tween,
+   and test coverage now share the same radius/depth constants.
+**Why.** The reviewer correctly distinguished an assisted visual cup from a
+real opening. This preserves casual forgiveness while making the ball's drop,
+wall contact, and below-rim completion physically legitimate.
+**Impact.** All 8 suites pass from isolated saved state: **950 checks, 0
+failures**, including physical assertions for the split turf, cavity walls and
+floor, below-rim completion, and no high-speed flyover regression.

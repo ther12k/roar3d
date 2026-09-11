@@ -41,6 +41,7 @@ func _run_all() -> void:
 	await _test_jump_blocked_in_air()
 	await _test_jump_resets_on_landing()
 	await _test_loft_launches_ball_upward()
+	await _test_physical_hole_drops_ball()
 
 
 # --- helpers ---
@@ -912,3 +913,47 @@ func _test_loft_launches_ball_upward() -> void:
 	harness.check(ball.linear_velocity.y > 0.5, "roar shot launches the ball airborne (vy > 0.5)")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
 	await _free_session(env)
+
+
+## The carved physical cavity (D-025): the turf under the cup is genuinely
+## opened, and a putt into the hole still completes — the carve must never
+## swallow capture. The ball ends below the cup plane (in the cavity).
+func _test_physical_hole_drops_ball() -> void:
+	harness.suite = "ui.physical_cup"
+	var env := await _make_full_game()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = (env["root"] as GameRoot).ball
+	var root: GameRoot = env["root"]
+	var level: LevelController = root.level
+	var completed: Dictionary = {"fired": false}
+	session.hole_completed.connect(func(_result: Dictionary) -> void: completed["fired"] = true)
+	# Give the deferred carve its physics frames.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var cup_physics := root.get_node_or_null("RealCupPhysics") as StaticBody3D
+	harness.check(cup_physics != null, "cup physics body exists after the deferred carve")
+	var turf_body := level.instance.find_child("TurfBody", true, false) as StaticBody3D
+	var full_turf_shape := turf_body.find_child("TurfShape", true, false) as CollisionShape3D if turf_body != null else null
+	harness.check(
+		full_turf_shape == null or full_turf_shape.shape == null,
+		"original full turf collider is removed at the cup opening"
+	)
+	harness.check(cup_physics != null and cup_physics.get_child_count() >= 2, "cup walls and floor colliders are present")
+	var cup := level.cup_position()
+	# The course collider is now a set of slabs around the opening, not one
+	# solid box beneath it. This is the physical (not visual) hole assertion.
+	harness.check(turf_body != null and turf_body.get_child_count() >= 4, "turf is split into multiple collider pieces around the hole")
+	# A brisk putt from 1 m arrives above the rim-band speed cap, rolls over
+	# the hole edge, and must FALL IN physically — capture below the rim.
+	ball.teleport_to(Transform3D(Basis.IDENTITY, cup + Vector3(0.0, 0.25, 1.0)))
+	harness.check(await _await_ball_rest(ball, 180), "ball settles 1 m before the cup")
+	harness.check(session.request_touch_shot(0.10), "brisk putt accepted (arrival above rim-band speed)")
+	var done := await _await_state(session, [GameStateMachine.State.COMPLETE], 600)
+	harness.check(done, "ball dropping into the carved hole completes the hole")
+	harness.check(bool(completed["fired"]), "hole_completed emitted for the physical drop")
+	# Sink tween (or captured-in-cavity position) leaves the ball below the plane.
+	for i: int in 45:
+		await get_tree().physics_frame
+	harness.check(ball.global_position.y < level.cup_plane_y() + 0.2, "ball ends below the cup plane (inside the cavity)")
+	await _free_full_game(env)

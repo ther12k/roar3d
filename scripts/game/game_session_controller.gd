@@ -22,6 +22,12 @@ const CUP_HORIZONTAL_MAX := 0.34
 const CUP_HEIGHT_MIN := 0.15
 const CUP_HEIGHT_MAX := 0.40
 const CUP_SPEED_MAX := 1.5
+# Physical cavity (D-025): the turf collider is carved into a real hole with
+# these dimensions; the visual cup in GameRoot must match. A ball whose center
+# drops below the cup plane inside the hole is holed regardless of entry speed.
+const CUP_HOLE_RADIUS := 0.30
+const CUP_CAVITY_DEPTH := 0.30
+const CUP_IN_HOLE_SPEED_MAX := 4.0
 const STUCK_WATCHDOG_SEC := 20.0
 
 @export var ball: BallController
@@ -205,8 +211,9 @@ func _physics_process(_delta: float) -> void:
 	_update_stuck_watchdog(_delta)
 
 
-## Real physical hole funnel: creates an inward and downward lip gravitational pull
-## so the ball realistically dips and rolls into the cup cavity.
+## Mild cup assist (D-025): with the turf physically carved into a real hole,
+## gravity does the capture — this only steadies honest slow approaches and
+## lip-unders, never yanks a rolling ball off its line from a distance.
 func _apply_cup_funnel() -> void:
 	if level == null or ball == null or not is_instance_valid(ball):
 		return
@@ -221,7 +228,7 @@ func _apply_cup_funnel() -> void:
 		if height >= 0.05 and height <= 0.45:
 			var pull_factor := (0.35 - flat_dist) / 0.35
 			var inward := flat_delta.normalized()
-			ball.apply_central_force(inward * (pull_factor * 5.0) + Vector3.DOWN * (pull_factor * 4.0))
+			ball.apply_central_force(inward * (pull_factor * 2.5) + Vector3.DOWN * (pull_factor * 2.0))
 
 
 func _consume_pending_shot() -> void:
@@ -336,7 +343,9 @@ func _set_stuck_available(available: bool) -> void:
 
 
 ## Cup eligibility: horizontal proximity, height band above the cup plane,
-## low speed. High flyovers and underside passes cannot complete (QA-024).
+## low speed — OR physically inside the carved cavity at any fall speed.
+## High flyovers and underside passes cannot complete (QA-024): the rim-height
+## band requires low speed, and the in-hole branch only fires below the plane.
 func _poll_cup_capture() -> void:
 	if not level.ball_in_cup_zone:
 		return
@@ -345,14 +354,21 @@ func _poll_cup_capture() -> void:
 	var cup := level.cup_position()
 	var ball_pos := ball.global_position
 	var flat_delta := Vector3(ball_pos.x - cup.x, 0.0, ball_pos.z - cup.z)
-	if flat_delta.length() > CUP_HORIZONTAL_MAX:
+	var flat_dist := flat_delta.length()
+	if flat_dist > CUP_HORIZONTAL_MAX:
 		return
 	var height := ball_pos.y - level.cup_plane_y()
-	if height < CUP_HEIGHT_MIN or height > CUP_HEIGHT_MAX:
-		return
-	if ball.linear_velocity.length() > CUP_SPEED_MAX:
-		return
-	_complete_hole(ball.global_transform)
+	if height >= CUP_HEIGHT_MIN and height <= CUP_HEIGHT_MAX:
+		if ball.linear_velocity.length() <= CUP_SPEED_MAX:
+			_complete_hole(ball.global_transform)
+			return
+	# Ball center below the cup plane while inside the hole footprint: it has
+	# physically dropped into the carved cavity — holed (QA-024 safe: only a
+	# ball already below the rim qualifies, never a flyover above the plane).
+	if flat_dist <= CUP_HOLE_RADIUS and height < CUP_HEIGHT_MIN \
+			and height > -CUP_CAVITY_DEPTH - 0.1 \
+			and ball.linear_velocity.length() <= CUP_IN_HOLE_SPEED_MAX:
+		_complete_hole(ball.global_transform)
 
 
 func _complete_hole(ball_transform: Transform3D) -> void:

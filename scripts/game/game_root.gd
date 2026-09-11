@@ -52,6 +52,7 @@ var _squash := 0.0
 var _squash_vel := 0.0
 var _sinking := false
 var _flag_mesh: MeshInstance3D = null
+var _cup_twin_material: Material = null  # turf material reused for carved pieces
 var _flag_time := 0.0
 var _last_bounce_ms := 0
 var _perf_label: Label = null
@@ -240,14 +241,19 @@ func _play_cup_sink() -> void:
 	_sinking = true
 	_visual_root.scale = Vector3.ONE
 	var sink := create_tween().set_parallel(true)
+	# Target sits on the physical cavity floor (ball center = plane - depth + radius);
+	# note cup_position().y is the marker anchor, the plane is cup_plane_y().
+	var rest_y := level.cup_plane_y() - GameSessionController.CUP_CAVITY_DEPTH + 0.25
 	sink.tween_property(ball, "global_position",
-		level.cup_position() + Vector3(0.0, -0.16, 0.0), 0.38
+		Vector3(level.cup_position().x, rest_y, level.cup_position().z), 0.38
 		).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	sink.tween_property(_visual_root, "scale", Vector3(0.55, 0.55, 0.55), 0.38)
 
 
-## Upgrades the authored flat cup sticker into a real 3D recessed hole with
-## crisp beveled white lip, dark recessed cavity depth, and bottom liner.
+## Upgrades the authored flat cup sticker into a real recessed hole: the turf
+## COLLIDER is carved open (see _carve_cup_cavity) and the visuals match —
+## beveled white lip, dark cavity walls you can see into, metallic floor liner.
+## Dimensions mirror GameSessionController.CUP_HOLE_RADIUS / CUP_CAVITY_DEPTH.
 func _build_real_cup() -> void:
 	if level == null:
 		return
@@ -256,6 +262,8 @@ func _build_real_cup() -> void:
 	var old_ring := level.find_child("Ring", true, false) as MeshInstance3D
 	if old_ring != null:
 		old_ring.visible = false
+	var hole_r: float = GameSessionController.CUP_HOLE_RADIUS
+	var depth: float = GameSessionController.CUP_CAVITY_DEPTH
 	var cup_root := Node3D.new()
 	cup_root.name = "RealCupVisual"
 	add_child(cup_root)
@@ -263,8 +271,8 @@ func _build_real_cup() -> void:
 
 	var shadow := MeshInstance3D.new()
 	var shadow_mesh := CylinderMesh.new()
-	shadow_mesh.top_radius = 0.28
-	shadow_mesh.bottom_radius = 0.28
+	shadow_mesh.top_radius = hole_r + 0.12
+	shadow_mesh.bottom_radius = hole_r + 0.12
 	shadow_mesh.height = 0.003
 	shadow.mesh = shadow_mesh
 	var shadow_mat := StandardMaterial3D.new()
@@ -277,8 +285,8 @@ func _build_real_cup() -> void:
 
 	var rim := MeshInstance3D.new()
 	var rim_mesh := TorusMesh.new()
-	rim_mesh.inner_radius = 0.20
-	rim_mesh.outer_radius = 0.25
+	rim_mesh.inner_radius = hole_r
+	rim_mesh.outer_radius = hole_r + 0.08
 	rim.mesh = rim_mesh
 	var rim_mat := StandardMaterial3D.new()
 	rim_mat.albedo_color = Color(0.97, 0.97, 0.98)
@@ -288,23 +296,29 @@ func _build_real_cup() -> void:
 	rim.position = Vector3(0.0, 0.005, 0.0)
 	cup_root.add_child(rim)
 
-	var hole_cavity := MeshInstance3D.new()
-	var hole_mesh := CylinderMesh.new()
-	hole_mesh.top_radius = 0.20
-	hole_mesh.bottom_radius = 0.19
-	hole_mesh.height = 0.18
-	hole_cavity.mesh = hole_mesh
-	var cavity_mat := StandardMaterial3D.new()
-	cavity_mat.albedo_color = Color(0.02, 0.03, 0.03)
-	cavity_mat.roughness = 0.95
-	hole_cavity.material_override = cavity_mat
-	hole_cavity.position = Vector3(0.0, -0.09, 0.0)
-	cup_root.add_child(hole_cavity)
+	# Cavity walls: open-topped tube with double-sided shading so looking in
+	# shows the dark inside of the liner instead of a flat black cap.
+	var walls := MeshInstance3D.new()
+	var walls_mesh := CylinderMesh.new()
+	walls_mesh.top_radius = hole_r
+	walls_mesh.bottom_radius = hole_r - 0.01
+	walls_mesh.height = depth
+	walls_mesh.cap_top = false
+	walls_mesh.cap_bottom = false
+	walls_mesh.radial_segments = 24
+	walls.mesh = walls_mesh
+	var walls_mat := StandardMaterial3D.new()
+	walls_mat.albedo_color = Color(0.02, 0.03, 0.03)
+	walls_mat.roughness = 0.95
+	walls_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	walls.material_override = walls_mat
+	walls.position = Vector3(0.0, -depth * 0.5, 0.0)
+	cup_root.add_child(walls)
 
 	var liner := MeshInstance3D.new()
 	var liner_mesh := CylinderMesh.new()
-	liner_mesh.top_radius = 0.19
-	liner_mesh.bottom_radius = 0.19
+	liner_mesh.top_radius = hole_r - 0.01
+	liner_mesh.bottom_radius = hole_r - 0.01
 	liner_mesh.height = 0.02
 	liner.mesh = liner_mesh
 	var liner_mat := StandardMaterial3D.new()
@@ -312,8 +326,180 @@ func _build_real_cup() -> void:
 	liner_mat.metallic = 0.7
 	liner_mat.roughness = 0.35
 	liner.material_override = liner_mat
-	liner.position = Vector3(0.0, -0.17, 0.0)
+	liner.position = Vector3(0.0, -depth + 0.01, 0.0)
 	cup_root.add_child(liner)
+
+	# Deferred: space-state queries only see bodies after a physics step has
+	# flushed the just-entered tree, and capture works on flat turf meanwhile.
+	_carve_cup_deferred(cup_pos, cup_y, hole_r, depth)
+
+
+func _carve_cup_deferred(cup_pos: Vector3, cup_y: float, hole_r: float, depth: float) -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if not is_inside_tree():
+		return
+	_carve_cup_cavity(cup_pos, cup_y, hole_r, depth)
+
+
+## Physics + visual half of the real cup: replaces the single turf BoxShape3D
+## under the cup with slabs around a square cut whose corners are filled back
+## to make the opening circular, mirrors those pieces as visible turf meshes
+## (hiding the now-hole-less original), then adds a cavity wall + floor on the
+## Course layer. The ball now genuinely drops in; capture recognizes it below
+## the rim (QA-024 keeps flyovers out: that branch only fires below the plane).
+func _carve_cup_cavity(cup_pos: Vector3, cup_y: float, hole_r: float, depth: float) -> void:
+	var space := level.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		Vector3(cup_pos.x, cup_y + 0.5, cup_pos.z),
+		Vector3(cup_pos.x, cup_y - 1.0, cup_pos.z)
+	)
+	query.collision_mask = 0b0000_0000_0010  # Course only
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return
+	var body := hit.get("collider") as StaticBody3D
+	if body == null:
+		return
+	# Find the box shape whose footprint covers the cup (kit turf is boxes).
+	for child in body.get_children():
+		var shape_node := child as CollisionShape3D
+		if shape_node == null or not (shape_node.shape is BoxShape3D):
+			continue
+		var box := shape_node.shape as BoxShape3D
+		var to_box: Transform3D = (body.global_transform * shape_node.transform).affine_inverse()
+		var cup_local := to_box * Vector3(cup_pos.x, cup_y, cup_pos.z)
+		var half := box.size * 0.5
+		if absf(cup_local.x) > half.x or absf(cup_local.z) > half.z:
+			continue
+		if cup_local.y < -half.y - 0.5 or cup_local.y > half.y + 0.5:
+			continue
+		# Cut rect clamped to the box (cup may sit near an edge).
+		var cut_min_x := maxf(cup_local.x - hole_r, -half.x)
+		var cut_max_x := minf(cup_local.x + hole_r, half.x)
+		var cut_min_z := maxf(cup_local.z - hole_r, -half.z)
+		var cut_max_z := minf(cup_local.z + hole_r, half.z)
+		var pieces: Array = []
+		# Four slabs preserve the full rectangular turf footprint while leaving a
+		# square opening around the cup.
+		if cut_max_x < half.x:
+			pieces.append({
+				"center": Vector3((cut_max_x + half.x) * 0.5, 0.0, 0.0),
+				"size": Vector3(half.x - cut_max_x, box.size.y, box.size.z),
+			})
+		if cut_min_x > -half.x:
+			pieces.append({
+				"center": Vector3((cut_min_x - half.x) * 0.5, 0.0, 0.0),
+				"size": Vector3(cut_min_x + half.x, box.size.y, box.size.z),
+			})
+		if cut_max_z < half.z:
+			pieces.append({
+				"center": Vector3((cut_min_x + cut_max_x) * 0.5, 0.0, (cut_max_z + half.z) * 0.5),
+				"size": Vector3(cut_max_x - cut_min_x, box.size.y, half.z - cut_max_z),
+			})
+		if cut_min_z > -half.z:
+			pieces.append({
+				"center": Vector3((cut_min_x + cut_max_x) * 0.5, 0.0, (cut_min_z - half.z) * 0.5),
+				"size": Vector3(cut_max_x - cut_min_x, box.size.y, cut_min_z + half.z),
+			})
+		# Fill the four square corners outside the circular radius. The inner
+		# corner of each block sits on r/sqrt(2), so the opening reads circular.
+		var reaches_full_x := [
+			cut_max_x >= cup_local.x + hole_r - 0.001,
+			cut_min_x <= cup_local.x - hole_r + 0.001,
+		]
+		var reaches_full_z := [
+			cut_max_z >= cup_local.z + hole_r - 0.001,
+			cut_min_z <= cup_local.z - hole_r + 0.001,
+		]
+		var fill := hole_r * (1.0 - 0.70710678)
+		var fill_center := hole_r - fill * 0.5
+		for quad: Array in [
+			[reaches_full_x[1], reaches_full_z[1], -1.0, -1.0],
+			[reaches_full_x[1], reaches_full_z[0], -1.0, 1.0],
+			[reaches_full_x[0], reaches_full_z[1], 1.0, -1.0],
+			[reaches_full_x[0], reaches_full_z[0], 1.0, 1.0],
+		]:
+			if bool(quad[0]) and bool(quad[1]):
+				pieces.append({
+					"center": Vector3(cup_local.x + quad[2] * fill_center, 0.0, cup_local.z + quad[3] * fill_center),
+					"size": Vector3(fill, box.size.y, fill),
+				})
+		if pieces.is_empty():
+			continue
+		var shape_world: Transform3D = body.global_transform * shape_node.transform
+		_hide_turf_visual_twin(shape_world, box.size)
+		for piece: Dictionary in pieces:
+			var new_shape := CollisionShape3D.new()
+			var new_box := BoxShape3D.new()
+			new_box.size = piece["size"]
+			new_shape.shape = new_box
+			new_shape.transform = shape_node.transform * Transform3D(Basis.IDENTITY, piece["center"])
+			body.add_child(new_shape)
+			var turf := MeshInstance3D.new()
+			var turf_mesh := BoxMesh.new()
+			turf_mesh.size = piece["size"]
+			turf.mesh = turf_mesh
+			if _cup_twin_material != null:
+				turf.material_override = _cup_twin_material
+			add_child(turf)
+			turf.global_transform = shape_world * Transform3D(Basis.IDENTITY, piece["center"])
+		body.remove_child(shape_node)
+		shape_node.queue_free()
+		break
+	# Cavity walls (double-sided concave ring) + floor on the Course layer.
+	var cup_body := StaticBody3D.new()
+	cup_body.name = "RealCupPhysics"
+	cup_body.collision_layer = 0b0000_0000_0010
+	cup_body.collision_mask = 0
+	add_child(cup_body)
+	cup_body.global_position = Vector3(cup_pos.x, cup_y, cup_pos.z)
+	var seg := 24
+	var verts := PackedVector3Array()
+	for i: int in seg:
+		var a0 := TAU * float(i) / float(seg)
+		var a1 := TAU * float(i + 1) / float(seg)
+		var p0 := Vector3(cos(a0) * hole_r, 0.0, sin(a0) * hole_r)
+		var p1 := Vector3(cos(a1) * hole_r, 0.0, sin(a1) * hole_r)
+		var b0 := p0 + Vector3(0.0, -depth, 0.0)
+		var b1 := p1 + Vector3(0.0, -depth, 0.0)
+		verts.append_array([p0, p1, b1, p0, b1, b0])
+	var walls_shape := ConcavePolygonShape3D.new()
+	walls_shape.backface_collision = true
+	walls_shape.set_faces(verts)
+	var walls_node := CollisionShape3D.new()
+	walls_node.shape = walls_shape
+	cup_body.add_child(walls_node)
+	var floor_shape := CylinderShape3D.new()
+	floor_shape.radius = hole_r
+	floor_shape.height = 0.04
+	var floor_node := CollisionShape3D.new()
+	floor_node.shape = floor_shape
+	floor_node.position = Vector3(0.0, -depth - 0.02, 0.0)
+	cup_body.add_child(floor_node)
+
+
+## The kit renders turf as a BoxMesh whose transform and size match the
+## collider box; find that visual twin by world position + size and hide it,
+## or the turf texture would still paint across the carved opening.
+func _hide_turf_visual_twin(shape_world: Transform3D, size: Vector3) -> void:
+	var stack: Array[Node] = [level]
+	_cup_twin_material = null
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		for child in node.get_children():
+			stack.append(child)
+		var mesh_node := node as MeshInstance3D
+		if mesh_node == null or not (mesh_node.mesh is BoxMesh):
+			continue
+		var box_mesh := mesh_node.mesh as BoxMesh
+		if (box_mesh.size - size).length() > 0.01:
+			continue
+		if mesh_node.global_transform.origin.distance_to(shape_world.origin) > 0.05:
+			continue
+		_cup_twin_material = mesh_node.material_override
+		mesh_node.visible = false
+		return
 
 
 ## Asset-pack dressing: a few scenery islands OUTSIDE course bounds and a
