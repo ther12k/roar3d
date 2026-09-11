@@ -40,6 +40,7 @@ func _run_all() -> void:
 	await _test_calibration_stage_works_without_prior_calibration()
 	await _test_jump_blocked_in_air()
 	await _test_jump_resets_on_landing()
+	await _test_loft_launches_ball_upward()
 
 
 # --- helpers ---
@@ -883,5 +884,31 @@ func _test_jump_resets_on_landing() -> void:
 	# Jump a second time — must succeed after the landing token restore.
 	harness.check(ball.jump(3.8), "second jump succeeds after landing")
 	harness.check(not ball.can_jump(), "jump unavailable again mid-air")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_session(env)
+
+
+## Roar-tier shots (power >= 0.70) launch with an upward loft component;
+## normal shots stay flat. The loft rides in ShotCommand.direction_world.y.
+func _test_loft_launches_ball_upward() -> void:
+	harness.suite = "physics.roar_loft"
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	# Normal putt: no loft, ball stays on the ground plane.
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	session.request_touch_shot(0.3, 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	harness.check(absf(ball.linear_velocity.y) < 0.2, "flat shot has no meaningful upward velocity")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	# Roar shot: loft 0.28 tilts the launch direction upward.
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	harness.check(session.request_touch_shot(0.9, 0.28), "roar shot accepted with loft")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	harness.check(ball.linear_velocity.y > 0.5, "roar shot launches the ball airborne (vy > 0.5)")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
 	await _free_session(env)

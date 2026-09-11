@@ -317,6 +317,6 @@ and closed the authority gap that let them in:
    instead of writing ball velocity directly from the input layer.
 **Why.** Tightening rules before adding mechanics: exploitable or inconsistent
 core behavior undermines every level design built on top of it.
-**Impact.** All 8 test suites pass (936 checks green, 0 failures), including 3
-new regression tests: calibration bootstrap from an empty profile, air-jump
-blocked, and jump-token restore on landing.
+**Impact.** All 8 test suites pass (940 checks green, 0 failures), including
+4 new regression tests: calibration bootstrap from an empty profile, air-jump
+blocked, jump-token restore on landing, and roar-loft upward launch.
