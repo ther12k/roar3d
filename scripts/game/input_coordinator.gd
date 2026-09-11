@@ -65,15 +65,18 @@ func slingshot_valid() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed and not _drag_aiming and not _sling_active and session.can_aim():
-			if SettingsStore.input_mode() == "touch":
-				_sling_active = true
-				_sling_start = event.position
-				_sling_vector = Vector2.ZERO
-				_sling_valid = false
-				aim_gesture_changed.emit(true, 0.0, false)
-			else:
-				_drag_aiming = true
+		if event.pressed:
+			if session != null and session.fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
+				trigger_jump()
+			elif not _drag_aiming and not _sling_active and session.can_aim():
+				if SettingsStore.input_mode() == "touch":
+					_sling_active = true
+					_sling_start = event.position
+					_sling_vector = Vector2.ZERO
+					_sling_valid = false
+					aim_gesture_changed.emit(true, 0.0, false)
+				else:
+					_drag_aiming = true
 		elif not event.pressed:
 			if _sling_active:
 				_sling_release()
@@ -87,6 +90,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_rotate_aim(-AIM_KEY_STEP)
 	elif event.is_action_pressed("ui_right") and session.can_aim():
 		_rotate_aim(AIM_KEY_STEP)
+	elif event.is_action_pressed("ui_select") or event.is_action_pressed("ui_accept"):
+		trigger_jump()
 
 
 ## Pull-back mapping: screen-down stretches the shot forward (away from the
@@ -122,7 +127,25 @@ func _sling_release() -> void:
 		_sling_valid = false
 		return
 	_sling_valid = false
-	touch_shoot(power)
+	var loft := 0.0
+	if power >= 0.70:
+		loft = clampf((power - 0.70) / 0.30, 0.0, 1.0) * 0.28
+	session.request_touch_shot(power, loft)
+
+
+## Active jump action: mid-roll jump hop or playful in-place hop at rest
+func trigger_jump() -> bool:
+	if session == null or session.ball == null:
+		return false
+	if session.fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
+		if session.ball.jump(3.8):
+			AudioDirector.play_effect("bounce", 0.9)
+			return true
+	elif session.can_aim():
+		if session.ball.jump(2.4):
+			AudioDirector.play_effect("bounce", 0.6)
+			return true
+	return false
 
 
 func _rotate_aim(angle: float) -> void:

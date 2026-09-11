@@ -137,6 +137,7 @@ func _ready() -> void:
 	_apply_equipped_cosmetic()
 	_build_visual_root()
 	_build_face_rig()
+	_build_real_cup()
 	# The authored cup flag exists in every level scene; only its flutter is
 	# driven here (presentation-only, no collider involved).
 	_flag_mesh = level.find_child("FlagMesh", true, false) as MeshInstance3D
@@ -240,9 +241,79 @@ func _play_cup_sink() -> void:
 	_visual_root.scale = Vector3.ONE
 	var sink := create_tween().set_parallel(true)
 	sink.tween_property(ball, "global_position",
-		level.cup_position() + Vector3(0.0, -0.14, 0.0), 0.38
+		level.cup_position() + Vector3(0.0, -0.16, 0.0), 0.38
 		).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	sink.tween_property(_visual_root, "scale", Vector3(0.55, 0.55, 0.55), 0.38)
+
+
+## Upgrades the authored flat cup sticker into a real 3D recessed hole with
+## crisp beveled white lip, dark recessed cavity depth, and bottom liner.
+func _build_real_cup() -> void:
+	if level == null:
+		return
+	var cup_pos := level.cup_position()
+	var cup_y := level.cup_plane_y()
+	var old_ring := level.find_child("Ring", true, false) as MeshInstance3D
+	if old_ring != null:
+		old_ring.visible = false
+	var cup_root := Node3D.new()
+	cup_root.name = "RealCupVisual"
+	add_child(cup_root)
+	cup_root.global_position = Vector3(cup_pos.x, cup_y, cup_pos.z)
+
+	var shadow := MeshInstance3D.new()
+	var shadow_mesh := CylinderMesh.new()
+	shadow_mesh.top_radius = 0.28
+	shadow_mesh.bottom_radius = 0.28
+	shadow_mesh.height = 0.003
+	shadow.mesh = shadow_mesh
+	var shadow_mat := StandardMaterial3D.new()
+	shadow_mat.albedo_color = Color(0.04, 0.10, 0.05, 0.55)
+	shadow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shadow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	shadow.material_override = shadow_mat
+	shadow.position = Vector3(0.0, 0.002, 0.0)
+	cup_root.add_child(shadow)
+
+	var rim := MeshInstance3D.new()
+	var rim_mesh := TorusMesh.new()
+	rim_mesh.inner_radius = 0.20
+	rim_mesh.outer_radius = 0.25
+	rim.mesh = rim_mesh
+	var rim_mat := StandardMaterial3D.new()
+	rim_mat.albedo_color = Color(0.97, 0.97, 0.98)
+	rim_mat.roughness = 0.2
+	rim.material_override = rim_mat
+	rim.scale = Vector3(1.0, 0.18, 1.0)
+	rim.position = Vector3(0.0, 0.005, 0.0)
+	cup_root.add_child(rim)
+
+	var hole_cavity := MeshInstance3D.new()
+	var hole_mesh := CylinderMesh.new()
+	hole_mesh.top_radius = 0.20
+	hole_mesh.bottom_radius = 0.19
+	hole_mesh.height = 0.18
+	hole_cavity.mesh = hole_mesh
+	var cavity_mat := StandardMaterial3D.new()
+	cavity_mat.albedo_color = Color(0.02, 0.03, 0.03)
+	cavity_mat.roughness = 0.95
+	hole_cavity.material_override = cavity_mat
+	hole_cavity.position = Vector3(0.0, -0.09, 0.0)
+	cup_root.add_child(hole_cavity)
+
+	var liner := MeshInstance3D.new()
+	var liner_mesh := CylinderMesh.new()
+	liner_mesh.top_radius = 0.19
+	liner_mesh.bottom_radius = 0.19
+	liner_mesh.height = 0.02
+	liner.mesh = liner_mesh
+	var liner_mat := StandardMaterial3D.new()
+	liner_mat.albedo_color = Color(0.45, 0.48, 0.52)
+	liner_mat.metallic = 0.7
+	liner_mat.roughness = 0.35
+	liner.material_override = liner_mat
+	liner.position = Vector3(0.0, -0.17, 0.0)
+	cup_root.add_child(liner)
 
 
 ## Asset-pack dressing: a few scenery islands OUTSIDE course bounds and a
@@ -699,7 +770,7 @@ func _process(delta: float) -> void:
 		_aim_guide.global_position = ball_pos + Vector3(0.0, 0.03, 0.0)
 		_aim_guide.look_at(ball_pos + session.aim_direction, Vector3.UP)
 
-		# Slingshot feedback: length scales dynamically with pull, color shifts whisper→speak→roar
+		# Slingshot / Voice feedback: length scales dynamically with pull, color shifts whisper→speak→roar
 		var power := 0.0
 		var is_sling := coordinator != null and coordinator.is_slinging()
 		if is_sling:
@@ -709,12 +780,19 @@ func _process(delta: float) -> void:
 			if _last_sling_band != -1 and band > _last_sling_band:
 				AudioDirector.play_effect("stretch", 0.45 + band * 0.15)
 			_last_sling_band = band
+		elif voice != null and voice.is_listening():
+			power = float(voice.published_preview()["power"])
 		else:
 			_last_sling_band = -1
 
-		var active_count := 6 if not is_sling else clampi(3 + int(round(power * 7.0)), 3, 10)
-		var tint := Color(1.0, 1.0, 1.0, 0.65) if not is_sling \
+		var active_count := 6 if power <= 0.0 else clampi(3 + int(round(power * 7.0)), 3, 10)
+		var tint := Color(1.0, 1.0, 1.0, 0.65) if power <= 0.0 \
 			else RoarTheme.METER_WHISPER.lerp(RoarTheme.METER_ROAR, power)
+
+		# 3D Parabolic Arc when loft is active (ROAR tier: power >= 0.70)
+		var loft_height := 0.0
+		if power >= 0.70:
+			loft_height = (power - 0.70) / 0.30 * 0.52
 
 		for i: int in _aim_segments.size():
 			var segment := _aim_segments[i]
@@ -723,6 +801,8 @@ func _process(delta: float) -> void:
 			if material != null:
 				var wave := sin(_aim_pulse_time - float(i) * 0.4) * 0.18 + 0.82
 				material.albedo_color = Color(tint.r, tint.g, tint.b, clampf(tint.a * wave, 0.25, 0.95))
+			var t := float(i) / float(maxi(active_count - 1, 1))
+			segment.position = Vector3(0.0, sin(t * PI) * loft_height, -0.42 - float(i) * 0.36)
 
 		if _aim_arrow != null:
 			_aim_arrow.visible = true

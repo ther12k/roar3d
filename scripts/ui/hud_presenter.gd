@@ -901,16 +901,16 @@ func _on_state(state_name: String) -> void:
 	_power_slider.editable = not rolling
 	_mic_button.disabled = rolling
 	if rolling:
-		_status_label.text = tr("BALL_MOVING")
+		_status_label.text = "Ball moving — Tap or Space to JUMP! 🦘"
 	elif session.fsm.state == GameStateMachine.State.READY:
 		_show_ready_copy()
 
 
 func _show_ready_copy() -> void:
 	if SettingsStore.is_voice_mode():
-		_status_label.text = "Hold mic & sound to shoot!"
+		_status_label.text = "Whisper to roll, ROAR to jump! 🦁"
 	else:
-		_status_label.text = "Touch & drag anywhere: pull back, release!"
+		_status_label.text = "Drag to aim — Pull far to ROAR jump! 🦘"
 
 
 ## Live slingshot feedback while the player stretches a shot.
@@ -921,7 +921,10 @@ func _on_aim_gesture(active: bool, power: float, valid: bool) -> void:
 		_show_ready_copy()  # drag canceled without a shot
 		return
 	if valid:
-		_status_label.text = "Release to shoot!  %d%%" % roundi(power * 100.0)
+		if power >= 0.70:
+			_status_label.text = "🦁 ROAR JUMP SHOT!  %d%%" % roundi(power * 100.0)
+		else:
+			_status_label.text = "Release to shoot!  %d%%" % roundi(power * 100.0)
 	else:
 		_status_label.text = "Keep dragging to charge..."
 

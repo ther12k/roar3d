@@ -102,22 +102,27 @@ func start_level() -> void:
 
 
 ## Touch path: slider power + Shoot press. Zero/invalid power never fires.
-func request_touch_shot(power: float) -> bool:
+## Touch path: slider power + Shoot press or slingshot.
+func request_touch_shot(power: float, loft: float = 0.0) -> bool:
 	if not fsm.can_accept_touch_shot() or not ScoringRules.can_take_shot(strokes, max_strokes):
 		return false
 	if not ShotMath.is_valid_power(power):
 		return false
-	return _enqueue_command(ShotCommand.Source.TOUCH, power)
+	return _enqueue_command(ShotCommand.Source.TOUCH, power, loft)
 
 
 ## Voice path: called by InputCoordinator only after the service returned a
 ## valid preview from the same capture token that started the hold.
+## Roaring (power >= 0.70) adds loft to the shot, launching the lion airborne!
 func request_voice_shot(preview_power: float) -> bool:
 	if not fsm.can_accept_voice_shot() or not ScoringRules.can_take_shot(strokes, max_strokes):
 		return false
 	if not ShotMath.is_valid_power(preview_power):
 		return false
-	return _enqueue_command(ShotCommand.Source.VOICE, preview_power)
+	var loft := 0.0
+	if preview_power >= 0.70:
+		loft = clampf((preview_power - 0.70) / 0.30, 0.0, 1.0) * 0.28
+	return _enqueue_command(ShotCommand.Source.VOICE, preview_power, loft)
 
 
 func can_begin_capture() -> bool:
@@ -156,10 +161,13 @@ func can_aim() -> bool:
 	return fsm.can_aim()
 
 
-func _enqueue_command(source: ShotCommand.Source, power: float) -> bool:
+func _enqueue_command(source: ShotCommand.Source, power: float, loft: float = 0.0) -> bool:
 	_shot_seq += 1
+	var dir := aim_direction
+	if loft > 0.001:
+		dir = Vector3(aim_direction.x, loft, aim_direction.z).normalized()
 	var command := ShotCommand.new(
-		_session_id, _shot_seq, source, power, aim_direction, level_id, ShotMath.TUNING_VERSION
+		_session_id, _shot_seq, source, power, dir, level_id, ShotMath.TUNING_VERSION
 	)
 	if not command.is_valid():
 		return false
@@ -176,8 +184,28 @@ func _physics_process(_delta: float) -> void:
 	if get_tree().paused:
 		return
 	_consume_pending_shot()
+	_apply_cup_funnel()
 	_poll_cup_capture()
 	_update_stuck_watchdog(_delta)
+
+
+## Real physical hole funnel: creates an inward and downward lip gravitational pull
+## so the ball realistically dips and rolls into the cup cavity.
+func _apply_cup_funnel() -> void:
+	if level == null or ball == null or not is_instance_valid(ball):
+		return
+	if fsm.state != GameStateMachine.State.ROLLING and fsm.state != GameStateMachine.State.SETTLING:
+		return
+	var cup := level.cup_position()
+	var ball_pos := ball.global_position
+	var flat_delta := Vector3(cup.x - ball_pos.x, 0.0, cup.z - ball_pos.z)
+	var flat_dist := flat_delta.length()
+	if flat_dist < 0.35 and flat_dist > 0.01:
+		var height := ball_pos.y - level.cup_plane_y()
+		if height >= 0.05 and height <= 0.45:
+			var pull_factor := (0.35 - flat_dist) / 0.35
+			var inward := flat_delta.normalized()
+			ball.apply_central_force(inward * (pull_factor * 5.0) + Vector3.DOWN * (pull_factor * 4.0))
 
 
 func _consume_pending_shot() -> void:

@@ -96,8 +96,8 @@ func _on_body_entered(_body: Node) -> void:
 func apply_shot(command: ShotCommand) -> bool:
 	if not command.is_valid() or not _resting:
 		return false
-	var direction := ShotMath.horizontal_direction(command.direction_world)
-	if direction == Vector3.ZERO:
+	var horiz := ShotMath.horizontal_direction(command.direction_world)
+	if horiz == Vector3.ZERO:
 		return false
 	var impulse_magnitude := ShotMath.impulse_for_power(command.normalized_power)
 	if impulse_magnitude <= 0.0:
@@ -105,7 +105,23 @@ func apply_shot(command: ShotCommand) -> bool:
 	_resting = false
 	_settle_timer = 0.0
 	unsettled.emit()
-	apply_central_impulse(direction * impulse_magnitude)
+	var launch_dir := horiz
+	if command.direction_world.y > 0.001:
+		launch_dir = Vector3(horiz.x, command.direction_world.y, horiz.z).normalized()
+	apply_central_impulse(launch_dir * impulse_magnitude)
+	return true
+
+
+## Active jump/hop: gives the ball upward impulse while rolling or at rest.
+func jump(strength: float = 3.8) -> bool:
+	if not _supported and linear_velocity.y > 0.5:
+		return false
+	linear_velocity.y = strength
+	_supported = false
+	_resting = false
+	_settle_timer = 0.0
+	unsettled.emit()
+	bounced.emit(strength * 2.0)
 	return true
 
 

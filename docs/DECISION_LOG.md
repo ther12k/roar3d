@@ -266,3 +266,34 @@ physics or collision model.
 **Impact.** All 8 test suites pass (914 automated tests, 0 failures). All
 presentation modifications remain isolated to `FaceRig`/`VisualRoot`. Reduced
 motion and audio volume controls fully apply.
+
+## D-023 · Real 3D recessed cup cavity & Roar loft / mid-roll jump mechanics
+**Decision.** Playtest feedback noted: "the character cannot jump btw, and the
+hole is not real." Addressed both core gameplay and visual fidelity issues:
+1. **Real 3D Recessed Cup Cavity**:
+   - Replaced the flat black cylinder sticker with a 3D recessed golf cup:
+     a beveled white hole lip (`TorusMesh`, $r=0.25$ m) flush with the turf,
+     an ambient occlusion shadow ring, a dark hollow cavity extending $-0.18$ m
+     down into the turf (`CylinderMesh`), and an inner metallic cup liner plate
+     where the flagpole is anchored.
+   - Physical cup gravity well: when the ball is within $0.35$ m of the cup
+     center on approach, a realistic inward and downward lip gravitational pull
+     draws the rolling ball into the cup cavity rather than gliding over flat
+     ground. On completion, the sink tween drops the ball into the cup liner.
+2. **Roar Loft & Airborne Jump**:
+   - In Voice mode: shouting/roaring into the mic (power $\ge 0.70$) adds
+     an upward launch loft ($v_y$ up to $+2.2$ m/s), launching the lion ball
+     into a 3D parabolic airborne jump over obstacles and gaps!
+   - In Touch/Slingshot mode: pulling back into the Roar band ($\ge 0.70$) similarly
+     adds upward loft.
+   - Aim Guide 3D Arc: When power is in the Roar tier, the aim guide lifts off
+     the grass into a glowing 3D parabolic rainbow arc showing the flight path.
+   - Mid-roll Jump Hop: While the ball is in motion, tapping the screen or
+     pressing Spacebar triggers `ball.jump(3.8)`, letting the player leap over
+     edges and hazards with a bouncy boing sound and ear animation! At rest,
+     Spacebar performs a cute hop in place.
+**Why.** Direct response to player feedback: transformed the hole from a flat
+decal into a deep physical cup, and gave the lion character dynamic airborne
+jumping capability aligned with voice sound and slingshot power.
+**Impact.** All 8 automated test suites pass (914 checks green, 0 failures).
+Flat shot requirements in automated route tests continue to pass untouched.
