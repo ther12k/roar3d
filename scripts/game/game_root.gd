@@ -51,6 +51,7 @@ var _blink_phase := -1.0
 var _squash := 0.0
 var _squash_vel := 0.0
 var _sinking := false
+var _hop_tween: Tween = null  # READY-state decorative hop (visual node only)
 var _flag_mesh: MeshInstance3D = null
 var _cup_twin_material: Material = null  # turf material reused for carved pieces
 var _flag_time := 0.0
@@ -134,6 +135,9 @@ func _ready() -> void:
 		_spawn_burst(ball.global_position, Color(0.75, 0.72, 0.66), 8, 1.2)  # landing dust
 		_kick_squash(3.5))
 	ball.bounced.connect(_on_ball_bounced)
+	# READY-state hop is presentation-only: the mascot bounces on its visual
+	# node, the RigidBody never moves (D-026 — no ball movement without stroke).
+	session.decorative_hop_requested.connect(_play_decorative_hop)
 
 	_apply_equipped_cosmetic()
 	_build_visual_root()
@@ -232,6 +236,25 @@ func _kick_squash(velocity: float) -> void:
 	if SettingsStore.reduced_motion() or _sinking:
 		return
 	_squash_vel += velocity
+
+
+## READY-state hop (D-026): bounces the mascot's visual node up and back; the
+## RigidBody never moves. Kill any running hop so rapid taps never stack.
+func _play_decorative_hop() -> void:
+	if _visual_root == null or _sinking:
+		return
+	_set_expression("happy")
+	_kick_squash(-3.0)
+	if SettingsStore.reduced_motion():
+		return
+	if _hop_tween != null and _hop_tween.is_valid():
+		_hop_tween.kill()
+	_visual_root.position.y = 0.0
+	_hop_tween = create_tween()
+	_hop_tween.tween_property(_visual_root, "position:y", 0.35, 0.22
+		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_hop_tween.tween_property(_visual_root, "position:y", 0.0, 0.22
+		).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 
 
 ## Finish moment: the frozen ball funnels into the cup while shrinking.

@@ -13,6 +13,7 @@ signal hole_completed(result: Dictionary)
 signal attempt_finished()
 signal stuck_recovery_changed(available: bool)
 signal save_warning()
+signal decorative_hop_requested()  ## READY-state hop: presentation only, never physics
 
 # Forgiveness tuning (D-020, from the first human playtest): finishing putts
 # previously demanded ±0.02 power precision against a 0.28 m / 1.2 m/s capture
@@ -153,19 +154,19 @@ func in_capture() -> bool:
 	return fsm.is_capture_state()
 
 
-## Mid-roll jump request. The session is the authority: it validates FSM state
-## and ball support so no other layer needs to touch ball directly for jumps.
-## ROLLING or SETTLING + ball grounded + jump token available → true.
-## READY + ball resting → decorative hop only (no stroke, no state change).
-## Returns true when the ball physically launched.
+## Jump request. The session is the authority: it validates FSM state so no
+## other layer touches the ball directly for jumps.
+## ROLLING/SETTLING + ball grounded + jump token available → physical Roar Jump.
+## READY → decorative hop SIGNAL only: the mascot animates, the rigid body
+## never moves — ball movement without a stroke is forbidden (D-026).
 func request_jump() -> bool:
 	if ball == null or not is_instance_valid(ball):
 		return false
 	if fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
 		return ball.jump(3.8)
-	# Allow a playful grounded hop at rest (visual only, session stays READY).
-	if fsm.state == GameStateMachine.State.READY and ball.is_resting():
-		return ball.jump(2.4)
+	if fsm.state == GameStateMachine.State.READY:
+		decorative_hop_requested.emit()
+		return true
 	return false
 
 

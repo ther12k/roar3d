@@ -40,6 +40,7 @@ func _run_all() -> void:
 	await _test_calibration_stage_works_without_prior_calibration()
 	await _test_jump_blocked_in_air()
 	await _test_jump_resets_on_landing()
+	await _test_ready_hop_never_moves_ball()
 	await _test_loft_launches_ball_upward()
 	await _test_physical_hole_drops_ball()
 
@@ -886,6 +887,31 @@ func _test_jump_resets_on_landing() -> void:
 	harness.check(ball.jump(3.8), "second jump succeeds after landing")
 	harness.check(not ball.can_jump(), "jump unavailable again mid-air")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_session(env)
+
+
+## READY-state hop is presentation-only (D-026): request_jump returns true and
+## emits the decorative-hop signal, but the rigid body never moves and no
+## stroke is spent — ball movement without a stroke is forbidden.
+func _test_ready_hop_never_moves_ball() -> void:
+	harness.suite = "physics.ready_hop_visual_only"
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var hop_signal := {"fired": false}
+	session.decorative_hop_requested.connect(func() -> void: hop_signal["fired"] = true)
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	var pos_before := ball.global_position
+	harness.check(session.request_jump(), "READY hop request accepted (signal path)")
+	harness.check(bool(hop_signal["fired"]), "decorative_hop_requested emitted, not physics")
+	for i: int in 30:
+		await get_tree().physics_frame
+	harness.check(ball.linear_velocity.length() < 0.01, "ball velocity untouched by READY hop")
+	harness.check(ball.global_position.distance_to(pos_before) < 0.001, "ball position unchanged by READY hop")
+	harness.check(ball.is_resting(), "ball still resting")
+	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "session still READY")
+	harness.check_eq(session.strokes, 0, "no stroke spent")
 	await _free_session(env)
 
 
