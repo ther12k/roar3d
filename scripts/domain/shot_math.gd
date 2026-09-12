@@ -25,6 +25,22 @@ static func impulse_for_power(power: float) -> float:
 	return IMPULSE_MIN_N_S + (IMPULSE_MAX_N_S - IMPULSE_MIN_N_S) * pow(power, POWER_EXPONENT)
 
 
+## Upward loft (the ShotCommand.direction_world.y contribution) for a
+## Roar-tier shot. THE single copy of the loft rule (review round 4, input
+## parity): slingshot, Touch slider, and Voice all reach the session, which
+## applies this — no input layer keeps its own copy. 0.0 below the Roar
+## threshold (0.70), rising linearly to 0.28 at full power.
+const ROAR_POWER_THRESHOLD := 0.70
+const ROAR_LOFT_MAX := 0.28
+
+
+static func loft_for_power(power: float) -> float:
+	if not is_valid_power(power) or power < ROAR_POWER_THRESHOLD:
+		return 0.0
+	var roar_fraction := (power - ROAR_POWER_THRESHOLD) / (MAX_POWER - ROAR_POWER_THRESHOLD)
+	return clampf(roar_fraction, 0.0, 1.0) * ROAR_LOFT_MAX
+
+
 ## Horizontal shot direction on the world XZ plane. The standard shot adds no
 ## upward component; ramps and pads create vertical movement through geometry.
 static func horizontal_direction(direction_world: Vector3) -> Vector3:

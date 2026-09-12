@@ -55,6 +55,14 @@ func _shot_math(h: TestHarness) -> void:
 	h.check_near(dir.y, 0.0, 1e-9, "direction is horizontal")
 	h.check_near(dir.length(), 1.0, 1e-6, "direction normalized")
 	h.check_eq(ShotMath.horizontal_direction(Vector3(0.0, 3.0, 0.0)), Vector3.ZERO, "vertical-only direction rejected")
+	# Loft rule (review round 4): one shared function; 0 below the roar
+	# threshold, 0.28 at full power, linear between.
+	h.check_eq(ShotMath.loft_for_power(0.3), 0.0, "flat putt carries no loft")
+	h.check_eq(ShotMath.loft_for_power(0.69), 0.0, "sub-threshold power carries no loft")
+	h.check_eq(ShotMath.loft_for_power(0.70), 0.0, "roar threshold itself carries no loft yet")
+	h.check_near(ShotMath.loft_for_power(0.85), 0.14, 1e-6, "mid-roar loft is linear")
+	h.check_near(ShotMath.loft_for_power(1.0), 0.28, 1e-6, "full power lofts 0.28")
+	h.check_eq(ShotMath.loft_for_power(0.0), 0.0, "invalid power carries no loft")
 	h.check_near(ShotMath.relative_power(-30.0, -40.0, -20.0), 0.5, 1e-6, "relative power midpoint")
 	h.check_eq(ShotMath.relative_power(-30.0, -20.0, -40.0), -1.0, "invalid calibration sentinel")
 	h.check_eq(ShotMath.relative_power(-50.0, -40.0, -20.0), 0.0, "below range clamps to 0")

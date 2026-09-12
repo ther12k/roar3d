@@ -108,28 +108,28 @@ func start_level() -> void:
 # --- Shot intake (guarded intents, never direct physics writes) ---
 
 
-## Touch path: slider power + Shoot press. Zero/invalid power never fires.
-## Touch path: slider power + Shoot press or slingshot.
-func request_touch_shot(power: float, loft: float = 0.0) -> bool:
+## Touch path: slider power + Shoot press or slingshot. Zero/invalid power
+## never fires. Roar-tier loft is applied HERE via the shared ShotMath rule —
+## the slider and the slingshot are the same mechanic (input parity, review
+## round 4); input layers never maintain their own loft copy.
+func request_touch_shot(power: float) -> bool:
 	if not fsm.can_accept_touch_shot() or not ScoringRules.can_take_shot(strokes, max_strokes):
 		return false
 	if not ShotMath.is_valid_power(power):
 		return false
-	return _enqueue_command(ShotCommand.Source.TOUCH, power, loft)
+	return _enqueue_command(ShotCommand.Source.TOUCH, power, ShotMath.loft_for_power(power))
 
 
 ## Voice path: called by InputCoordinator only after the service returned a
-## valid preview from the same capture token that started the hold.
-## Roaring (power >= 0.70) adds loft to the shot, launching the lion airborne!
+## valid preview from the same capture token that started the hold. Same
+## shared loft rule as Touch — full-power voice and full-power slider behave
+## identically.
 func request_voice_shot(preview_power: float) -> bool:
 	if not fsm.can_accept_voice_shot() or not ScoringRules.can_take_shot(strokes, max_strokes):
 		return false
 	if not ShotMath.is_valid_power(preview_power):
 		return false
-	var loft := 0.0
-	if preview_power >= 0.70:
-		loft = clampf((preview_power - 0.70) / 0.30, 0.0, 1.0) * 0.28
-	return _enqueue_command(ShotCommand.Source.VOICE, preview_power, loft)
+	return _enqueue_command(ShotCommand.Source.VOICE, preview_power, ShotMath.loft_for_power(preview_power))
 
 
 func can_begin_capture() -> bool:

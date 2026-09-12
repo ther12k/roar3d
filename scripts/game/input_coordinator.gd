@@ -127,10 +127,9 @@ func _sling_release() -> void:
 		_sling_valid = false
 		return
 	_sling_valid = false
-	var loft := 0.0
-	if power >= 0.70:
-		loft = clampf((power - 0.70) / 0.30, 0.0, 1.0) * 0.28
-	session.request_touch_shot(power, loft)
+	# Loft is the session's shared rule now — full-power slingshot, slider,
+	# and voice all behave identically (input parity).
+	session.request_touch_shot(power)
 
 
 ## Active jump action: delegates to the session (gameplay authority).

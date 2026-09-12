@@ -44,6 +44,7 @@ func _run_all() -> void:
 	await _test_jump_resets_on_landing()
 	await _test_ready_hop_never_moves_ball()
 	await _test_loft_launches_ball_upward()
+	await _test_input_routes_loft_parity()
 	await _test_physical_hole_drops_ball()
 
 
@@ -1056,22 +1057,82 @@ func _test_loft_launches_ball_upward() -> void:
 	var env := await _make_session()
 	var session: GameSessionController = env["session"]
 	var ball: BallController = env["ball"]
-	# Normal putt: no loft, ball stays on the ground plane.
+	# Flat shot: no loft, ball stays on the ground plane (rule gives 0 below
+	# the roar threshold — the session owns the rule now).
 	session.start_level()
 	await _await_state(session, [GameStateMachine.State.READY], 180)
-	session.request_touch_shot(0.3, 0.0)
+	session.request_touch_shot(0.3)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	harness.check(absf(ball.linear_velocity.y) < 0.2, "flat shot has no meaningful upward velocity")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
-	# Roar shot: loft 0.28 tilts the launch direction upward.
+	# Roar shot via the Touch/slider route: the session applies the shared
+	# loft rule — parity with slingshot and voice at the same power.
 	session.start_level()
 	await _await_state(session, [GameStateMachine.State.READY], 180)
-	harness.check(session.request_touch_shot(0.9, 0.28), "roar shot accepted with loft")
+	harness.check(session.request_touch_shot(0.9), "roar shot accepted (slider route)")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	harness.check(ball.linear_velocity.y > 0.5, "roar shot launches the ball airborne (vy > 0.5)")
+	harness.check(ball.linear_velocity.y > 0.5, "slider roar shot launches the ball airborne (vy > 0.5)")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_session(env)
+
+
+## Input parity (review round 4, P2): at the SAME power, all input routes
+## commit the same loft. Previously the Touch slider passed no loft and
+## silently lost the roar mechanic at full power. The voice route goes
+## through the real hold flow (request_voice_shot requires CAPTURING —
+## the token contract).
+func _test_input_routes_loft_parity() -> void:
+	harness.suite = "input.loft_parity"
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var commits: Array = []
+	session.shot_committed.connect(func(shot: ShotCommand) -> void: commits.append(shot))
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	session.request_touch_shot(1.0)  # slider route at full power
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	# Voice route through the real hold/release flow. The preview is smoothed,
+	# so the hold must run long enough for it to saturate at power 1.0 —
+	# fresh 100 ms chunks keep it alive (instant delivery would trip the
+	# 500 ms no-input timeout before release).
+	var voice_env := await _make_voice_env()
+	var voice_session: GameSessionController = voice_env["session"]
+	var voice_coordinator: InputCoordinator = voice_env["coordinator"]
+	var voice_source: VoiceFrameSource.SyntheticFrameSource = voice_env["source"]
+	var voice_commits: Array = []
+	voice_session.shot_committed.connect(func(shot: ShotCommand) -> void: voice_commits.append(shot))
+	harness.check(voice_coordinator.voice_hold_started(), "voice hold opens for parity shot")
+	for i: int in 25:
+		voice_source.push_constant_ms(100, 0.12)  # ≥ upper_db → raw 1.0
+		await get_tree().process_frame
+	harness.check_between(float((voice_env["voice"] as VoiceInputService).published_preview()["power"]), 0.99, 1.001,
+		"voice preview saturated at full power")
+	voice_coordinator.voice_release_inside()
+	var rolling := await _await_state(voice_session, [GameStateMachine.State.ROLLING], 10)
+	harness.check(rolling, "voice parity shot rolls")
+	harness.check_eq(commits.size(), 1, "slider commit recorded")
+	harness.check_eq(voice_commits.size(), 1, "voice commit recorded")
+	if commits.size() == 1 and voice_commits.size() == 1:
+		var slider_cmd := commits[0] as ShotCommand
+		var voice_cmd := voice_commits[0] as ShotCommand
+		# The shared-rule invariant: each route's committed direction.y must
+		# equal loft_for_power(its own committed power), normalized into the
+		# aim direction. (The voice preview is smoothed, so a 300 ms hold at
+		# full-loudness releases at ~0.86, not 1.0 — the rule still holds.)
+		for cmd: ShotCommand in [slider_cmd, voice_cmd]:
+			var loft := ShotMath.loft_for_power(cmd.normalized_power)
+			var expected_y := loft / sqrt(1.0 + loft * loft)
+			harness.check_near(cmd.direction_world.y, expected_y, 0.001,
+				"%s commit matches the shared loft rule at its power (%.3f)" % [
+					ShotCommand.Source.keys()[cmd.source], cmd.normalized_power])
+		harness.check(slider_cmd.direction_world.y > 0.2, "full-power slider shot carries roar loft")
+		harness.check_near(slider_cmd.direction_world.y, voice_cmd.direction_world.y, 0.001,
+			"slider and voice loft identical at the same committed power")
+	await _await_state(voice_session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_session(voice_env)  # free its level/ball/session: leaked CC01
+	# turf would hijack the next test's carve-ray target.
 	await _free_session(env)
 
 

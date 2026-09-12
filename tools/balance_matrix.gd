@@ -66,8 +66,9 @@ func _play_hole(level_id: String, catalog: LevelCatalog.CatalogData) -> Dictiona
 			# bot cannot see gaps or portals, so this measures how far a
 			# straight-line strategy gets; a loft drive reliably clears far
 			# rails on lane holes (honest penalty, first version looped OOB).
+			# Loft is session-owned now (0 below the roar threshold anyway).
 			var power := clampf(0.10 + dist * 0.048, 0.06, 0.68)
-			session.request_touch_shot(power, 0.0)
+			session.request_touch_shot(power)
 		await get_tree().physics_frame
 		frames += 1
 		waited += 1.0 / 60.0
