@@ -12,36 +12,48 @@ OVERALL=0
 LOG_DIR="${ROAR3D_TEST_LOGS:-/tmp/roar3d-test-logs}"
 mkdir -p "$LOG_DIR"
 
+# Acceptance for one suite: exit 0 AND exactly ONE correctly formatted
+# summary line "<EXPECTED> TESTS: N passed, 0 failed" (N >= 1) with BOTH
+# counts extracted from that single match, AND no unexplained engine/script
+# errors. Anchored to the line start/end and pinned to the expected suite
+# name, so diagnostics that merely CONTAIN "0 failed", duplicate summaries,
+# wrong-suite summaries, or missing/malformed ones are all rejected.
 run_suite() {
-	local name="$1" scene="$2"
+	local name="$1" scene="$2" expected="$3"
 	local log="$LOG_DIR/${name}.log"
 	# Logs are RETAINED (never deleted) so a CI failure carries its full
 	# output for inspection instead of a 20-line tail.
 	XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . "$scene" >"$log" 2>&1
 	local code=$?
-	# Acceptance: exit 0 AND an exact "N passed, 0 failed" report with N >= 1
-	# (the report line is anchored so "10 failed" can never match "0 failed"),
-	# AND no unexplained engine/script errors. Deliberately-generated errors
-	# (negative tests) print "Parse JSON" lines and are whitelisted below.
-	local passed failed
-	passed=$(grep -oE "[0-9]+ passed" "$log" | tail -1 | grep -oE "[0-9]+")
-	failed=$(grep -oE "[0-9]+ failed" "$log" | tail -1 | grep -oE "[0-9]+")
-	local report
-	report=$(grep -E "TESTS:" "$log" | tail -1)
-	printf '%-14s exit=%d %s\n' "$name" "$code" "$report"
+	local pattern="^${expected} TESTS: [0-9]+ passed, [0-9]+ failed$"
+	local summary_count summary_line passed failed
+	summary_count=$(grep -cE "$pattern" "$log")
+	summary_line=$(grep -E "$pattern" "$log" | tail -1)
+	passed=$(printf '%s' "$summary_line" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+")
+	failed=$(printf '%s' "$summary_line" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+")
+	printf '%-14s exit=%d %s\n' "$name" "$code" "$summary_line"
 	local ok=1
-	if [ "$code" -ne 0 ]; then ok=0; fi
-	if [ -z "$passed" ] || [ -z "$failed" ] || [ "$passed" -lt 1 ] || [ "$failed" -ne 0 ]; then ok=0; fi
+	local reason=""
+	if [ "$code" -ne 0 ]; then ok=0; reason="exit=$code"; fi
+	if [ "$summary_count" -ne 1 ]; then
+		ok=0
+		reason="$reason summaries=$summary_count (need exactly 1 of: $pattern)"
+	fi
+	if [ -z "$passed" ] || [ -z "$failed" ] || [ "$passed" -lt 1 ] || [ "$failed" -ne 0 ]; then
+		ok=0
+		reason="$reason counts=(passed=${passed:-none} failed=${failed:-none})"
+	fi
 	local errors
 	errors=$(grep -cE "SCRIPT ERROR|Parse Error" "$log" || true)
 	if [ "$errors" -ne 0 ]; then
-		# Negative tests legitimately produce parse-json noise; SCRIPT ERROR /
-		# Parse Error lines are never expected from a suite run.
+		# SCRIPT ERROR / Parse Error lines are never expected from a suite run
+		# (deliberately-generated negative-test noise is "Parse JSON" only).
 		ok=0
+		reason="$reason script_errors=$errors"
 	fi
 	if [ "$ok" -ne 1 ]; then
 		OVERALL=1
-		echo "  -> REJECTED (exit=$code passed=$passed failed=$failed script_errors=$errors log=$log)"
+		echo "  -> REJECTED ($reason log=$log)"
 		grep -E "FAIL|SCRIPT ERROR|Parse Error" "$log" | head -20
 	fi
 }
@@ -61,8 +73,8 @@ echo "OK: $ACTUAL_VERSION matches $PINNED_VERSION"
 echo
 echo "== Clean import check =="
 rm -rf .godot
-"$GODOT_BIN" --headless --path . --import > /tmp/roar3d_import.log 2>&1 || {
-  echo "IMPORT FAILED"; grep -E "ERROR|SCRIPT ERROR" /tmp/roar3d_import.log | head -20; exit 1;
+"$GODOT_BIN" --headless --path . --import > "$LOG_DIR/import.log" 2>&1 || {
+  echo "IMPORT FAILED"; grep -E "ERROR|SCRIPT ERROR" "$LOG_DIR/import.log" | head -20; exit 1;
 }
 IMPORT_ERRORS=$(grep -cE "SCRIPT ERROR|Parse Error" /tmp/roar3d_import.log || true)
 echo "Import complete. Script/parse errors: $IMPORT_ERRORS"
@@ -70,14 +82,14 @@ echo "Import complete. Script/parse errors: $IMPORT_ERRORS"
 
 echo
 echo "== Suites (each runs with an isolated user:// profile) =="
-run_suite "UNIT"          res://tests/unit/run_tests.tscn
-run_suite "INTEGRATION"   res://tests/integration/run_integration_tests.tscn
-run_suite "COURSE_KIT"    res://tests/integration/run_course_kit_tests.tscn
-run_suite "LEVEL_ROUTE"   res://tests/integration/run_level_route_tests.tscn
-run_suite "STABILITY"     res://tests/integration/run_stability_tests.tscn
-run_suite "UI_SCREENS"    res://tests/integration/run_ui_screens_tests.tscn
-run_suite "OBSTACLE"      res://tests/integration/run_obstacle_tests.tscn
-run_suite "HOLE_ROUTE"    res://tests/integration/run_hole_route_tests.tscn
+run_suite "UNIT"          res://tests/unit/run_tests.tscn "UNIT"
+run_suite "INTEGRATION"   res://tests/integration/run_integration_tests.tscn "INTEGRATION"
+run_suite "COURSE_KIT"    res://tests/integration/run_course_kit_tests.tscn "COURSE KIT"
+run_suite "LEVEL_ROUTE"   res://tests/integration/run_level_route_tests.tscn "LEVEL ROUTE"
+run_suite "STABILITY"     res://tests/integration/run_stability_tests.tscn "STABILITY"
+run_suite "UI_SCREENS"    res://tests/integration/run_ui_screens_tests.tscn "UI SCREENS"
+run_suite "OBSTACLE"      res://tests/integration/run_obstacle_tests.tscn "OBSTACLE"
+run_suite "HOLE_ROUTE"    res://tests/integration/run_hole_route_tests.tscn "HOLE ROUTE"
 
 echo
 if [ "$OVERALL" -eq 0 ]; then

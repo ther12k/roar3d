@@ -36,7 +36,20 @@ jobs:
 
       - name: Run all test suites
         id: tests
+        env:
+          # Suite + import logs land here and upload below even on failure,
+          # so a red CI run carries its full output (review round 5).
+          ROAR3D_TEST_LOGS: ${{ github.workspace }}/test-logs
         run: tools/run_tests.sh godot
+
+      - name: Upload suite and import logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs
+          path: test-logs/
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Annotate results
         if: always()
