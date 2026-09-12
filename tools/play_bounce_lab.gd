@@ -55,7 +55,40 @@ func _ready() -> void:
 	camera_rig.level = level
 	add_child(camera_rig)
 	cam.current = true
+	# Minimal lighting rig (game_root.tscn owns the real one).
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-50, -30, 0)
+	sun.light_energy = 1.2
+	add_child(sun)
+	var env := WorldEnvironment.new()
+	var env_res := Environment.new()
+	env_res.background_mode = Environment.BG_SKY
+	var sky := Sky.new()
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color("3a86dd")
+	sky_mat.sky_horizon_color = Color("cfe9ff")
+	sky_mat.ground_horizon_color = Color("aedcf5")
+	sky_mat.ground_bottom_color = Color("6f95a8")
+	sky.sky_material = sky_mat
+	env_res.sky = sky
+	env_res.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env_res.ambient_light_color = Color(1.0, 0.98, 0.94)
+	env_res.ambient_light_energy = 1.0
+	env.environment = env_res
+	add_child(env)
 	print("Bounce Lab ready — Arrows aim, Enter shoot, Z jump/perfect-bounce, R restart, Esc quit")
+	# Evidence capture: one phone-size PNG after settle (review-friendly).
+	var shot := OS.get_environment("ROAR3D_LAB_SHOT")
+	if not shot.is_empty() and DisplayServer.get_name() != "headless":
+		for i: int in 240:
+			await get_tree().physics_frame
+			if session.fsm.state == GameStateMachine.State.READY:
+				break
+		await get_tree().process_frame
+		var image := get_viewport().get_texture().get_image()
+		if image != null:
+			image.save_png(shot)
+			print("lab capture: " + shot)
 
 
 func _unhandled_input(event: InputEvent) -> void:
