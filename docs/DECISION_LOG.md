@@ -402,3 +402,50 @@ physics, scoring, or input authority.
 **Impact.** All 8 suites stay green (985 checks). Phone-size captures verify
 CC01/CC04/PP01 framing; the replay harness produces a reproducible 5-beat
 CC04 evidence strip plus frame stats on every run.
+
+## D-029 · Review round 4 correction cycle: UI-state, parity, tooling, artifact
+**Decision.** Source review against the frozen RC found defects reachable
+without hardware; fixed in attributable commits, none touching v0.1.0-rc1:
+1. **Calibration-cancel deadlock (P1)**: closing the sheet mid-stage cleared
+   `_cal_stage`, so the pending stage timer no-op'd and the HUD's Start
+   button stayed disabled forever; a stale timer could also finish a NEWER
+   recording. Fixed with a UI reset on every sheet open plus per-attempt
+   completion tokens. Regression drives the REAL sheet through start →
+   cancel → reopen → full Room/Soft/Strong completion (which also exposed
+   that the stage-timer path had never been exercised headless — synthetic
+   sources need a continuous tone, since instant delivery trips the 500 ms
+   no-input timeout and silence chunks poison the stage median).
+2. **Input parity (P2)**: full-power slider shots carried no loft while
+   slingshot and voice did. The loft rule now lives once in
+   `ShotMath.loft_for_power`, applied by the session for every route; input
+   layers pass power only. Regression asserts each route's committed
+   direction matches the shared rule at its committed power (the voice
+   preview is smoothed, so parity is asserted at the committed power, with a
+   saturated-hold check at 1.0).
+3. **Runner gate (P1)**: `run_suite` now parses the report exactly
+   (N ≥ 1 passed AND 0 failed), rejects any SCRIPT ERROR/Parse Error
+   independently, and RETAINS full logs. Proven against the reviewer's four
+   adversarial cases (script-error+green, 10 failed, 0 passed, clean).
+4. **Replay harness (P2)**: required beats accumulate failures and exit
+   nonzero; captures verify their write; frame stats sample monotonic
+   timestamps per main-loop frame with the clock honestly labeled
+   (rendered vs headless-process) — never sampled from physics awaits.
+5. **Route re-band**: the CC03 bank route re-measured under the loft rule
+   (p=0.90 lands 1 cm SHORT of the green edge; p=1.00 → 8.93) and re-banded
+   with margin — the runner's new strictness caught this immediately.
+6. **RC artifact**: `roarball-rc1-debug.apk` built from a worktree at
+   `fa94f27`, uploaded to the release with a SHA-256 + provenance manifest
+   (aapt: targetSdk 36 — artifact-level confirmation of the corrected
+   finding). Tag untouched.
+7. **Touch layout (P2)**: the power slider now owns its layout — percentage
+   above a full-width slider, full-width Shoot; the WHISPER/ROAR meter is
+   Voice-only (it duplicated the slider and stole its width).
+8. **Hardware expectations (docs)**: HARDWARE_ACCEPTANCE step 6 now states
+   `route_category()` is still "unknown"/unimplemented so testers
+   characterize the gap rather than verify nonexistent logic.
+**Why.** The RC froze the test target; these corrections flow from evidence
+(source review + failure injection), each the smallest change that closes the
+finding, with regression gates where automatable.
+**Impact.** All 8 suites green under the hardened gate: 1000 checks
+(200 unit, 247 integration, 186 course kit, 112 level route, 76 stability,
+46 UI, 57 obstacle, 96 hole route → counts as measured in this cycle).

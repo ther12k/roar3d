@@ -24,7 +24,7 @@ issues #2, #4, #6, and #53 — do not close those from this document alone.
 | 3 | CC04 Touch run (3 strokes, use the replay script above as the shot plan) | Playable end-to-end; HUD readable; touch never triggers the OS mic indicator |
 | 4 | CC04 Voice run | Whisper rolls, ROAR lofts; meter previews match effort; audio cues duck during capture |
 | 5 | Background mid-hold (home button during a capture) | Capture closes; no mic indicator after backgrounding; resume returns to READY with no stroke |
-| 6 | Bluetooth earbuds: connect → calibrate → one shot | Route change invalidates calibration (stale prompt); indicator behavior correct |
+| 6 | Bluetooth earbuds: connect → calibrate → one shot | Route change behavior — **expectation: `PlatformAdapter.route_category()` still returns `"unknown"` unconditionally and no route-change detection is implemented yet** (documented deferral, RB-005). This step therefore CHARACTERIZES the gap for the implementer (what the OS reports, when routes change mid-hold, whether the OS mic indicator follows), rather than verifying existing invalidation logic. Record observations; calibration-stale-on-route-change remains to be built from them. |
 | 7 | 10–15 min sustained play (replay CC01→CC04 loop) | FPS overlay (`ROAR3D_PERF=1`) sampled every 2 min; note frame spikes, thermal warnings, mic failures |
 | 8 | Permission revoke while backgrounded → return | App handles denial gracefully (no capture, status surfaced, no crash) |
 

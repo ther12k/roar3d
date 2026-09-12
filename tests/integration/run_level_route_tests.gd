@@ -217,14 +217,18 @@ func _test_cc03_bank_route() -> void:
 	var session: GameSessionController = env["session"]
 	var ball: BallController = env["ball"]
 	# Bank: diagonal shot into the corner wall redirects into the corridor and
-	# carries all the way onto the bank green in one stroke. The line must be
-	# shallow enough to clear the tee's side-rail end (z=-2.5) before the
-	# corner, exactly like the kit corner traversal.
-	await _shoot(session, Vector3(0.35, 0, -0.937).normalized(), 0.9)
+	# carries onto the bank green in one stroke. The line must be shallow
+	# enough to clear the tee's side-rail end (z=-2.5) before the corner.
+	# Re-banded for the session-owned loft rule (review round 4): every
+	# full-power shot now lofts, and the airborne ball skips turf resistance,
+	# so carry grows with power — measured p=0.90 -> x=7.49 (1 cm SHORT of
+	# the green edge 7.5), p=0.95 -> 8.18, p=1.00 -> 8.93. Drive p=1.0 and
+	# demand a landing with margin on the green.
+	await _shoot(session, Vector3(0.35, 0, -0.937).normalized(), 1.0)
 	await _resolve(session)
 	print("  [route] CC03 bank shot rest %v" % ball.global_position)
 	harness.check_eq(session.fsm.state, GameStateMachine.State.READY, "bank shot resolves safely")
-	harness.check(ball.global_position.x > 7.6, "bank shot reached the final green (x=%.2f)" % ball.global_position.x)
+	harness.check(ball.global_position.x > 8.5, "bank shot landed on the final green with margin (x=%.2f)" % ball.global_position.x)
 	await _putt_until_complete(env, 1)
 	harness.check(session.strokes <= 3, "bank route finishes within par (strokes=%d)" % session.strokes)
 	await _free_level_session(env)

@@ -31,7 +31,7 @@ var _tray_panel: PanelContainer
 var _mode_chip: Button
 var _power_bar: ProgressBar
 var _power_label: Label
-var _touch_box: HBoxContainer
+var _touch_box: VBoxContainer  # Touch's own layout: pct label + wide slider + Shoot
 var _power_slider: HSlider
 var _shoot_button: Button
 var _voice_box: HBoxContainer
@@ -65,6 +65,8 @@ var _cal_hint_label: Label
 var _cal_start_button: Button
 var _cal_wave_label: Label
 var _last_input_mode := ""
+var _meter_box: VBoxContainer = null  # voice-only power meter (hidden in Touch)
+var _slider_pct_label: Label = null  # Touch slider's own percentage readout
 var _cal_stage_index := -1
 
 const CAL_STAGES: Array[String] = ["room", "soft", "strong"]
@@ -289,10 +291,20 @@ func _build() -> void:
 	_mic_button.button_up.connect(_on_mic_up)
 	_voice_box.add_child(_mic_button)
 
-	_touch_box = HBoxContainer.new()
+	_touch_box = VBoxContainer.new()
 	_touch_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_touch_box.add_theme_constant_override("separation", 8)
+	_touch_box.add_theme_constant_override("separation", 4)
 	action_row.add_child(_touch_box)
+
+	# Touch's own layout (review round 4): percentage above a WIDE slider,
+	# then a full-width Shoot button. The slider is the primary Touch control
+	# and must never be squeezed into a leftover sliver next to the meter.
+	_slider_pct_label = Label.new()
+	_slider_pct_label.text = "50%"
+	_slider_pct_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_slider_pct_label.add_theme_font_size_override("font_size", 13)
+	_slider_pct_label.add_theme_color_override("font_color", RoarTheme.TEXT_LIGHT)
+	_touch_box.add_child(_slider_pct_label)
 
 	_power_slider = HSlider.new()
 	_power_slider.min_value = 1.0
@@ -300,19 +312,23 @@ func _build() -> void:
 	_power_slider.step = 1.0
 	_power_slider.value = 50.0
 	_power_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_power_slider.custom_minimum_size = Vector2(0, 48)
+	_power_slider.custom_minimum_size = Vector2(0, 40)
 	_touch_box.add_child(_power_slider)
 
 	_shoot_button = RoarTheme.make_flat_button(tr("SHOOT"))
-	_shoot_button.custom_minimum_size = Vector2(88, 52)
+	_shoot_button.custom_minimum_size = Vector2(0, 52)
+	_shoot_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_shoot_button.pressed.connect(_on_shoot)
 	_touch_box.add_child(_shoot_button)
 
-	# Right: The "Whisper to Roar" Meter Box
+	# Right: The "Whisper to Roar" Meter Box — VOICE ONLY. In Touch mode it
+	# hides: a display-only meter duplicates the editable slider's info and
+	# steals the slider's width (review round 4).
 	var meter_box := VBoxContainer.new()
 	meter_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	meter_box.add_theme_constant_override("separation", 2)
 	action_row.add_child(meter_box)
+	_meter_box = meter_box
 
 	_power_label = Label.new()
 	_power_label.text = "Shot power 50%"
@@ -867,6 +883,8 @@ func _update_power_display() -> void:
 
 	_power_bar.value = power * 100.0
 	_power_label.text = "Shot power %d%%" % roundi(power * 100.0)
+	if _slider_pct_label != null:
+		_slider_pct_label.text = "%d%%" % roundi(power * 100.0)
 
 	# Dynamic meter coloring: green for whisper, orange for speak, red for roar
 	var fill_style := _power_bar.get_theme_stylebox("fill") as StyleBoxFlat
@@ -886,6 +904,11 @@ func _refresh_input_mode() -> void:
 	_last_input_mode = mode
 	_touch_box.visible = mode == "touch"
 	_voice_box.visible = mode == "voice"
+	# The WHISPER/ROAR meter is the VOICE tier display; Touch's power lives on
+	# its own wide slider + percentage. Hiding it returns the row width to the
+	# editable control (review round 4, Touch layout).
+	if _meter_box != null:
+		_meter_box.visible = mode == "voice"
 	_mode_chip.text = "Voice 🎙" if mode == "voice" else "Touch 👆"
 	if mode != "voice" and coordinator != null:
 		coordinator.interrupt_capture()
