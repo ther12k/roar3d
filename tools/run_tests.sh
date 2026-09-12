@@ -76,9 +76,9 @@ rm -rf .godot
 "$GODOT_BIN" --headless --path . --import > "$LOG_DIR/import.log" 2>&1 || {
   echo "IMPORT FAILED"; grep -E "ERROR|SCRIPT ERROR" "$LOG_DIR/import.log" | head -20; exit 1;
 }
-IMPORT_ERRORS=$(grep -cE "SCRIPT ERROR|Parse Error" /tmp/roar3d_import.log || true)
+IMPORT_ERRORS=$(grep -cE "SCRIPT ERROR|Parse Error" "$LOG_DIR/import.log" || true)
 echo "Import complete. Script/parse errors: $IMPORT_ERRORS"
-[ "$IMPORT_ERRORS" = "0" ] || { grep -E "SCRIPT ERROR|Parse Error" /tmp/roar3d_import.log | head; exit 1; }
+[ "$IMPORT_ERRORS" = "0" ] || { grep -E "SCRIPT ERROR|Parse Error" "$LOG_DIR/import.log" | head; exit 1; }
 
 echo
 echo "== Suites (each runs with an isolated user:// profile) =="
