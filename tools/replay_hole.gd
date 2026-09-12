@@ -68,25 +68,44 @@ func _run() -> void:
 
 	# --- Beat 2: approach putt toward the ramp ---
 	_require_shot(session.request_touch_shot(0.45), "approach putt accepted")
-	await _await_rolling(session)
+	_require_rolling(session)
 	await _sim_frames(30)
 	await _beat_capture(root, out_dir + "/2_midroll.png")
-	await _await_resolved(session)
+	var outcome := await _await_resolved(session)
+	if outcome == "COMPLETE":
+		# Explicit early-completion exception: the script's shots holed out
+		# sooner than scripted. Recorded as success; remaining shot beats are
+		# moot and skipped deliberately (not accidentally).
+		print("REPLAY EARLY-COMPLETE after approach putt (explicit exception)")
+		await _sim_frames(20)
+		await _beat_capture(root, out_dir + "/5_end.png")
+		_frame_ticker.report(level_id)
+		print("REPLAY DONE strokes=%d state=%s failures=%d" % [session.strokes, session.fsm.state, _failures])
+		get_tree().quit(1 if _failures > 0 else 0)
+		return
 
 	# --- Beat 3: roar shot over the ramp (loft + launch feel) ---
-	if session.fsm.state == GameStateMachine.State.READY:
-		_require_shot(session.request_touch_shot(0.9), "roar shot accepted")
-		await _await_rolling(session)
+	_require_ready(session, "before roar shot")
+	_require_shot(session.request_touch_shot(0.9), "roar shot accepted")
+	_require_rolling(session)
+	await _sim_frames(20)
+	await _beat_capture(root, out_dir + "/3_roar_airborne.png")
+	outcome = await _await_resolved(session)
+	if outcome == "COMPLETE":
+		print("REPLAY EARLY-COMPLETE after roar shot (explicit exception)")
 		await _sim_frames(20)
-		await _beat_capture(root, out_dir + "/3_roar_airborne.png")
-	await _await_resolved(session)
+		await _beat_capture(root, out_dir + "/5_end.png")
+		_frame_ticker.report(level_id)
+		print("REPLAY DONE strokes=%d state=%s failures=%d" % [session.strokes, session.fsm.state, _failures])
+		get_tree().quit(1 if _failures > 0 else 0)
+		return
 
 	# --- Beat 4: roll onto the green toward the cup ---
-	if session.fsm.state == GameStateMachine.State.READY:
-		_require_shot(session.request_touch_shot(0.3), "green roll accepted")
-		await _await_rolling(session)
-		await _sim_frames(25)
-		await _beat_capture(root, out_dir + "/4_green.png")
+	_require_ready(session, "before green roll")
+	_require_shot(session.request_touch_shot(0.3), "green roll accepted")
+	_require_rolling(session)
+	await _sim_frames(25)
+	await _beat_capture(root, out_dir + "/4_green.png")
 	await _await_resolved(session)
 
 	# --- Beat 5: settle state at end of script ---
@@ -110,6 +129,7 @@ func _require_shot(accepted: bool, what: String) -> void:
 	print("REPLAY SHOT %s accepted=%s" % [what, str(accepted)])
 
 
+## Reaching READY from spawn is a required beat.
 func _await_ready(session: GameSessionController) -> bool:
 	for i: int in READY_FRAMES_MAX:
 		if session.fsm.state == GameStateMachine.State.READY:
@@ -118,21 +138,44 @@ func _await_ready(session: GameSessionController) -> bool:
 	return session.fsm.state == GameStateMachine.State.READY
 
 
-func _await_rolling(session: GameSessionController) -> void:
+## The scripted shots must reach ROLLING; a timeout is a failed beat.
+func _require_rolling(session: GameSessionController) -> void:
 	for i: int in 20:
 		if session.fsm.state == GameStateMachine.State.ROLLING:
+			print("REPLAY BEAT rolling ok=true")
 			return
 		await get_tree().physics_frame
+	_failures += 1
+	print("REPLAY BEAT rolling ok=false (timed out in %s)" % session.fsm.state)
 
 
-func _await_resolved(session: GameSessionController) -> void:
+## The next scripted shot requires READY; anything else is a failed beat.
+func _require_ready(session: GameSessionController, what: String) -> void:
+	if session.fsm.state == GameStateMachine.State.READY:
+		return
+	_failures += 1
+	print("REPLAY BEAT READY required %s — state is %s" % [what, session.fsm.state])
+
+
+## Waits for a shot to resolve. Returns the terminal state name. READY is the
+## normal outcome; COMPLETE ends the scenario early (explicitly recorded by
+## the caller); FAILED means the scripted shot went out of bounds or hit the
+## attempt limit — that is a FAILED BEAT, not a successful resolution.
+func _await_resolved(session: GameSessionController) -> String:
 	for i: int in SETTLE_FRAMES_MAX:
 		if session.fsm.state in [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED]:
-			return
+			var state_name: String = GameStateMachine.State.keys()[session.fsm.state]
+			if session.fsm.state == GameStateMachine.State.FAILED:
+				_failures += 1
+				print("REPLAY BEAT resolution ok=false (scenario FAILED: penalty/attempt-limit)")
+			else:
+				print("REPLAY BEAT resolution ok=true (%s)" % state_name)
+			return state_name
 		await get_tree().physics_frame
 	# Timed out without resolving: a required transition failed.
 	_failures += 1
 	print("REPLAY TIMEOUT waiting for shot resolution (state=%s)" % session.fsm.state)
+	return "TIMEOUT"
 
 
 func _sim_frames(count: int) -> void:
