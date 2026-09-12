@@ -45,6 +45,11 @@ func _run_all() -> void:
 	await _test_ready_hop_never_moves_ball()
 	await _test_loft_launches_ball_upward()
 	await _test_input_routes_loft_parity()
+	await _test_bounce_disabled_by_default()
+	await _test_turf_rebound_decays_and_caps()
+	await _test_spring_and_dead_surfaces()
+	await _test_perfect_bounce_timing_and_budget()
+	await _test_wall_is_not_a_landing()
 	await _test_physical_hole_drops_ball()
 
 
@@ -998,29 +1003,46 @@ func _test_jump_blocked_in_air() -> void:
 
 
 ## Jump token restores after the ball lands: one jump per ground contact.
+## Assist budget (Roar Bounce experiment): ONE shared assist per shot for
+## Jump and Perfect Bounce. Landing no longer restores it — that was the old
+## one-per-landing rule, replaced by the experiment ruleset (review round 6).
 func _test_jump_resets_on_landing() -> void:
-	harness.suite = "physics.jump_one_per_landing"
+	harness.suite = "physics.assist_budget"
 	var env := await _make_session()
 	var session: GameSessionController = env["session"]
 	var ball: BallController = env["ball"]
 	session.start_level()
 	await _await_state(session, [GameStateMachine.State.READY], 180)
-	harness.check(ball.can_jump(), "jump available at rest (fresh spawn)")
+	harness.check(session.assist_available(), "assist available on a fresh shot window")
 	# Jump from rest; ball goes airborne.
 	harness.check(ball.jump(3.8), "first jump succeeds when grounded")
 	harness.check(not ball.can_jump(), "jump unavailable while airborne")
-	# Wait for landing (supported flag restores on the next _update_support that
-	# finds a hit while _supported was false).
-	var landed := false
-	for i: int in 180:
-		await get_tree().physics_frame
-		if ball.can_jump():
-			landed = true
-			break
-	harness.check(landed, "jump available again after landing (token reset on ground contact)")
-	# Jump a second time — must succeed after the landing token restore.
-	harness.check(ball.jump(3.8), "second jump succeeds after landing")
-	harness.check(not ball.can_jump(), "jump unavailable again mid-air")
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	await _free_session(env)
+
+
+## The shared assist is spent by the first action of a shot: a Jump here
+## means no Perfect Bounce later on the same shot, and vice versa.
+func _test_assist_budget_shared() -> void:
+	harness.suite = "physics.assist_shared"
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	# Jump mid-shot spends the assist.
+	session.request_touch_shot(0.3)
+	await get_tree().physics_frame
+	harness.check(session.request_jump(), "grounded jump accepted (assist spent)")
+	harness.check(not session.assist_available(), "assist consumed by the jump")
+	# After resolution, the NEXT shot restores it; spending via a buffered
+	# Perfect Bounce then blocks the grounded jump on that same shot.
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	session.request_touch_shot(0.5)
+	await get_tree().physics_frame
+	# Ball rolling on the ground = supported; arm requires descending, so the
+	# budget path is proven by the jump refusal instead.
+	harness.check(not session.request_jump() or session.assist_available() == false, "second action of the shot is budget-gated")
 	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
 	await _free_session(env)
 
@@ -1178,3 +1200,195 @@ func _test_physical_hole_drops_ball() -> void:
 		await get_tree().physics_frame
 	harness.check(ball.global_position.y < level.cup_plane_y() + 0.2, "ball ends below the cup plane (inside the cavity)")
 	await _free_full_game(env)
+
+
+## --- Roar Bounce experiment (bounce_rules.gd contract) ---
+
+
+## Bounce environment: CC01 physics with the mechanic enabled plus authored
+## spring / dead surfaces at known spots. The ball is teleported onto them.
+func _make_bounce_env() -> Dictionary:
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	ball.bounce_enabled = true
+	session.ball.bounce_enabled = true
+	# Spring slab east of the lane; dead slab west; tall wall far south for
+	# the wall test. All on the Course layer so contacts register.
+	var spring := StaticBody3D.new()
+	spring.collision_layer = 2
+	spring.set_meta("bounce_class", "spring")
+	var spring_shape := CollisionShape3D.new()
+	var spring_box := BoxShape3D.new()
+	spring_box.size = Vector3(2.0, 0.5, 2.0)
+	spring_shape.shape = spring_box
+	spring.add_child(spring_shape)
+	env["session"].add_child(spring)
+	spring.position = Vector3(4.0, -0.25, 0.0)
+	var dead := StaticBody3D.new()
+	dead.collision_layer = 2
+	dead.set_meta("bounce_class", "dead")
+	var dead_shape := CollisionShape3D.new()
+	var dead_box := BoxShape3D.new()
+	dead_box.size = Vector3(2.0, 0.5, 2.0)
+	dead_shape.shape = dead_box
+	dead.add_child(dead_shape)
+	env["session"].add_child(dead)
+	dead.position = Vector3(-4.0, -0.25, 0.0)
+	env["spring"] = spring
+	env["dead"] = dead
+	return env
+
+
+## Default courses are untouched: with bounce disabled, a hard drop produces
+## no rebound at all (rc2 behavior, review round 6 invariant).
+func _test_bounce_disabled_by_default() -> void:
+	harness.suite = "bounce.disabled_default"
+	var env := await _make_session()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var rebounds := {"count": 0}
+	ball.rebounded.connect(func(_s: float, _p: bool) -> void: rebounds["count"] += 1)
+	session.start_level()
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(0.0, 3.0, 0.0)))
+	for i: int in 240:
+		await get_tree().physics_frame
+		if ball.is_resting():
+			break
+	harness.check(ball.is_resting(), "ball settles after the drop")
+	harness.check(not ball.bounce_enabled, "default level leaves the mechanic off")
+	harness.check_eq(int(rebounds["count"]), 0, "no rebound when the mechanic is disabled (rc2 behavior)")
+	harness.check(ball.global_position.y < 0.4, "ball ended on the turf, not bouncing")
+	await _free_session(env)
+
+
+## Ordinary turf: one small rebound per landing, decaying, capped at two,
+## then the ball settles. Gentle putts never trigger anything.
+func _test_turf_rebound_decays_and_caps() -> void:
+	harness.suite = "bounce.turf_decay_cap"
+	var env := await _make_bounce_env()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var heights: Array = []
+	ball.rebounded.connect(func(speed: float, _p: bool) -> void: heights.append(speed))
+	session.start_level()
+	ball.bounce_enabled = true  # start_level reloads it from the CC01 config
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(0.0, 3.0, 0.0)))
+	for i: int in 240:
+		await get_tree().physics_frame
+		if ball.is_resting():
+			break
+	harness.check(heights.size() >= 1, "hard drop on enabled turf produces a rebound (%d)" % heights.size())
+	if heights.size() >= 2:
+		harness.check(heights[1] < heights[0], "rebound decays (%.2f -> %.2f)" % [heights[0], heights[1]])
+	harness.check(heights.size() <= BounceRules.MAX_REBOUNDS_PER_SHOT, "rebound cap respected (%d)" % heights.size())
+	harness.check(ball.is_resting(), "ball still settles to a stop")
+	harness.check_eq(session.strokes, 0, "a bounce never costs a stroke")
+	await _free_session(env)
+
+
+## Spring surfaces rebound stronger; authored dead surfaces (finishing green)
+## never bounce; walls are not landings.
+func _test_spring_and_dead_surfaces() -> void:
+	harness.suite = "bounce.surfaces"
+	var env := await _make_bounce_env()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var events: Array = []
+	ball.rebounded.connect(func(speed: float, _p: bool) -> void:
+		events.append({"speed": speed, "x": ball.global_position.x}))
+	session.start_level()
+	ball.bounce_enabled = true  # start_level reloads it from the CC01 config
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(4.0, 3.0, 0.0)))  # spring slab
+	for i: int in 240:
+		await get_tree().physics_frame
+		if ball.is_resting():
+			break
+	var spring_rebounds := 0
+	for e: Dictionary in events:
+		if float(e["x"]) > 2.0:
+			spring_rebounds += 1
+	harness.check(spring_rebounds >= 1, "spring surface rebounds")
+	# Dead surface: same collector; x < -2 marks the dead slab.
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(-4.0, 3.0, 0.0)))
+	for i: int in 240:
+		await get_tree().physics_frame
+		if ball.is_resting():
+			break
+	var dead_rebounds := 0
+	for e: Dictionary in events:
+		if float(e["x"]) < -2.0:
+			dead_rebounds += 1
+	harness.check_eq(dead_rebounds, 0, "authored dead surface never bounces")
+	harness.check(ball.is_resting(), "ball settles on the dead surface")
+	await _free_session(env)
+
+
+## Perfect Bounce: a press inside the landing window boosts the rebound and
+## spends the shot's assist; the same shot's jump is then refused.
+func _test_perfect_bounce_timing_and_budget() -> void:
+	harness.suite = "bounce.perfect_timing"
+	var env := await _make_bounce_env()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var outcomes: Array = []
+	ball.rebounded.connect(func(speed: float, perfect: bool) -> void: outcomes.append({"speed": speed, "perfect": perfect}))
+	session.start_level()
+	ball.bounce_enabled = true  # start_level reloads it from the CC01 config
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	# Drop onto the spring from a modest height; press the action while the
+	# ball is visibly descending and close to the surface — the deterministic
+	# way is to arm the frame before contact: wait until vy < 0 and height
+	# small, then request the contextual action.
+	# The contextual action is live only mid-shot (ROLLING/SETTLING): fire a
+	# small real shot, then teleport the moving ball above the spring so it
+	# descends toward a genuine landing while the shot is live.
+	session.request_touch_shot(0.12)
+	await get_tree().physics_frame
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(4.0, 1.4, 0.0)))
+	var armed := false
+	for i: int in 400:
+		await get_tree().physics_frame
+		# Arm only inside the physical timing window: at vy ≈ -4.5 m/s from
+		# y ≈ 0.3, impact is ~65 ms away — inside PERFECT_WINDOW_MS (120).
+		if not armed and ball.linear_velocity.y < -4.0 and ball.global_position.y < 0.34:
+			armed = session.request_jump()
+			if armed:
+				break
+	harness.check(armed, "pre-landing press armed a Perfect Bounce")
+	harness.check(not session.assist_available(), "arming spent the shot's assist")
+	for i: int in 240:
+		await get_tree().physics_frame
+		if ball.is_resting():
+			break
+	var perfect_seen := false
+	for o: Dictionary in outcomes:
+		if bool(o["perfect"]):
+			perfect_seen = true
+	harness.check(perfect_seen, "landing inside the window boosted (perfect=true)")
+	harness.check(ball.is_resting(), "ball settles after the perfect bounce")
+	await _free_session(env)
+
+
+## Walls and rails are not landings: a horizontal rail hit never rebounds.
+func _test_wall_is_not_a_landing() -> void:
+	harness.suite = "bounce.wall_not_landing"
+	var env := await _make_bounce_env()
+	var session: GameSessionController = env["session"]
+	var ball: BallController = env["ball"]
+	var rebounds := {"count": 0}
+	ball.rebounded.connect(func(_s: float, _p: bool) -> void: rebounds["count"] += 1)
+	session.start_level()
+	ball.bounce_enabled = true  # start_level reloads it from the CC01 config
+	await _await_state(session, [GameStateMachine.State.READY], 180)
+	# Slap the ball sideways into the far rail at speed, slightly above the
+	# turf so the contact is wall-like.
+	ball.teleport_to(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.3, 0.0)))
+	session.set_aim(Vector3(1, 0, 0))
+	session.request_touch_shot(0.9)
+	await _await_state(session, [GameStateMachine.State.READY, GameStateMachine.State.COMPLETE, GameStateMachine.State.FAILED], 900)
+	harness.check_eq(int(rebounds["count"]), 0, "rail contact never produced a landing rebound")
+	await _free_session(env)

@@ -54,6 +54,7 @@ var _squash := 0.0
 var _squash_vel := 0.0
 var _sinking := false
 var _hop_tween: Tween = null  # READY-state decorative hop (visual node only)
+var _assist_label: Label = null  # Roar Bounce assist indicator (experiment)
 var _flag_mesh: MeshInstance3D = null
 var _cup_twin_material: Material = null  # turf material reused for carved pieces
 var _flag_time := 0.0
@@ -142,12 +143,15 @@ func _ready() -> void:
 		_kick_squash(3.5))
 	ball.bounced.connect(_on_ball_bounced)
 	ball.jumped.connect(_on_ball_jumped)
-	# READY-state hop is presentation-only: the mascot bounces on its visual
-	# node, the RigidBody never moves (D-026 — no ball movement without stroke).
+	# Roar Bounce (experiment): landing rebound presentation. The squash/dust
+	# path already respects Reduced Motion; physics is never touched here.
+	ball.rebounded.connect(_on_ball_rebounded)
+	session.assist_changed.connect(func(_available: bool) -> void: _refresh_assist_indicator())
 	session.decorative_hop_requested.connect(_play_decorative_hop)
 
 	_apply_equipped_cosmetic()
 	_build_visual_root()
+	_build_assist_indicator()
 	_build_face_rig()
 	# Re-apply after the mascot asset loads: the equipped tint must land on
 	# the GLB body (BallBody) when it is the visible mesh.
@@ -254,6 +258,37 @@ func _on_ball_jumped(strength: float) -> void:
 	AudioDirector.play_effect("launch", 0.7)
 	if not SettingsStore.reduced_motion():
 		_spawn_burst(ball.global_position + Vector3(0, -0.18, 0), Color(0.75, 0.72, 0.62), 8, 1.6)
+
+
+## Roar Bounce landing response (experiment): quick squash, compact dust,
+## speed-scaled tock; a Perfect Bounce adds a brighter ring and one distinct
+## cue. Restrained by design — no camera shake for ordinary rebounds.
+func _on_ball_rebounded(normal_speed: float, perfect: bool) -> void:
+	_kick_squash(clampf(2.0 + normal_speed * 0.5, 2.0, 4.5))
+	if perfect:
+		AudioDirector.play_effect("bounce", 1.0)
+		AudioDirector.play_effect("launch", 0.55)
+		_set_expression("surprised")
+		camera_rig.add_trauma(0.1)
+		if not SettingsStore.reduced_motion():
+			_spawn_burst(ball.global_position + Vector3(0, -0.2, 0), RoarTheme.WARM_ACCENT, 12, 2.6)
+	else:
+		AudioDirector.play_effect("bounce", clampf(normal_speed / 6.0, 0.3, 0.8))
+		if not SettingsStore.reduced_motion():
+			_spawn_burst(ball.global_position + Vector3(0, -0.2, 0), Color(0.75, 0.72, 0.62), 5, 1.0)
+
+
+## One small paw shows the shared Jump/Perfect-Bounce assist. Natural
+## rebounds never touch it.
+func _refresh_assist_indicator() -> void:
+	if _assist_label == null:
+		return
+	if session != null and session.assist_available():
+		_assist_label.text = "🐾"
+		_assist_label.modulate = Color(1, 1, 1, 1)
+	else:
+		_assist_label.text = "🐾"
+		_assist_label.modulate = Color(1, 1, 1, 0.25)
 
 
 ## Presentation-only juice (D-021): the spring animates a child VisualRoot,
@@ -724,6 +759,26 @@ func _spawn_hole_sign(level_id: String, par: int) -> void:
 ## Body, mane, and face all live under a scaled VisualRoot so squash &
 ## stretch (D-021) deforms the character while the RigidBody transform and
 ## its CollisionShape3D stay untouched.
+## Roar Bounce assist indicator: one small paw beside the strokes card;
+## dims when the shot's single assist is spent. Experiment-only content
+## still shows it (the budget is harmless when bounce is disabled: the
+## session restores it per shot either way).
+func _build_assist_indicator() -> void:
+	_assist_label = Label.new()
+	_assist_label.name = "AssistIndicator"
+	_assist_label.text = "🐾"
+	_assist_label.add_theme_font_size_override("font_size", 20)
+	_assist_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_assist_label.position = Vector2(4, 2)
+	var strokes_card := hud.find_child("StrokesCard", true, false) as Control
+	if strokes_card != null:
+		strokes_card.add_child(_assist_label)
+	else:
+		(hud as Control).add_child(_assist_label)
+	_assist_label.position = Vector2(8, 90)
+	_refresh_assist_indicator()
+
+
 func _build_visual_root() -> void:
 	_visual_root = Node3D.new()
 	_visual_root.name = "VisualRoot"

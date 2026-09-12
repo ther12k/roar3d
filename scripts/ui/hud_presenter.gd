@@ -261,6 +261,7 @@ func _build() -> void:
 
 	# Left: Strokes Pill Badge
 	var strokes_box := RoarTheme.make_pill_panel(RoarTheme.NAVY_CARD, RoarTheme.NAVY_BORDER)
+	strokes_box.name = "StrokesCard"
 	strokes_box.custom_minimum_size = Vector2(76, 76)
 	var strokes_inner := VBoxContainer.new()
 	strokes_inner.alignment = BoxContainer.ALIGNMENT_CENTER

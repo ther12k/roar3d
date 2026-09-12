@@ -449,3 +449,42 @@ finding, with regression gates where automatable.
 **Impact.** All 8 suites green under the hardened gate: 1019 checks
 (200 unit, 247 integration, 186 course kit, 112 level route, 76 stability,
 46 UI, 57 obstacle, 95 hole route — counts as measured this cycle).
+
+## D-030 · Roar Bounce experiment (branch-only; rc2 unchanged)
+**Decision.** Prototyped the reviewer's Roar Bounce design on the
+`experiment/roar-bounce` branch. rc2/main are untouched; the packaged
+12-hole catalog contract is intact (CC04X is an authored scene outside the
+catalog, playable via `tools/play_bounce_lab.tscn`).
+1. **Pure rules** (`scripts/domain/bounce_rules.gd`): eligibility
+   (≥1.2 m/s normal impact, ≤2 rebounds/shot), surface restitution
+   (turf 0.35 / spring 0.60 / authored dead 0.0), Perfect Bounce
+   (one press per descent, 120 ms window, +1.6 m/s), hard cap 4.0 m/s
+   outgoing along the surface normal.
+2. **Landing = contact, not proximity**: the ball processes integration-time
+   contacts with landing normals (dot up ≥ 0.5); walls/rails/ceilings never
+   respond. Measured finding: Godot Jolt resolves contacts BEFORE
+   `_integrate_forces` sees them — live velocity at first contact is already
+   (0,0,0) on a straight drop. The rebound therefore uses the velocity cached
+   at the END of the previous step (the untouched approach velocity), and the
+   response REPLACES the normal component exactly.
+3. **Session-owned budget**: ONE assist per shot shared by Jump and Perfect
+   Bounce (replaces one-jump-per-landing on this branch); restored per shot
+   and per fall reset; READY remains the decorative-hop signal (D-026).
+   The pad's authored Area launch is exclusive on its contact
+   (`note_pad_launch()` suppresses rule rebounds/boost there).
+4. **Opt-in per level**: `LevelConfig.bounce_enabled` (default false —
+   default courses are byte-for-byte rc2 behavior; integration test proves a
+   hard drop produces zero rebounds when off).
+5. **Presentation**: rebound squash + compact dust + speed-scaled tock;
+   Perfect Bounce adds a distinct two-cue hit and a restrained trauma tick;
+   one paw indicator shows the shared assist. Reduced Motion affects only
+   cosmetics — physics and timing rules are identical.
+6. **Content**: `CC04X.tscn` (CC04 + spring slab on the landing island +
+   dead-bounce final green via `metadata/bounce_class`) and a generic
+   `spring_pad.tscn` kit piece; catalog untouched by design.
+**Why.** Adds a timing-skill layer (bounce opens routes) without weakening
+putting predictability; bounded so it cannot become infinite hopping.
+**Impact.** Branch suites: 1062 checks green (221 unit incl. the pure-rule
+contract, 266 integration incl. decay/cap/spring/dead/wall/timing/budget/
+disabled-default boundaries). CC04 through the replay harness is unchanged.
+Playtest needs humans: this branch is explicitly NOT a release candidate.

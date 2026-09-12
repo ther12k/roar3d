@@ -132,14 +132,21 @@ func _sling_release() -> void:
 	session.request_touch_shot(power)
 
 
-## Active jump action: delegates to the session (gameplay authority).
-## Plays audio based on whether the ball was rolling or resting.
+## Contextual Bounce action (experiment): delegates to the session.
+## Grounded during a shot → Jump; descending → buffer Perfect Bounce;
+## READY → decorative hop. Audio hints at which intent was accepted.
 func trigger_jump() -> bool:
 	if session == null:
 		return false
+	var grounded := session.ball != null and is_instance_valid(session.ball) and session.ball.is_supported()
 	var was_rolling := session.fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]
 	if session.request_jump():
-		AudioDirector.play_effect("bounce", 0.9 if was_rolling else 0.6)
+		if was_rolling and grounded:
+			AudioDirector.play_effect("bounce", 0.9)
+		elif was_rolling:
+			AudioDirector.play_effect("stretch", 0.5)  # Perfect Bounce armed
+		else:
+			AudioDirector.play_effect("bounce", 0.6)
 		return true
 	return false
 

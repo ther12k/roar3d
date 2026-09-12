@@ -12,6 +12,7 @@ signal unsettled()
 signal fall_detected(reason: String)
 signal bounced(strength: float)  ## impact speed at contact start (presentation only)
 signal jumped(strength: float)  ## active jump launched (presentation only)
+signal rebounded(normal_speed: float, perfect: bool)  ## Roar Bounce landing response
 
 const REST_LINEAR_SPEED := 0.06
 const REST_ANGULAR_SPEED := 0.3
@@ -31,13 +32,23 @@ var _resting := false
 var _stable := false
 var _settle_timer := 0.0
 var _supported := false
-var _jump_available := true  ## reset to true on landing; prevents air-hopping
 var _support_normal := UP
 var _support_is_static := false
 var _teleport_pending := false
 var _teleport_transform := Transform3D.IDENTITY
 var _teleport_velocity := Vector3.ZERO
 var _fall_emitted := false
+
+# --- Roar Bounce experiment (bounce_rules.gd owns the math) ---
+## Opt-in per level: when false, every code path below is inert and the ball
+## behaves exactly like the rc2 build (engine restitution stays 0).
+var bounce_enabled := false
+var _perfect_armed := false  ## one buffered press per descent, session-set
+var _perfect_armed_ms := 0
+var _natural_rebounds := 0  ## rule-driven rebounds since the current shot
+var _rebound_latch := false  ## one response per contact episode
+var _prev_step_velocity := Vector3.ZERO  ## end-of-last-step velocity (pre-impact)
+var _pad_exclusive_until_ms := 0  ## a pad launch owns that contact entirely
 
 
 func _ready() -> void:
@@ -106,6 +117,7 @@ func apply_shot(command: ShotCommand) -> bool:
 		return false
 	_resting = false
 	_settle_timer = 0.0
+	reset_bounce_state()  # fresh shot: fresh rebound budget
 	unsettled.emit()
 	var launch_dir := horiz
 	if command.direction_world.y > 0.001:
@@ -115,12 +127,12 @@ func apply_shot(command: ShotCommand) -> bool:
 
 
 ## Active jump/hop: gives the ball upward impulse while on the ground.
-## One jump per landing — _jump_available resets when the ball touches down.
-## Air-jumping is blocked unconditionally (_supported must be true).
+## The SHOT BUDGET lives in GameSessionController (one shared assist per
+## shot for Jump and Perfect Bounce) — the ball only refuses physically
+## impossible jumps. Air-jumping is blocked unconditionally.
 func jump(strength: float = 3.8) -> bool:
-	if not _supported or not _jump_available:
+	if not _supported:
 		return false
-	_jump_available = false
 	linear_velocity.y = strength
 	_supported = false
 	_resting = false
@@ -131,9 +143,37 @@ func jump(strength: float = 3.8) -> bool:
 	return true
 
 
-## Expose jump availability so the HUD and session can gate the prompt.
+## Expose jump availability so the HUD and session can gate the prompt
+## (grounded and not already flying).
 func can_jump() -> bool:
-	return _supported and _jump_available
+	return _supported
+
+
+## Session accepted the player's pre-landing press: arm a Perfect Bounce for
+## this descent. One press per descent — a second press cannot extend or
+## re-arm; an early press simply expires at the landing.
+func arm_perfect_bounce() -> bool:
+	if not bounce_enabled or _perfect_armed:
+		return false
+	if _supported or linear_velocity.y >= 0.0:
+		return false  # buffer only while genuinely descending toward a landing
+	_perfect_armed = true
+	_perfect_armed_ms = Time.get_ticks_msec()
+	return true
+
+
+## A BouncePad launch is the exclusive response for that contact: ordinary
+## rebounds and Perfect Bounce stand down for a short window.
+func note_pad_launch() -> void:
+	_pad_exclusive_until_ms = Time.get_ticks_msec() + 300
+	_perfect_armed = false
+
+
+## Fresh shot: rebound counters and stale buffers reset with it.
+func reset_bounce_state() -> void:
+	_natural_rebounds = 0
+	_perfect_armed = false
+	_rebound_latch = false
 
 
 ## Engine-safe teleport: applied inside _integrate_forces, clearing all
@@ -151,7 +191,7 @@ func teleport_with_velocity(target: Transform3D, exit_velocity: Vector3) -> void
 	_fall_emitted = false
 	_resting = false
 	_settle_timer = 0.0
-	_jump_available = true  # fresh ground contact after the teleport restores jump
+	reset_bounce_state()  # a repositioned ball carries no stale bounce state
 	linear_velocity = exit_velocity
 	angular_velocity = Vector3.ZERO
 
@@ -169,9 +209,75 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 	_update_support(state)
 	_apply_rolling_resistance(state)
+	_process_bounce_contacts(state)
 	_clamp_speed(state)
 	_update_rest(state)
 	_check_kill_plane(state)
+	_prev_step_velocity = state.linear_velocity
+
+
+## Roar Bounce (experiment): one accepted rebound per genuine landing, driven
+## entirely by BounceRules. Uses the integration-time contact list — contact
+## positions and pre-resolution velocity read here are the engine's step
+## state, not a generic signal's post-resolution snapshot. Inert unless
+## bounce_enabled; the pad's authored launch is exclusive on its contacts.
+func _process_bounce_contacts(state: PhysicsDirectBodyState3D) -> void:
+	if not bounce_enabled or _resting:
+		return
+	var contacts := state.get_contact_count()
+	if contacts == 0:
+		_rebound_latch = false  # airborne again: a new landing may respond
+		return
+	if _rebound_latch:
+		return  # this contact episode already had its one response
+	for i: int in contacts:
+		var collider_obj: Object = state.get_contact_collider_object(i)
+		if collider_obj is Node and (collider_obj as Node).is_in_group("bounce_pad"):
+			continue  # pad launch is exclusive; its Area owns the response
+		# Sphere geometry gives the surface normal directly: from the contact
+		# point back toward the ball center.
+		var n := (state.transform.origin - state.get_contact_collider_position(i)).normalized()
+		if not BounceRules.is_landing_normal(n):
+			continue  # walls/ceilings are not landings
+		var surface_class := BounceRules.CLASS_TURF
+		if collider_obj is Node:
+			var owner_node: Node = collider_obj
+			while owner_node != null:
+				if owner_node.has_meta("bounce_class"):
+					surface_class = str(owner_node.get_meta("bounce_class"))
+					break
+				owner_node = owner_node.get_parent()
+		if surface_class == BounceRules.CLASS_DEAD:
+			continue  # authored non-bouncing turf (finishing green)
+		# Jolt resolves contacts BEFORE _integrate_forces sees them: the live
+		# state.linear_velocity is already post-impact (measured (0,0,0) on a
+		# straight drop). The incoming speed therefore comes from the velocity
+		# cached at the end of the previous step — the untouched approach
+		# velocity (review round 6 lifecycle warning).
+		var incoming := BounceRules.incoming_normal_speed(_prev_step_velocity, n)
+		if not BounceRules.is_eligible(incoming, _natural_rebounds):
+			continue
+		var boost := 0.0
+		var perfect := false
+		if _perfect_armed:
+			_perfect_armed = false  # the press is consumed: used or expired
+			if BounceRules.perfect_accepts(Time.get_ticks_msec() - _perfect_armed_ms):
+				boost = BounceRules.PERFECT_BOOST
+				perfect = true
+		var outgoing := BounceRules.outgoing_speed(
+			incoming, BounceRules.restitution_for(surface_class), boost)
+		if outgoing < 0.1:
+			continue
+		# Replace ONLY the normal component with the outgoing speed;
+		# tangential motion is preserved exactly.
+		var v := state.linear_velocity
+		var v_normal := v.dot(n)
+		state.linear_velocity = v + n * (outgoing - v_normal)
+		_natural_rebounds += 1
+		_rebound_latch = true
+		rebounded.emit(outgoing, perfect)
+		return
+
 
 
 func _clamp_speed(state: PhysicsDirectBodyState3D) -> void:
@@ -199,14 +305,9 @@ func _update_support(state: PhysicsDirectBodyState3D) -> void:
 	var collider: Object = hit.get("collider")
 	if collider is AnimatableBody3D:
 		is_static = false
-	var was_supported := _supported
 	_support_normal = normal
 	_supported = normal.dot(UP) >= SUPPORT_DOT
 	_support_is_static = is_static
-	# Restore jump token on landing so players get exactly one jump per ground
-	# contact, preventing Flappy-Bird-style infinite air-hopping.
-	if _supported and not was_supported:
-		_jump_available = true
 
 
 ## Authored rolling resistance: reduce only the tangential component of

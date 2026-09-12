@@ -13,3 +13,7 @@ extends Node3D
 @export var cup_plane_y := 0.0
 ## Anchors closer than this to the cup never become safe rest anchors.
 @export var cup_anchor_exclusion_radius := 0.6
+## Roar Bounce experiment (review round 6): opt-in per level. When true the
+## ball gains bounded landing rebounds and the Perfect Bounce timing action;
+## default courses keep rc2 physics exactly.
+@export var bounce_enabled := false

@@ -14,6 +14,7 @@ signal attempt_finished()
 signal stuck_recovery_changed(available: bool)
 signal save_warning()
 signal decorative_hop_requested()  ## READY-state hop: presentation only, never physics
+signal assist_changed(available: bool)  ## Roar Bounce experiment: 1 assist/shot
 
 # Forgiveness tuning (D-020, from the first human playtest): finishing putts
 # previously demanded ±0.02 power precision against a 0.28 m / 1.2 m/s capture
@@ -52,6 +53,7 @@ var _reset_pending := false
 var _stuck_timer := 0.0
 var _stuck_available := false
 var _active_shot_id := -1  # shot that owns the once-only fall penalty
+var _assist_available := true  # Roar Bounce: one shared Jump/Perfect assist per shot
 
 
 func _ready() -> void:
@@ -99,10 +101,12 @@ func start_level() -> void:
 	last_committed_power = 0.0
 	ball.kill_plane_y = level.kill_plane_y()
 	ball.turf_resistance = level.turf_resistance()
+	ball.bounce_enabled = level.bounce_enabled()  # Roar Bounce: opt-in per level
 	aim_direction = level.initial_aim_direction()
 	ball.teleport_to(level.spawn_transform())
 	_safe_anchor = level.spawn_transform()
 	_has_safe_anchor = true
+	_restore_assist()
 
 
 # --- Shot intake (guarded intents, never direct physics writes) ---
@@ -154,20 +158,51 @@ func in_capture() -> bool:
 	return fsm.is_capture_state()
 
 
-## Jump request. The session is the authority: it validates FSM state so no
-## other layer touches the ball directly for jumps.
-## ROLLING/SETTLING + ball grounded + jump token available → physical Roar Jump.
+## Contextual Bounce action (Roar Bounce experiment, review round 6). The
+## session is the authority: it owns the ONE shared assist per shot and
+## validates FSM state, so no other layer touches the ball directly.
+## ROLLING/SETTLING + grounded + assist → physical Roar Jump (spends assist).
+## ROLLING/SETTLING + descending + assist → buffer a Perfect Bounce for the
+##   next landing (spends assist; early press expires naturally).
 ## READY → decorative hop SIGNAL only: the mascot animates, the rigid body
-## never moves — ball movement without a stroke is forbidden (D-026).
+##   never moves — ball movement without a stroke is forbidden (D-026).
 func request_jump() -> bool:
 	if ball == null or not is_instance_valid(ball):
 		return false
 	if fsm.state in [GameStateMachine.State.ROLLING, GameStateMachine.State.SETTLING]:
-		return ball.jump(3.8)
+		if not _assist_available:
+			return false
+		if ball.is_supported():
+			if ball.jump(3.8):
+				_spend_assist()
+				return true
+			return false
+		if ball.linear_velocity.y < 0.0:
+			if ball.arm_perfect_bounce():
+				_spend_assist()
+				return true
+			return false
+		return false  # ascending: an early press does nothing
 	if fsm.state == GameStateMachine.State.READY:
 		decorative_hop_requested.emit()
 		return true
 	return false
+
+
+## Active assist display: one paw indicator, shared by Jump and Perfect Bounce.
+func assist_available() -> bool:
+	return _assist_available
+
+
+func _spend_assist() -> void:
+	_assist_available = false
+	assist_changed.emit(false)
+
+
+func _restore_assist() -> void:
+	if not _assist_available:
+		_assist_available = true
+	assist_changed.emit(true)
 
 
 func set_aim(direction: Vector3) -> void:
@@ -242,6 +277,7 @@ func _consume_pending_shot() -> void:
 		_active_shot_id = shot.shot_id
 		last_committed_power = shot.normalized_power
 		fsm.begin_rolling()
+		_restore_assist()  # a new shot brings a fresh single assist
 		strokes_changed.emit(strokes)
 		shot_committed.emit(shot)
 	else:
@@ -302,6 +338,7 @@ func _on_fall(reason: String = "kill_volume") -> void:
 	if fsm.state != GameStateMachine.State.INTRO:
 		strokes += 1
 		strokes_changed.emit(strokes)
+	_restore_assist()  # the reset begins a fresh opportunity
 	var anchor := _choose_reset_anchor()
 	ball.teleport_to(anchor)
 	if not fsm.begin_resetting():

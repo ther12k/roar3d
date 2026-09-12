@@ -118,6 +118,10 @@ func turf_resistance() -> float:
 	return _config.turf_resistance if _config != null else 0.55
 
 
+func bounce_enabled() -> bool:
+	return _config != null and _config.bounce_enabled
+
+
 func kill_plane_y() -> float:
 	return _config.kill_plane_y if _config != null else -100.0
 

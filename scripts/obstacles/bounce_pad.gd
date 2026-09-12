@@ -38,6 +38,8 @@ func _launch(ball: BallController) -> void:
 	if _rearm_at_msec.has(id) and now < int(_rearm_at_msec[id]):
 		return
 	_latched_ids[id] = true
+	if ball.has_method("note_pad_launch"):
+		ball.note_pad_launch()  # pad response is exclusive on that contact
 	var launch := (global_transform.basis.y).normalized() * launch_speed
 	ball.apply_central_impulse(launch * ball.mass)
 
