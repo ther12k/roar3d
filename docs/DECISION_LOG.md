@@ -446,6 +446,6 @@ without hardware; fixed in attributable commits, none touching v0.1.0-rc1:
 **Why.** The RC froze the test target; these corrections flow from evidence
 (source review + failure injection), each the smallest change that closes the
 finding, with regression gates where automatable.
-**Impact.** All 8 suites green under the hardened gate: 1000 checks
+**Impact.** All 8 suites green under the hardened gate: 1019 checks
 (200 unit, 247 integration, 186 course kit, 112 level route, 76 stability,
-46 UI, 57 obstacle, 96 hole route → counts as measured in this cycle).
+46 UI, 57 obstacle, 95 hole route — counts as measured this cycle).
