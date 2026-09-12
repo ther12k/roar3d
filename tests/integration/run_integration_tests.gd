@@ -38,6 +38,7 @@ func _run_all() -> void:
 	await _test_chunk_size_independent_qualification()
 	await _test_game_root_scene_smoke()
 	await _test_mascot_asset_contract()
+	await _test_calibration_cancel_recovers()
 	await _test_calibration_stage_works_without_prior_calibration()
 	await _test_jump_blocked_in_air()
 	await _test_jump_resets_on_landing()
@@ -848,6 +849,68 @@ func _test_mascot_asset_contract() -> void:
 	if shape != null and shape.shape is SphereShape3D:
 		harness.check_near((shape.shape as SphereShape3D).radius, 0.25, 0.001, "collider radius unchanged by the mascot asset")
 	harness.check_near(ball.mass, 1.0, 0.001, "ball mass unchanged by the mascot asset")
+	await _free_full_game(env)
+
+
+## Calibration UI recovery (review round 4, P1): the REAL sheet is exercised
+## through start → cancel mid-stage → reopen → full Room/Soft/Strong
+## completion. Regression 1: Start must be re-enabled after a cancelled
+## attempt (previously stuck disabled forever). Regression 2: a stale stage
+## timer from a cancelled/superseded attempt must not finish a newer recording.
+func _test_calibration_cancel_recovers() -> void:
+	harness.suite = "ui.calibration_cancel_recovery"
+	var env := await _make_full_game()
+	var root: GameRoot = env["root"]
+	var hud: HUDPresenter = env["hud"]
+	var voice: VoiceInputService = env["voice"]
+	var source: VoiceFrameSource.SyntheticFrameSource = env["source"]
+	SettingsStore.invalidate_calibration()
+	voice.calibration = {}
+	# Open the REAL sheet and start the Room stage through the real button.
+	hud.open_calibration_sheet()
+	await get_tree().process_frame
+	harness.check(hud._cal_sheet.visible, "calibration sheet opens")
+	hud._on_cal_start()
+	await get_tree().process_frame
+	harness.check(hud._cal_start_button.disabled, "Start disabled while a stage records")
+	# Cancel mid-stage via the sheet close (the Use Touch path calls this).
+	hud._close_calibration_sheet()
+	await get_tree().process_frame
+	harness.check(not voice.is_listening(), "cancel stops the recording")
+	# THE REGRESSION: reopen must establish a known enabled-button state.
+	hud.open_calibration_sheet()
+	await get_tree().process_frame
+	harness.check(not hud._cal_start_button.disabled, "Start re-enabled on reopen after cancel (deadlock fixed)")
+	# Stale-token guard: start a fresh attempt, then feed it the PREVIOUS
+	# attempt's completion — the recording must survive; the current token
+	# must complete it.
+	hud._on_cal_start()
+	await get_tree().process_frame
+	harness.check(voice.is_listening(), "fresh stage records after reopen")
+	var stale_token: int = root._cal_attempt - 1
+	root._finish_calibration_stage(stale_token)
+	harness.check(voice.is_listening(), "stale attempt token cannot finish the current recording")
+	root._finish_calibration_stage(root._cal_attempt)
+	await get_tree().process_frame
+	harness.check(not voice.is_listening(), "current attempt token completes the stage")
+	harness.check(not hud._cal_start_button.disabled, "Start re-enabled by the stage completion")
+	# Full Room → Soft → Strong completion through the real UI: the sheet
+	# STAYS OPEN across stages (reopening resets the stage index — that is
+	# the real flow), each stage gets its own level (derivation needs
+	# soft/strong separation). Completion is owned by the 1.5 s stage timer:
+	# wait it out in REAL time per stage. (The synthetic source is consumed
+	# instantly, so its hold hits the 500 ms no-input timeout long before the
+	# timer — a synthetic artifact; a real mic streams continuously.)
+	var stage_levels := {"room": 0.004, "soft": 0.06, "strong": 0.32}
+	for stage: String in ["room", "soft", "strong"]:
+		hud._on_cal_start()
+		await get_tree().process_frame
+		harness.check(voice.is_listening(), "%s stage recording" % stage)
+		harness.check_eq(root._cal_stage, stage, "%s stage owns the attempt token" % stage)
+		source.push_constant_ms(3000, float(stage_levels[stage]))
+		await get_tree().create_timer(1.7).timeout
+		harness.check_eq(root._cal_stage, "", "%s stage completed by its timer" % stage)
+	harness.check(not voice.calibration.is_empty(), "full real-UI flow derives calibration")
 	await _free_full_game(env)
 
 

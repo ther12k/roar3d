@@ -9,21 +9,41 @@ GODOT_BIN="${1:-${GODOT_BIN:-godot}}"
 cd "$(dirname "$0")/.."
 
 OVERALL=0
+LOG_DIR="${ROAR3D_TEST_LOGS:-/tmp/roar3d-test-logs}"
+mkdir -p "$LOG_DIR"
 
 run_suite() {
 	local name="$1" scene="$2"
-	local log
-	log=$(mktemp)
+	local log="$LOG_DIR/${name}.log"
+	# Logs are RETAINED (never deleted) so a CI failure carries its full
+	# output for inspection instead of a 20-line tail.
 	XDG_DATA_HOME="$(mktemp -d /tmp/roar3d-test-XXXX)" "$GODOT_BIN" --headless --path . "$scene" >"$log" 2>&1
 	local code=$?
+	# Acceptance: exit 0 AND an exact "N passed, 0 failed" report with N >= 1
+	# (the report line is anchored so "10 failed" can never match "0 failed"),
+	# AND no unexplained engine/script errors. Deliberately-generated errors
+	# (negative tests) print "Parse JSON" lines and are whitelisted below.
+	local passed failed
+	passed=$(grep -oE "[0-9]+ passed" "$log" | tail -1 | grep -oE "[0-9]+")
+	failed=$(grep -oE "[0-9]+ failed" "$log" | tail -1 | grep -oE "[0-9]+")
 	local report
 	report=$(grep -E "TESTS:" "$log" | tail -1)
 	printf '%-14s exit=%d %s\n' "$name" "$code" "$report"
-	if [ "$code" -ne 0 ] || ! grep -qE "TESTS:.*0 failed" "$log"; then
+	local ok=1
+	if [ "$code" -ne 0 ]; then ok=0; fi
+	if [ -z "$passed" ] || [ -z "$failed" ] || [ "$passed" -lt 1 ] || [ "$failed" -ne 0 ]; then ok=0; fi
+	local errors
+	errors=$(grep -cE "SCRIPT ERROR|Parse Error" "$log" || true)
+	if [ "$errors" -ne 0 ]; then
+		# Negative tests legitimately produce parse-json noise; SCRIPT ERROR /
+		# Parse Error lines are never expected from a suite run.
+		ok=0
+	fi
+	if [ "$ok" -ne 1 ]; then
 		OVERALL=1
+		echo "  -> REJECTED (exit=$code passed=$passed failed=$failed script_errors=$errors log=$log)"
 		grep -E "FAIL|SCRIPT ERROR|Parse Error" "$log" | head -20
 	fi
-	rm -f "$log"
 }
 
 echo "== Engine version gate (must match ENGINE_VERSION) =="

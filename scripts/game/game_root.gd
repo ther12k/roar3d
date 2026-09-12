@@ -62,6 +62,7 @@ var _perf_label: Label = null
 var _perf_accum := 0.0
 var _perf_frames := 0
 var _cal_stage: String = ""
+var _cal_attempt := 0  # completion token; stale stage timers no-op
 var _cal_room: Dictionary = {}
 var _cal_soft: Dictionary = {}
 var _cal_strong: Dictionary = {}
@@ -1304,13 +1305,17 @@ func start_calibration_stage(stage: String) -> bool:
 		hud.on_calibration_stage_done({"ok": false, "error_code": "no_input"})
 		return true
 	_cal_stage = stage
-	get_tree().create_timer(CAL_STAGE_SECONDS, true, false, true).timeout.connect(_finish_calibration_stage)
+	# Token the scheduled completion: a cancelled or superseded attempt's
+	# timer must no-op instead of finishing a NEWER recording early.
+	_cal_attempt += 1
+	get_tree().create_timer(CAL_STAGE_SECONDS, true, false, true).timeout.connect(
+		_finish_calibration_stage.bind(_cal_attempt))
 	return true
 
 
-func _finish_calibration_stage() -> void:
-	if _cal_stage.is_empty():
-		return
+func _finish_calibration_stage(token: int = -1) -> void:
+	if _cal_stage.is_empty() or token != _cal_attempt:
+		return  # stale timer: attempt cancelled or superseded by a newer one
 	var summary := voice.finish_calibration_stage()
 	summary["ok"] = _calibration_stage_ok(summary)
 	var stage := String(summary.get("stage", ""))

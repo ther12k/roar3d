@@ -726,6 +726,10 @@ func _build_calibration_sheet() -> void:
 func open_calibration_sheet() -> void:
 	_cal_stage_index = 0
 	_update_calibration_copy("")
+	# Every fresh open establishes a known-good button state: a previous
+	# attempt cancelled mid-stage left Start disabled and its completion
+	# callback cancelled with it (calibration-cancel deadlock, review round 4).
+	_cal_start_button.disabled = false
 	_cal_sheet.visible = true
 	_update_sheet_blocker()
 
